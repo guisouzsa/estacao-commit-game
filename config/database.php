@@ -99,6 +99,11 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Transaction poolers such as Neon/PgBouncer cannot safely reuse
+            // server-side prepared plans after a migration changes a row type.
+            'options' => extension_loaded('pdo_pgsql') ? [
+                PDO::ATTR_EMULATE_PREPARES => true,
+            ] : [],
             // Neon requires the endpoint id when the local libpq has no SNI support.
         ],
 

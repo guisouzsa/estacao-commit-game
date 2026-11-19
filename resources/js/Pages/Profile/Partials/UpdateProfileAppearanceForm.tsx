@@ -281,7 +281,7 @@ export default function UpdateProfileAppearanceForm({
                             <div>
                                 <InputLabel
                                     htmlFor="primary_badge"
-                                    value="Badge pessoal"
+                                    value="Selo do perfil"
                                 />
                                 <select
                                     id="primary_badge"

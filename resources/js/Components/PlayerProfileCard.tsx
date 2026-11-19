@@ -1,6 +1,5 @@
 export interface PlayerProfile {
     username: string;
-    display_name: string;
     bio?: string | null;
     avatar?: string | null;
     avatar_position_x?: number;
@@ -17,43 +16,76 @@ export interface PlayerProfile {
     links?: ProfileLink[];
     badges?: ProfileBadge[];
     achievement_badge?: ProfileBadge | null;
-    statistics?: { matches: number; wins: number; losses: number; win_rate: number; xp?: number; level?: number } | null;
+    statistics?: {
+        matches: number | null;
+        wins: number;
+        losses: number;
+        win_rate: number | null;
+        xp?: number;
+        level?: number;
+    } | null;
 }
 
-export interface ProfileLink { platform: string; label: string; url: string; is_public?: boolean }
-export interface ProfileBadge { id: number; slug: string; name: string; description: string; category?: string; rarity: string; image_path?: string | null; unlocked?: boolean; unlocked_at?: string | null }
-
-const frameStyles: Record<string, string> = {
-    standard: 'border-[#1d1d1b] shadow-[0_0_0_4px_#1d1d1b]',
-    lime: 'border-[#b4da33] shadow-[0_0_0_4px_#b4da33]',
-    violet: 'border-[#464498] shadow-[0_0_0_4px_#464498]',
-    pink: 'border-[#f481c6] shadow-[0_0_0_4px_#f481c6]',
-    red: 'border-[#d01600] shadow-[0_0_0_4px_#d01600]',
-};
+export interface ProfileLink {
+    platform: string;
+    label: string;
+    url: string;
+    is_public?: boolean;
+}
+export interface ProfileBadge {
+    id: number;
+    slug: string;
+    name: string;
+    description: string;
+    category?: string;
+    rarity: string;
+    image_path?: string | null;
+    unlocked?: boolean;
+    unlocked_at?: string | null;
+}
 
 const badgeLabels: Record<string, string> = {
     terminal: 'Terminal',
     branch: 'Branch',
     commit: 'Commit',
     'pull-request': 'Pull Request',
+    git: 'Git',
+    github: 'GitHub',
+    docker: 'Docker',
+    linux: 'Linux',
+    'open-source': 'Open Source',
+    'code-review': 'Code Review',
+    'ship-it': 'Ship It!',
+    'coffee-powered': 'Movido a café',
+    'bug-squasher': 'Bug Squasher',
+    api: 'API',
 };
 
 const titleLabels: Record<string, string> = {
     explorer: 'Explorador',
     builder: 'Montador',
     collaborator: 'Colaborador',
+    'coffee-developer': 'Dev Cafeteiro',
+    'git-master': 'Mestre do Git',
+    'docker-captain': 'Capitão Docker',
+    'bug-hunter': 'Caçador de Bugs',
+    'code-guardian': 'Guardião do Código',
+    'api-architect': 'Arquiteto de APIs',
+    'container-tamer': 'Domador de Containers',
+    'terminal-wizard': 'Mago do Terminal',
+    'open-source-hero': 'Herói Open Source',
+    'full-stack-alchemist': 'Alquimista Full Stack',
 };
 
 export default function PlayerProfileCard({
     profile,
     compact = false,
+    children,
 }: {
     profile: PlayerProfile;
     compact?: boolean;
+    children?: ReactNode;
 }) {
-    const frame =
-        frameStyles[profile.profile_frame ?? 'standard'] ??
-        frameStyles.standard;
     const title = profile.profile_title
         ? titleLabels[profile.profile_title]
         : null;
@@ -67,7 +99,14 @@ export default function PlayerProfileCard({
 
             <div className="relative h-40 overflow-hidden bg-[#464498] sm:h-52">
                 {profile.cover ? (
-                    <img src={profile.cover} alt="" className="h-full w-full object-cover" style={{objectPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`}} />
+                    <img
+                        src={profile.cover}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        style={{
+                            objectPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
+                        }}
+                    />
                 ) : (
                     <div className="absolute inset-0 bg-[linear-gradient(135deg,#464498_0_52%,#b4da33_52%_56%,#1d1d1b_56%)]" />
                 )}
@@ -82,95 +121,118 @@ export default function PlayerProfileCard({
                 />
             </div>
             <div className="relative px-5 pb-6 sm:px-7">
-                <div className="relative -mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end">
-                    <div
-                        className={`h-24 w-24 shrink-0 rounded-full border-[3px] bg-[#f3f1ec] p-1 ${frame}`}
-                    >
-                        <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#464498] text-3xl font-bold text-white">
-                            {profile.avatar ? (
-                                <img
-                                    src={profile.avatar}
-                                    alt={`Avatar de @${profile.username}`}
-                                    className="h-full w-full object-cover"
-                                    style={{
-                                        objectPosition: `${profile.avatar_position_x ?? 50}% ${profile.avatar_position_y ?? 50}%`,
-                                        transform: `scale(${(profile.avatar_zoom ?? 100) / 100})`,
-                                    }}
-                                />
-                            ) : (
-                                <span aria-hidden="true">
-                                    {profile.username
-                                        .trim()
-                                        .charAt(0)
-                                        .toUpperCase() || '?'}
-                                </span>
-                            )}
-                        </div>
-                    </div>
+                <div className="relative -mt-12 w-fit sm:-mt-14">
+                    <PlayerAvatar profile={profile} size="lg" />
+                </div>
 
-                    <div className="min-w-0">
-                        <p className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-[#464498]">
-                            jogador
-                        </p>
-                        <h1 className="mt-1 break-words text-3xl font-black leading-tight text-[#1d1d1b] sm:text-4xl">
+                <div className="mt-4 flex min-w-0 flex-wrap items-end justify-between gap-4">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                        <h1 className="break-words text-3xl font-black leading-tight text-[#1d1d1b] sm:text-4xl">
                             @{profile.username}
                         </h1>
                         {title && (
-                            <p className="mt-2 inline-flex border-2 border-[#464498] bg-white px-2 py-1 font-mono text-xs text-[#464498]">
+                            <span className="inline-flex border-2 border-[#464498] bg-white px-2.5 py-1 font-mono text-xs font-bold text-[#464498] shadow-[2px_2px_0_#f481c6]">
                                 {title}
-                            </p>
+                            </span>
                         )}
-                        {profile.achievement_badge && <p className="mt-2 font-mono text-xs font-bold uppercase text-[#d01600]">Conquista em destaque: {profile.achievement_badge.name}</p>}
                     </div>
-
+                    {profile.statistics && (
+                        <div className="shrink-0" aria-label="Desempenho">
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    ['Vitórias', profile.statistics.wins],
+                                    ['Partidas', profile.statistics.matches],
+                                    ['Derrotas', profile.statistics.losses],
+                                ].map(([label, value]) => (
+                                    <div
+                                        key={label}
+                                        className="min-w-20 border-2 border-[#1d1d1b] bg-white px-3 py-2 text-center shadow-[3px_3px_0_#b4da33]"
+                                    >
+                                        <p className="font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-[#68665f]">
+                                            {label}
+                                        </p>
+                                        <p className="mt-1 text-xl font-black leading-none">
+                                            {value ?? '—'}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                            {typeof profile.statistics.xp === 'number' && (
+                                <div className="mt-2 flex items-center justify-between border-2 border-[#464498] bg-[#464498] px-3 py-1.5 text-white shadow-[3px_3px_0_#f481c6]">
+                                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
+                                        XP
+                                    </span>
+                                    <strong className="font-mono text-sm">
+                                        {profile.statistics.xp.toLocaleString(
+                                            'pt-BR',
+                                        )}
+                                    </strong>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {profile.achievement_badge && (
+                        <p className="w-full font-mono text-xs font-bold uppercase text-[#d01600]">
+                            Conquista em destaque:{' '}
+                            {profile.achievement_badge.name}
+                        </p>
+                    )}
                 </div>
             </div>
 
             <div
                 className={`space-y-5 px-5 py-5 sm:px-7 ${compact ? 'sm:py-5' : 'sm:py-7'}`}
             >
-                <div className="flex flex-wrap gap-2">
-                    {profile.developer_badge && (
-                        <span className="inline-flex items-center gap-2 border-2 border-[#464498] bg-white px-3 py-1.5 font-mono text-xs font-bold uppercase text-[#1d1d1b] shadow-[3px_3px_0_#f481c6]">
-                            <span className="text-[#464498]" aria-hidden="true">
-                                &lt;/&gt;
+                <div className="space-y-3">
+                    <div
+                        className="flex flex-wrap items-center gap-2"
+                        aria-label="Selos do perfil"
+                    >
+                        {profile.primary_badge && (
+                            <span className="inline-flex items-center gap-1.5 border-2 border-[#1d1d1b] bg-[#b4da33] px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-[#1d1d1b] shadow-[2px_2px_0_#1d1d1b]">
+                                <span aria-hidden="true">✦</span>
+                                {badgeLabels[profile.primary_badge] ??
+                                    profile.primary_badge}
                             </span>
-                            {profile.developer_badge}
-                        </span>
-                    )}
-                </div>
-
-                <p className="min-h-12 whitespace-pre-wrap break-words text-sm leading-6 text-[#393833]">
-                    {profile.bio ||
-                        'Este jogador ainda não escreveu uma biografia.'}
-                </p>
-
-                <div className="flex flex-wrap items-end justify-between gap-3 border-t border-[#1d1d1b]/20 pt-4">
-                    <div>
-                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#68665f]">
-                            Identificador público
-                        </p>
-                        <p className="mt-1 font-mono text-sm font-bold">
-                            @{profile.username}
-                        </p>
+                        )}
+                        {profile.developer_badge && (
+                            <span className="inline-flex items-center gap-1.5 border-2 border-[#464498] bg-white px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-[#1d1d1b] shadow-[2px_2px_0_#f481c6]">
+                                <span
+                                    className="text-[#464498]"
+                                    aria-hidden="true"
+                                >
+                                    &lt;/&gt;
+                                </span>
+                                {profile.developer_badge}
+                            </span>
+                        )}
                     </div>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-6 text-[#393833]">
+                        {profile.bio ||
+                            'Este jogador ainda não escreveu uma biografia.'}
+                    </p>
                     {profile.created_at && (
-                        <div className="text-left sm:text-right">
-                            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#68665f]">
-                                Na estação desde
-                            </p>
-                            <p className="mt-1 text-sm font-semibold">
-                                {new Date(
-                                    profile.created_at,
-                                ).toLocaleDateString('pt-BR', {
-                                    month: 'long',
-                                    year: 'numeric',
-                                })}
-                            </p>
+                        <div className="border-t border-[#1d1d1b]/20 pt-3">
+                            <div>
+                                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#68665f]">
+                                    Na estação desde
+                                </p>
+                                <p className="mt-1 text-sm font-semibold">
+                                    {new Date(
+                                        profile.created_at,
+                                    ).toLocaleDateString('pt-BR', {
+                                        month: 'long',
+                                        year: 'numeric',
+                                    })}
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
+                {children}
             </div>
         </article>
     );
 }
+import { ReactNode } from 'react';
+import PlayerAvatar from './PlayerAvatar';

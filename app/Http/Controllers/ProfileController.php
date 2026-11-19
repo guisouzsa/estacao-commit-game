@@ -18,7 +18,7 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
-        $user = $request->user()->load(['badges' => fn ($query) => $query->where('active', true), 'profileLinks', 'achievementBadge']);
+        $user = $request->user()->load(['badges' => fn ($query) => $query->whereRaw('active IS TRUE'), 'profileLinks', 'achievementBadge']);
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
@@ -30,13 +30,13 @@ class ProfileController extends Controller
             ],
             'profileExtras' => [
                 'links' => $user->profileLinks->map->only(['platform','label','url','is_public'])->values(),
-                'badges' => \App\Models\Badge::query()->where('active', true)->where('secret', false)->orderBy('sort_order')->get()->map(fn ($badge) => [
+                'badges' => \App\Models\Badge::query()->whereRaw('active IS TRUE')->whereRaw('secret IS FALSE')->orderBy('sort_order')->get()->map(fn ($badge) => [
                     ...$badge->only(['id','slug','name','description','category','rarity','image_path']),
                     'unlocked' => $user->badges->contains($badge->id),
                     'unlocked_at' => optional($user->badges->firstWhere('id', $badge->id)?->pivot)->unlocked_at,
                 ]),
                 'achievement_badge_id' => $user->achievement_badge_id,
-                'statistics' => null,
+                'statistics' => $user->historicalGameStatistics(),
             ],
         ]);
     }
@@ -49,6 +49,7 @@ class ProfileController extends Controller
         $validated = $request->validated();
         $validated['username'] = strtolower($validated['username']);
         $request->user()->fill($validated);
+        $request->user()->display_name = $validated['username'];
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;

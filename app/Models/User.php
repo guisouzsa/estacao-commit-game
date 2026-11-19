@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -46,6 +46,7 @@ class User extends Authenticatable
         'email',
         'google_id',
         'password',
+        'onboarding_completed_at',
     ];
 
     /**
@@ -73,6 +74,26 @@ class User extends Authenticatable
             'avatar_zoom' => 'integer',
             'cover_position_x' => 'integer',
             'cover_position_y' => 'integer',
+            'onboarding_completed_at' => 'datetime',
+            'matches_played' => 'integer',
+            'matches_won' => 'integer',
+            'matches_lost' => 'integer',
+        ];
+    }
+
+    public function historicalGameStatistics(): ?array
+    {
+        if ($this->matches_played === null && $this->matches_won === null && $this->matches_lost === null) {
+            return null;
+        }
+
+        return [
+            'matches' => $this->matches_played,
+            'wins' => $this->matches_won ?? 0,
+            'losses' => $this->matches_lost ?? 0,
+            'win_rate' => $this->matches_played
+                ? round(($this->matches_won ?? 0) / $this->matches_played * 100, 1)
+                : null,
         ];
     }
 

@@ -10,7 +10,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -45,7 +44,13 @@ class RegisteredUserController extends Controller
                 'min:3',
                 'max:30',
                 'regex:/\A[a-zA-Z0-9_-]+\z/',
-                Rule::unique('users', 'username')->where(fn ($query) => $query->whereRaw('LOWER(username) = ?', [strtolower($request->username)])),
+                function ($attribute, $value, $fail): void {
+                    if (User::query()
+                        ->whereRaw('LOWER(username) = ?', [strtolower($value)])
+                        ->exists()) {
+                        $fail('Este nome de usuário já está sendo utilizado. Escolha outro.');
+                    }
+                },
             ],
             'email' => [
                 'required',
@@ -53,9 +58,13 @@ class RegisteredUserController extends Controller
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->where(
-                    fn ($query) => $query->whereRaw('LOWER(email) = ?', [strtolower($request->input('email'))])
-                ),
+                function ($attribute, $value, $fail): void {
+                    if (User::query()
+                        ->whereRaw('LOWER(email) = ?', [strtolower($value)])
+                        ->exists()) {
+                        $fail('The email has already been taken.');
+                    }
+                },
             ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], [
@@ -65,7 +74,7 @@ class RegisteredUserController extends Controller
         try {
             $user = User::create([
                 'username' => strtolower($validated['username']),
-                'display_name' => $validated['username'],
+                'display_name' => strtolower($validated['username']),
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
             ]);

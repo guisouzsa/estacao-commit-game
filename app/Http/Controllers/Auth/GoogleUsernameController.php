@@ -60,7 +60,7 @@ class GoogleUsernameController extends Controller
             $user = DB::transaction(function () use ($validated, $pendingUser): User {
                 $user = User::create([
                     'username' => Str::lower($validated['username']),
-                    'display_name' => $pendingUser['display_name'] ?: 'Jogador',
+                    'display_name' => Str::lower($validated['username']),
                     'email' => $pendingUser['email'],
                     'google_id' => $pendingUser['google_id'],
                     'password' => Str::random(64),

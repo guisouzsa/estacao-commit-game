@@ -34,7 +34,6 @@ class HandleInertiaRequests extends Middleware
         $authUser = $user?->only([
             'id',
             'username',
-            'display_name',
             'bio',
             'avatar',
             'avatar_position_x',
@@ -49,6 +48,7 @@ class HandleInertiaRequests extends Middleware
             'email',
             'email_verified_at',
             'created_at',
+            'onboarding_completed_at',
         ]);
 
         if ($user && $authUser) {

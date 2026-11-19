@@ -32,7 +32,6 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->patch('/profile', [
                 'username' => 'testuser',
-                'display_name' => 'Test User',
                 'email' => 'test@example.com',
             ]);
 
@@ -42,7 +41,8 @@ class ProfileTest extends TestCase
 
         $user->refresh();
 
-        $this->assertSame('Test User', $user->display_name);
+        $this->assertSame('testuser', $user->display_name);
+        $this->assertSame('testuser', $user->username);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
     }
@@ -55,7 +55,6 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->patch('/profile', [
                 'username' => 'testuser',
-                'display_name' => 'Test User',
                 'email' => $user->email,
             ]);
 
@@ -184,6 +183,26 @@ class ProfileTest extends TestCase
                 'profile_title' => 'explorer',
             ])
             ->assertSessionHasErrors('profile_frame');
+    }
+
+    public function test_profile_username_updates_are_unique_case_insensitively(): void
+    {
+        User::factory()->create(['username' => 'gui']);
+        $user = User::factory()->create(['username' => 'anotherplayer']);
+
+        $this->actingAs($user)
+            ->from('/profile')
+            ->patch('/profile/appearance', [
+                'username' => 'GUI',
+                'avatar_position_x' => 50,
+                'avatar_position_y' => 50,
+                'profile_frame' => 'standard',
+                'primary_badge' => 'terminal',
+                'profile_title' => 'explorer',
+            ])
+            ->assertSessionHasErrors([
+                'username' => 'Este nome de usuário já está sendo utilizado. Escolha outro.',
+            ]);
     }
 
     public function test_profile_appearance_cannot_be_used_to_assign_a_developer_badge(): void

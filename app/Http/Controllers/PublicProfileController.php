@@ -14,13 +14,12 @@ class PublicProfileController extends Controller
     {
         $user = User::query()
             ->whereRaw('LOWER(username) = ?', [strtolower($username)])
-            ->with(['badges' => fn ($query) => $query->where('active', true), 'profileLinks' => fn ($query) => $query->where('is_public', true), 'achievementBadge'])
+            ->with(['badges' => fn ($query) => $query->whereRaw('active IS TRUE'), 'profileLinks' => fn ($query) => $query->whereRaw('is_public IS TRUE'), 'achievementBadge'])
             ->firstOrFail();
 
         return Inertia::render('Profile/Public', [
             'profile' => [
                 'username' => $user->username,
-                'display_name' => $user->display_name,
                 'bio' => $user->bio,
                 'avatar' => $user->avatar
                     ? (str_starts_with($user->avatar, 'http')
@@ -41,13 +40,13 @@ class PublicProfileController extends Controller
                     : null,
                 'created_at' => $user->created_at,
                 'links' => $user->profileLinks->map->only(['platform','label','url'])->values(),
-                'badges' => Badge::query()->where('active', true)->where('secret', false)->orderBy('sort_order')->get()->map(fn ($badge) => [
+                'badges' => Badge::query()->whereRaw('active IS TRUE')->whereRaw('secret IS FALSE')->orderBy('sort_order')->get()->map(fn ($badge) => [
                     ...$badge->only(['id','slug','name','description','category','rarity','image_path']),
                     'unlocked' => $user->badges->contains($badge->id),
                     'unlocked_at' => optional($user->badges->firstWhere('id', $badge->id)?->pivot)->unlocked_at,
                 ]),
                 'achievement_badge' => $user->achievementBadge?->only(['id','slug','name','description','rarity','image_path']),
-                'statistics' => null,
+                'statistics' => $user->historicalGameStatistics(),
             ],
         ]);
     }

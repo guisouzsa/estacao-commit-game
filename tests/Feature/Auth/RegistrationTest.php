@@ -21,7 +21,6 @@ class RegistrationTest extends TestCase
     {
         $response = $this->post('/register', [
             'username' => 'testplayer',
-            'display_name' => 'Test Player',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -29,6 +28,10 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertDatabaseHas('users', [
+            'username' => 'testplayer',
+            'display_name' => 'testplayer',
+        ]);
     }
 
     public function test_registration_rejects_duplicate_usernames_case_insensitively(): void
@@ -37,7 +40,6 @@ class RegistrationTest extends TestCase
 
         $this->from('/register')->post('/register', [
             'username' => 'Gui',
-            'display_name' => 'Guilherme',
             'email' => 'other@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -52,7 +54,6 @@ class RegistrationTest extends TestCase
 
         $this->from('/register')->post('/register', [
             'username' => 'anotherplayer',
-            'display_name' => 'Another Player',
             'email' => 'player@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -63,7 +64,6 @@ class RegistrationTest extends TestCase
     {
         $this->post('/register', [
             'username' => 'Player_One',
-            'display_name' => 'Player One',
             'email' => 'player@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -72,5 +72,6 @@ class RegistrationTest extends TestCase
         $user = User::where('email', 'player@example.com')->firstOrFail();
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $user->id);
         $this->assertSame('player_one', $user->username);
+        $this->assertSame('player_one', $user->display_name);
     }
 }

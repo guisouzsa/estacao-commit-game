@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class RoomInvitation extends Model
+{
+    protected $fillable = ['room_id','token_hash','expires_at','revoked_at'];
+    protected $hidden = ['token_hash'];
+    protected function casts(): array { return ['expires_at'=>'datetime','revoked_at'=>'datetime']; }
+    public function room(): BelongsTo { return $this->belongsTo(GameRoom::class, 'room_id'); }
+}

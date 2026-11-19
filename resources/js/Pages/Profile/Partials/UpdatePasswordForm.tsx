@@ -49,23 +49,23 @@ export default function UpdatePasswordForm({
     };
 
     return (
-        <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Update Password
+        <section className={`flex h-full flex-col border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-5 shadow-[5px_5px_0_#464498] sm:p-6 ${className}`}>
+            <header className="border-b border-[#1d1d1b]/20 pb-4">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#464498]">Conta / segurança</p>
+                <h2 className="mt-2 text-2xl font-black text-[#1d1d1b]">
+                    Alterar senha
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600">
-                    Ensure your account is using a long, random password to stay
-                    secure.
+                <p className="mt-1 text-sm leading-6 text-[#5b5953]">
+                    Use uma senha longa e exclusiva para manter sua conta protegida.
                 </p>
             </header>
 
-            <form onSubmit={updatePassword} className="mt-6 space-y-6">
+            <form onSubmit={updatePassword} className="mt-5 flex flex-1 flex-col space-y-4">
                 <div>
                     <InputLabel
                         htmlFor="current_password"
-                        value="Current Password"
+                        value="Senha atual"
                     />
 
                     <TextInput
@@ -76,7 +76,7 @@ export default function UpdatePasswordForm({
                             setData('current_password', e.target.value)
                         }
                         type="password"
-                        className="mt-1 block w-full"
+                        className="mt-2 block w-full border-[#1d1d1b]/30 bg-white focus:border-[#464498] focus:ring-[#464498]"
                         autoComplete="current-password"
                     />
 
@@ -87,7 +87,7 @@ export default function UpdatePasswordForm({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="password" value="New Password" />
+                    <InputLabel htmlFor="password" value="Nova senha" />
 
                     <TextInput
                         id="password"
@@ -95,7 +95,7 @@ export default function UpdatePasswordForm({
                         value={data.password}
                         onChange={(e) => setData('password', e.target.value)}
                         type="password"
-                        className="mt-1 block w-full"
+                        className="mt-2 block w-full border-[#1d1d1b]/30 bg-white focus:border-[#464498] focus:ring-[#464498]"
                         autoComplete="new-password"
                     />
 
@@ -105,7 +105,7 @@ export default function UpdatePasswordForm({
                 <div>
                     <InputLabel
                         htmlFor="password_confirmation"
-                        value="Confirm Password"
+                        value="Confirmar nova senha"
                     />
 
                     <TextInput
@@ -115,7 +115,7 @@ export default function UpdatePasswordForm({
                             setData('password_confirmation', e.target.value)
                         }
                         type="password"
-                        className="mt-1 block w-full"
+                        className="mt-2 block w-full border-[#1d1d1b]/30 bg-white focus:border-[#464498] focus:ring-[#464498]"
                         autoComplete="new-password"
                     />
 
@@ -125,8 +125,8 @@ export default function UpdatePasswordForm({
                     />
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                <div className="mt-auto flex items-center gap-4 pt-1">
+                    <PrimaryButton className="border-2 border-[#1d1d1b] bg-[#b4da33] text-[#1d1d1b] hover:bg-[#c5e84b] focus:ring-[#464498]" disabled={processing}>{processing ? 'Salvando...' : 'Salvar senha'}</PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -135,8 +135,8 @@ export default function UpdatePasswordForm({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">
-                            Saved.
+                        <p className="font-mono text-xs font-bold text-[#464498]">
+                            Senha atualizada.
                         </p>
                     </Transition>
                 </div>

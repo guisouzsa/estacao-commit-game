@@ -50,41 +50,36 @@ export default function DeleteUserForm({
     };
 
     return (
-        <section className={`space-y-6 ${className}`}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Delete Account
+        <section className={`flex h-full flex-col border-[3px] border-[#d01600] bg-[#f3f1ec] p-5 shadow-[5px_5px_0_#d01600] sm:p-6 ${className}`}>
+            <header className="border-b border-[#d01600]/25 pb-4">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d01600]">Conta / zona de risco</p>
+                <h2 className="mt-2 text-2xl font-black text-[#1d1d1b]">
+                    Excluir conta
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Before deleting your account,
-                    please download any data or information that you wish to
-                    retain.
+                <p className="mt-1 text-sm leading-6 text-[#5b5953]">
+                    Esta ação remove permanentemente sua conta e os dados associados. Ela não poderá ser desfeita.
                 </p>
             </header>
 
-            <DangerButton onClick={confirmUserDeletion}>
-                Delete Account
+            <DangerButton className="mt-auto self-start border-2 border-[#1d1d1b] shadow-[3px_3px_0_#1d1d1b]" onClick={confirmUserDeletion}>
+                Excluir minha conta
             </DangerButton>
 
             <Modal show={confirmingUserDeletion} onClose={closeModal}>
                 <form onSubmit={deleteUser} className="p-6">
                     <h2 className="text-lg font-medium text-gray-900">
-                        Are you sure you want to delete your account?
+                        Tem certeza de que deseja excluir sua conta?
                     </h2>
 
                     <p className="mt-1 text-sm text-gray-600">
-                        Once your account is deleted, all of its resources and
-                        data will be permanently deleted. Please enter your
-                        password to confirm you would like to permanently delete
-                        your account.
+                        Depois da exclusão, seus dados não poderão ser recuperados. Digite sua senha para confirmar.
                     </p>
 
                     <div className="mt-6">
                         <InputLabel
                             htmlFor="password"
-                            value="Password"
+                            value="Senha"
                             className="sr-only"
                         />
 
@@ -99,7 +94,7 @@ export default function DeleteUserForm({
                             }
                             className="mt-1 block w-3/4"
                             isFocused
-                            placeholder="Password"
+                            placeholder="Digite sua senha"
                         />
 
                         <InputError
@@ -110,11 +105,11 @@ export default function DeleteUserForm({
 
                     <div className="mt-6 flex justify-end">
                         <SecondaryButton onClick={closeModal}>
-                            Cancel
+                            Cancelar
                         </SecondaryButton>
 
                         <DangerButton className="ms-3" disabled={processing}>
-                            Delete Account
+                            Excluir conta
                         </DangerButton>
                     </div>
                 </form>

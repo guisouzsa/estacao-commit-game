@@ -31,8 +31,9 @@ export default function Public({ profile }: { profile: PlayerProfile }) {
                 </Link>
             </header>
             <main className="mx-auto max-w-5xl">
-                <PlayerProfileCard profile={profile} />
-                <ProfileExtras username={profile.username} links={profile.links} badges={profile.badges} statistics={profile.statistics ?? null} share />
+                <PlayerProfileCard profile={profile}>
+                    <ProfileExtras username={profile.username} links={profile.links} badges={profile.badges} statistics={profile.statistics ?? null} share />
+                </PlayerProfileCard>
                 <p className="mt-8 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
                     Perfil público / estação commit
                 </p>

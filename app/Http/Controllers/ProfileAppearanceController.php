@@ -3,22 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileAppearanceUpdateRequest;
+use App\Support\ProfileImageOptimizer;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
-use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class ProfileAppearanceController extends Controller
 {
-    public function update(ProfileAppearanceUpdateRequest $request): RedirectResponse
+    public function update(
+        ProfileAppearanceUpdateRequest $request,
+        ProfileImageOptimizer $imageOptimizer
+    ): RedirectResponse
     {
         $user = $request->user();
         $validated = $request->validated();
         $previousAvatar = $user->avatar;
         $previousCover = $user->profile_cover;
+        $newFiles = [];
+
+        try {
         if (isset($validated['username'])) {
             $user->username = strtolower($validated['username']);
-            // Compatibilidade com registros antigos; a identidade pública usa somente username.
             $user->display_name = $user->username;
         }
         if (array_key_exists('bio', $validated)) {
@@ -26,23 +33,15 @@ class ProfileAppearanceController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            $avatarPath = $request->file('avatar')->storePublicly("avatars/{$user->id}", 'public');
-
-            if ($avatarPath === false) {
-                throw new RuntimeException('Não foi possível armazenar o avatar.');
-            }
-
-            $user->avatar = $avatarPath;
+            $user->avatar = $imageOptimizer->store($request->file('avatar'), "avatars/{$user->id}", 800);
+            $newFiles[] = $user->avatar;
         } elseif ($validated['remove_avatar'] ?? false) {
             $user->avatar = null;
         }
 
         if ($request->hasFile('cover')) {
-            $coverPath = $request->file('cover')->storePublicly("covers/{$user->id}", 'public');
-            if ($coverPath === false) {
-                throw new RuntimeException('Não foi possível armazenar a capa.');
-            }
-            $user->profile_cover = $coverPath;
+            $user->profile_cover = $imageOptimizer->store($request->file('cover'), "covers/{$user->id}", 1920);
+            $newFiles[] = $user->profile_cover;
         } elseif ($validated['remove_cover'] ?? false) {
             $user->profile_cover = null;
         }
@@ -65,6 +64,13 @@ class ProfileAppearanceController extends Controller
                 }
             }
         });
+        } catch (Throwable $exception) {
+            foreach ($newFiles as $path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            throw $exception;
+        }
 
         if ($previousAvatar !== $user->avatar && $this->isManagedAvatar($previousAvatar, $user->id)) {
             Storage::disk('public')->delete($previousAvatar);

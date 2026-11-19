@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
 {
@@ -23,9 +22,17 @@ class ProfileUpdateRequest extends FormRequest
                 'min:3',
                 'max:30',
                 'regex:/\A[a-zA-Z0-9_-]+\z/',
-                Rule::unique('users', 'username')->where(fn ($query) => $query->whereRaw('LOWER(username) = ?', [strtolower($this->input('username'))]))->ignore($this->user()->id),
+                function ($attribute, $value, $fail): void {
+                    $exists = User::query()
+                        ->whereRaw('LOWER(username) = ?', [strtolower($value)])
+                        ->where('id', '!=', $this->user()->id)
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Este nome de usuário já está sendo utilizado. Escolha outro.');
+                    }
+                },
             ],
-            'display_name' => ['required', 'string', 'min:2', 'max:50'],
             'bio' => ['nullable', 'string', 'max:500'],
             'email' => [
                 'required',
@@ -33,9 +40,16 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->where(
-                    fn ($query) => $query->whereRaw('LOWER(email) = ?', [strtolower($this->input('email'))])
-                )->ignore($this->user()->id),
+                function ($attribute, $value, $fail): void {
+                    $exists = User::query()
+                        ->whereRaw('LOWER(email) = ?', [strtolower($value)])
+                        ->where('id', '!=', $this->user()->id)
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('The email has already been taken.');
+                    }
+                },
             ],
         ];
     }

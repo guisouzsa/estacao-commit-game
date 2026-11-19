@@ -1,11 +1,14 @@
 export interface User {
     id: string;
     username: string;
-    display_name: string;
     bio?: string | null;
     avatar?: string | null;
     avatar_position_x?: number;
     avatar_position_y?: number;
+    avatar_zoom?: number;
+    cover?: string | null;
+    cover_position_x?: number;
+    cover_position_y?: number;
     profile_frame?: string | null;
     primary_badge?: string | null;
     profile_title?: string | null;

@@ -1,7 +1,4 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -26,51 +23,49 @@ export default function GoogleUsername({
         <GuestLayout>
             <Head title="Escolha seu username" />
 
-            <div className="mb-6">
-                <h1 className="text-xl font-bold text-gray-800">
-                    Escolha seu username
-                </h1>
-                <p className="mt-2 text-sm text-gray-600">
-                    {displayName
-                        ? `Olá, ${displayName}. Defina seu nome público para concluir o cadastro.`
-                        : 'Defina seu nome público para concluir o cadastro.'}
-                </p>
-                <p className="mt-1 text-sm text-gray-500">{email}</p>
-            </div>
+            <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">Identificação do agente</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight">Defina seu nickname.</h1>
+            <p className="mt-3 text-ink/55">
+                {displayName
+                    ? `Olá, ${displayName}! Escolha seu username público para finalizar o cadastro com Google.`
+                    : 'Escolha seu username público para finalizar o cadastro com Google.'}
+            </p>
+            <p className="mt-1 font-mono text-xs text-purple-700">{email}</p>
 
-            <form onSubmit={submit}>
-                <InputLabel htmlFor="username" value="Username público" />
-                <TextInput
-                    id="username"
-                    name="username"
-                    value={data.username}
-                    className="mt-1 block w-full"
-                    autoComplete="username"
-                    minLength={3}
-                    maxLength={30}
-                    pattern="[A-Za-z0-9_-]{3,30}"
-                    title="Use de 3 a 30 letras, números, _ ou -"
-                    autoFocus
-                    required
-                    onChange={(event) =>
-                        setData(
-                            'username',
-                            event.target.value
-                                .toLowerCase()
-                                .replace(/[^a-z0-9_-]/g, ''),
-                        )
-                    }
-                />
-                <InputError message={errors.username} className="mt-2" />
+            <form onSubmit={submit} className="mt-8 space-y-6">
+                <div>
+                    <label className="auth-label" htmlFor="username">Username único</label>
+                    <input
+                        id="username"
+                        name="username"
+                        value={data.username}
+                        className="auth-input"
+                        autoComplete="username"
+                        minLength={3}
+                        maxLength={30}
+                        pattern="[A-Za-z0-9_-]{3,30}"
+                        title="Use de 3 a 30 letras, números, _ ou -"
+                        autoFocus
+                        required
+                        aria-invalid={Boolean(errors.username)}
+                        onChange={(event) =>
+                            setData(
+                                'username',
+                                event.target.value
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9_-]/g, ''),
+                            )
+                        }
+                    />
+                    <InputError message={errors.username} className="mt-2" />
+                    <p className="mt-2 text-xs leading-5 text-ink/40">
+                        Seu nickname será sua identificação nas partidas, salas e rankings da estação.
+                    </p>
+                </div>
 
-                <p className="mt-3 text-xs leading-5 text-gray-500">
-                    O username é exclusivo e pode ser diferente do seu nome de
-                    exibição.
-                </p>
-
-                <PrimaryButton className="mt-6 w-full" disabled={processing}>
-                    Concluir cadastro
-                </PrimaryButton>
+                <button className="auth-submit !mt-7" disabled={processing}>
+                    {processing ? 'Concluindo cadastro…' : 'Concluir cadastro e entrar'}
+                </button>
             </form>
         </GuestLayout>
     );

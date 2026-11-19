@@ -1,12 +1,11 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import PasswordVisibilityToggle from '@/Components/PasswordVisibilityToggle';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
 
 export default function ConfirmPassword() {
+    const [show, setShow] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         password: '',
     });
@@ -23,33 +22,36 @@ export default function ConfirmPassword() {
         <GuestLayout>
             <Head title="Confirmar senha" />
 
-            <h1 className="text-4xl font-black tracking-tight">Confirme sua identidade.</h1>
-            <div className="mb-5 mt-3 text-sm text-ink/55">
-                Esta é uma área segura. Confirme sua senha para continuar.
-            </div>
+            <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">Área restrita</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight">Confirme sua senha.</h1>
+            <p className="mt-3 mb-6 text-ink/55">
+                Esta é uma área de segurança elevada. Confirme sua senha atual para continuar a operação.
+            </p>
 
             <form onSubmit={submit}>
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Senha" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        isFocused={true}
-                        onChange={(e) => setData('password', e.target.value)}
-                    />
-
+                <div>
+                    <label className="auth-label" htmlFor="password">Senha</label>
+                    <div className="relative">
+                        <input
+                            id="password"
+                            type={show ? 'text' : 'password'}
+                            name="password"
+                            value={data.password}
+                            className="auth-input pr-20"
+                            autoComplete="current-password"
+                            autoFocus
+                            aria-invalid={Boolean(errors.password)}
+                            required
+                            onChange={(e) => setData('password', e.target.value)}
+                        />
+                        <PasswordVisibilityToggle visible={show} onToggle={() => setShow(!show)} />
+                    </div>
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Confirmar e continuar
-                    </PrimaryButton>
-                </div>
+                <button className="auth-submit !mt-7" disabled={processing}>
+                    {processing ? 'Confirmando…' : 'Confirmar e continuar'}
+                </button>
             </form>
         </GuestLayout>
     );

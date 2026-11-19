@@ -1,10 +1,8 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import PasswordVisibilityToggle from '@/Components/PasswordVisibilityToggle';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
 
 export default function ResetPassword({
     token,
@@ -13,6 +11,7 @@ export default function ResetPassword({
     token: string;
     email: string;
 }) {
+    const [show, setShow] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         token: token,
         email: email,
@@ -31,70 +30,69 @@ export default function ResetPassword({
     return (
         <GuestLayout>
             <Head title="Redefinir senha" />
-            <h1 className="mb-6 text-4xl font-black tracking-tight">Crie uma nova senha.</h1>
 
-            <form onSubmit={submit}>
+            <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">Chave de acesso</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight">Crie uma nova senha.</h1>
+            <p className="mt-3 mb-6 text-ink/55">
+                Defina sua nova credencial para retomar suas missões na estação.
+            </p>
+
+            <form onSubmit={submit} className="space-y-6">
                 <div>
-                    <InputLabel htmlFor="email" value="E-mail" />
-
-                    <TextInput
+                    <label className="auth-label" htmlFor="email">E-mail</label>
+                    <input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        className="auth-input"
                         autoComplete="username"
+                        aria-invalid={Boolean(errors.email)}
+                        required
                         onChange={(e) => setData('email', e.target.value)}
                     />
-
                     <InputError message={errors.email} className="mt-2" />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Nova senha" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        isFocused={true}
-                        onChange={(e) => setData('password', e.target.value)}
-                    />
-
+                <div>
+                    <label className="auth-label" htmlFor="password">Nova senha</label>
+                    <div className="relative">
+                        <input
+                            id="password"
+                            type={show ? 'text' : 'password'}
+                            name="password"
+                            value={data.password}
+                            className="auth-input pr-20"
+                            autoComplete="new-password"
+                            autoFocus
+                            aria-invalid={Boolean(errors.password)}
+                            required
+                            onChange={(e) => setData('password', e.target.value)}
+                        />
+                        <PasswordVisibilityToggle visible={show} onToggle={() => setShow(!show)} />
+                    </div>
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirmar nova senha"
-                    />
-
-                    <TextInput
-                        type="password"
+                <div>
+                    <label className="auth-label" htmlFor="password_confirmation">Confirmar nova senha</label>
+                    <input
+                        id="password_confirmation"
+                        type={show ? 'text' : 'password'}
                         name="password_confirmation"
                         value={data.password_confirmation}
-                        className="mt-1 block w-full"
+                        className="auth-input"
                         autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
+                        aria-invalid={Boolean(errors.password_confirmation)}
+                        required
+                        onChange={(e) => setData('password_confirmation', e.target.value)}
                     />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
+                    <InputError message={errors.password_confirmation} className="mt-2" />
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Redefinir senha
-                    </PrimaryButton>
-                </div>
+                <button className="auth-submit !mt-7" disabled={processing}>
+                    {processing ? 'Redefinindo…' : 'Redefinir senha'}
+                </button>
             </form>
         </GuestLayout>
     );

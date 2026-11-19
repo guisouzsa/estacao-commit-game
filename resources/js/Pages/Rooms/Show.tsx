@@ -44,11 +44,12 @@ export default function Show({
             router.reload({
                 only: ['room', 'expiresAt'],
             });
-        if (!window.Echo) return;
 
         const channelName = `rooms.${room.id}`;
-        const channel = window.Echo.private(channelName);
-        channel.listen('.room.state.changed', refresh);
+        if (window.Echo) {
+            const channel = window.Echo.private(channelName);
+            channel.listen('.room.state.changed', refresh);
+        }
 
         const poll = window.setInterval(() => {
             if (room.status === 'waiting') refresh();
@@ -56,7 +57,7 @@ export default function Show({
 
         return () => {
             window.clearInterval(poll);
-            window.Echo.leave(channelName);
+            window.Echo?.leave(channelName);
         };
     }, [room.id, room.status]);
 

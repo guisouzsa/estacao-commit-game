@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -16,7 +19,54 @@ class RegistrationTest extends TestCase
     {
         $response = $this->get('/register');
 
-        $response->assertStatus(200);
+        $response
+            ->assertOk()
+            ->assertHeaderMissing('X-Inertia')
+            ->assertHeader('Content-Type', 'text/html; charset=UTF-8')
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/Register')
+                ->where('auth.user', null)
+                ->has('errors')
+                ->where('status', null)
+                ->where('googleConfigured', false));
+    }
+
+    public function test_registration_link_navigation_receives_a_valid_inertia_response(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Welcome')
+                ->where('canRegister', true)
+                ->where('auth.user', null));
+
+        $headers = [
+            'X-Inertia' => 'true',
+            'X-Requested-With' => 'XMLHttpRequest',
+            'Accept' => 'text/html, application/xhtml+xml',
+        ];
+        $version = app(HandleInertiaRequests::class)->version(Request::create('/register'));
+
+        if ($version !== null) {
+            $headers['X-Inertia-Version'] = $version;
+        }
+
+        $this->get('/register', $headers)
+            ->assertOk()
+            ->assertHeader('X-Inertia', 'true')
+            ->assertHeader('Content-Type', 'application/json')
+            ->assertJsonStructure([
+                'component',
+                'props' => ['auth' => ['user'], 'errors'],
+                'url',
+                'version',
+                'encryptHistory',
+                'clearHistory',
+            ])
+            ->assertJsonPath('component', 'Auth/Register')
+            ->assertJsonPath('props.auth.user', null)
+            ->assertJsonPath('props.status', null)
+            ->assertJsonPath('props.googleConfigured', false);
     }
 
     public function test_new_users_can_register(): void

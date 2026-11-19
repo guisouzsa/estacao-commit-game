@@ -39,6 +39,7 @@ RUN apt-get update \
         libpq-dev \
         libwebp-dev \
         libzip-dev \
+        supervisor \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" \
@@ -74,12 +75,18 @@ RUN composer install \
 COPY . .
 
 COPY --from=frontend /app/public/build ./public/build
+COPY docker/apache/reverb-proxy.conf /etc/apache2/conf-available/reverb-proxy.conf
+COPY docker/apache/mpm-tuning.conf /etc/apache2/conf-available/mpm-tuning.conf
+COPY docker/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 
 RUN composer dump-autoload --no-dev --optimize --no-interaction \
     && composer check-platform-reqs --no-dev \
-    && a2enmod headers rewrite \
+    && a2enmod headers rewrite proxy proxy_http proxy_wstunnel \
+    && a2enconf reverb-proxy mpm-tuning \
     && sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/*.conf \
     && sed -ri 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
+    && chmod +x /usr/local/bin/docker-entrypoint \
     && mkdir -p \
         storage/app/private \
         storage/app/public \
@@ -89,19 +96,10 @@ RUN composer dump-autoload --no-dev --optimize --no-interaction \
         storage/logs \
         bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R ug+rwX storage bootstrap/cache \
-    && printf '%s\n' \
-        '#!/bin/sh' \
-        'set -eu' \
-        'PORT="${PORT:-10000}"' \
-        'sed -ri "s/^Listen [0-9]+/Listen ${PORT}/" /etc/apache2/ports.conf' \
-        'sed -ri "s/<VirtualHost \*:([0-9]+)>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
-        'exec "$@"' \
-        > /usr/local/bin/docker-entrypoint \
-    && chmod +x /usr/local/bin/docker-entrypoint
+    && chmod -R ug+rwX storage bootstrap/cache
 
 EXPOSE 10000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 
-CMD ["apache2-foreground"]
+CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]

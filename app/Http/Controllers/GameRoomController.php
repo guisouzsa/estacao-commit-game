@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\RoomStateChanged;
 use App\Models\GameRoom;
 use App\Models\RoomInvitation;
 use App\Services\RoomExpirationService;
+use App\Services\RoomStateBroadcaster;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -118,7 +118,7 @@ class GameRoomController extends Controller
 
         abort_if($expired, 410, 'Esta sala expirou.');
         if ($joined) {
-            RoomStateChanged::dispatch($room->id, 'participant_joined');
+            app(RoomStateBroadcaster::class)->publish($room->id, 'participant_joined');
         }
 
         return to_route('rooms.show', $room)->with('status', 'Entrada na sala confirmada.');

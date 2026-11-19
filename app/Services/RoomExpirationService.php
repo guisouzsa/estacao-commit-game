@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Events\RoomStateChanged;
 use App\Models\GameRoom;
 use Illuminate\Support\Facades\DB;
 
@@ -34,7 +33,7 @@ class RoomExpirationService
                 ->whereNull('revoked_at')
                 ->update(['revoked_at' => now()]);
 
-            RoomStateChanged::dispatch($room->id, 'expired');
+            app(RoomStateBroadcaster::class)->publish($room->id, 'expired');
 
             return true;
         }, 3);

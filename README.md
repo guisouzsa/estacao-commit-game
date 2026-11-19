@@ -19,6 +19,35 @@ Configure `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` no `.env`. `GOOGLE_REDIREC
 
 Novos usuários Google escolhem o próprio username; ele não é gerado automaticamente. Um e-mail já cadastrado não vincula contas sozinho: entre primeiro na conta existente e use “Vincular com Google” no perfil. Contas criadas pelo Google podem definir uma senha pela recuperação de senha para manter uma forma alternativa de acesso.
 
+## Laravel Reverb no Render
+
+O Docker Web Service executa Apache e Laravel na porta `$PORT` do Render e Laravel Reverb em `127.0.0.1:8080`. Apache encaminha somente o endpoint WebSocket `/app/` para o Reverb. O navegador usa HTTPS/WSS no hostname público do serviço; não exponha a porta interna `8080`.
+
+No ambiente do serviço Render, configure:
+
+| Variável | Valor/finalidade |
+| --- | --- |
+| `BROADCAST_CONNECTION` | `reverb` |
+| `REVERB_APP_ID` | ID do app Reverb existente |
+| `REVERB_APP_KEY` | Chave pública do app Reverb |
+| `REVERB_APP_SECRET` | Segredo do mesmo app; mantenha somente no backend |
+| `REVERB_HOST` | `127.0.0.1`, destino interno dos broadcasts Laravel |
+| `REVERB_PORT` | `8080`, porta interna do Reverb |
+| `REVERB_SCHEME` | `http`, protocolo interno Laravel → Reverb |
+| `REVERB_SERVER_HOST` | `127.0.0.1`, endereço de bind interno do Reverb |
+| `REVERB_SERVER_PORT` | `8080`, porta interna do Reverb |
+
+Configure também as variáveis públicas abaixo no mesmo serviço. O Render as disponibiliza como build arguments para o Docker; salve as alterações usando **Save, rebuild, and deploy**, pois o Vite incorpora esses valores ao bundle:
+
+| Variável | Valor/finalidade |
+| --- | --- |
+| `VITE_REVERB_APP_KEY` | A mesma chave pública `REVERB_APP_KEY` |
+| `VITE_REVERB_HOST` | Hostname público real do serviço, sem `https://` (por exemplo, o domínio `.onrender.com` mostrado no Dashboard) |
+| `VITE_REVERB_PORT` | `443` |
+| `VITE_REVERB_SCHEME` | `https` |
+
+Nunca defina `REVERB_APP_SECRET` como `VITE_*`. O limite inicial do Reverb é 25 conexões e o Apache aceita até 2 requisições simultâneas; são limites conservadores para o serviço de 512 MB, não uma garantia de capacidade. Acompanhe memória e erros no Render antes de ajustar esses limites. O plano gratuito pode suspender o serviço após inatividade; clientes Echo reconectam, enquanto o polling da sala segue disponível.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

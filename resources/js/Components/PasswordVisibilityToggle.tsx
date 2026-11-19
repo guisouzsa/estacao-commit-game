@@ -1,0 +1,6 @@
+export default function PasswordVisibilityToggle({ visible, onToggle }: { visible: boolean; onToggle: () => void }) {
+    const label = visible ? 'Ocultar senha' : 'Mostrar senha';
+    return <button type="button" onClick={onToggle} aria-label={label} aria-pressed={visible} title={label} className="absolute inset-y-0 right-2 my-auto grid size-10 place-items-center border-2 border-[#1d1d1b] bg-[#f3f1ec] text-[#464498] shadow-[2px_2px_0_#f481c6] transition hover:-translate-y-0.5 hover:bg-[#b4da33] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498]">
+        {visible ? <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none"><path d="M2.8 12s3.2-5 9.2-5 9.2 5 9.2 5-3.2 5-9.2 5-9.2-5-9.2-5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><circle cx="12" cy="12" r="2.7" fill="#f481c6" stroke="#1d1d1b" strokeWidth="1.4"/></svg> : <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none"><path d="M3 12s3.2-5 9-5c2 0 3.7.6 5.1 1.4M21 12s-3.2 5-9 5c-2 0-3.8-.6-5.2-1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="m4 4 16 16" stroke="#d01600" strokeWidth="2.2" strokeLinecap="round"/></svg>}
+    </button>;
+}

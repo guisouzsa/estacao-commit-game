@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GameRoom;
 use App\Models\User;
+use App\Services\RoomExpirationService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,7 +19,15 @@ class DashboardController extends Controller
             ->withCount('participants')
             ->latest()
             ->limit(10)
-            ->get(['id','host_user_id','status','created_at']);
+            ->get(['id','host_user_id','status','created_at'])
+            ->map(fn (GameRoom $room) => [
+                'id' => $room->id,
+                'status' => $room->status,
+                'participants_count' => $room->participants_count,
+                'expires_at' => $room->status === 'waiting' && $room->participants_count === 1
+                    ? $room->created_at->copy()->addMinutes(RoomExpirationService::WAITING_MINUTES)->toIso8601String()
+                    : null,
+            ]);
 
         return Inertia::render('Dashboard', [
             'rooms' => $rooms,

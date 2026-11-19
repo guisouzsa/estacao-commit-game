@@ -18,7 +18,7 @@ export default function Authenticated({
     return (
         <div className="min-h-screen w-full bg-[#e8e5dc]">
             <header className="sticky top-0 z-30 border-b-[3px] border-[#b4da33] bg-[#1d1d1b] text-white shadow-[0_4px_0_rgba(29,29,27,.12)]">
-                <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-3 py-3 sm:px-5 lg:gap-5 lg:px-7">
+                <div className="flex w-full flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:gap-5 lg:px-6">
                     <Link
                         aria-label="Estação Commit — início"
                         className="order-1 flex shrink-0 items-center gap-2"

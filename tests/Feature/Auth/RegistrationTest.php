@@ -3,7 +3,9 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -73,5 +75,43 @@ class RegistrationTest extends TestCase
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $user->id);
         $this->assertSame('player_one', $user->username);
         $this->assertSame('player_one', $user->display_name);
+    }
+
+    public function test_registration_creates_unverified_account_and_sends_verification_email(): void
+    {
+        Notification::fake();
+
+        $this->post('/register', [
+            'username' => 'unverified_player',
+            'email' => 'unverified@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $user = User::where('email', 'unverified@example.com')->firstOrFail();
+        $this->assertFalse($user->hasVerifiedEmail());
+        $this->assertNull($user->email_verified_at);
+        $this->assertTrue($user->password_set);
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_registration_rejects_invalid_email_format(): void
+    {
+        $this->from('/register')->post('/register', [
+            'username' => 'valid_user',
+            'email' => 'not-an-email',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasErrors('email');
+    }
+
+    public function test_registration_rejects_short_password(): void
+    {
+        $this->from('/register')->post('/register', [
+            'username' => 'valid_user',
+            'email' => 'valid@example.com',
+            'password' => '123',
+            'password_confirmation' => '123',
+        ])->assertSessionHasErrors('password');
     }
 }

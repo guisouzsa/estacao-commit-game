@@ -77,6 +77,7 @@ class RegisteredUserController extends Controller
                 'display_name' => strtolower($validated['username']),
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
+                'password_set' => true,
             ]);
         } catch (QueryException $exception) {
             if (str_contains(strtolower($exception->getMessage()), 'users_username_lower_unique')) {

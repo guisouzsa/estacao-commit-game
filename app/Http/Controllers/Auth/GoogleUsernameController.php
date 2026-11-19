@@ -64,6 +64,7 @@ class GoogleUsernameController extends Controller
                     'email' => $pendingUser['email'],
                     'google_id' => $pendingUser['google_id'],
                     'password' => Str::random(64),
+                    'password_set' => false,
                 ]);
 
                 $user->email_verified_at = now();

@@ -1,7 +1,8 @@
 import Modal from '@/Components/Modal';
+import RoomCountdown from '@/Components/RoomCountdown';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 type Player = { id: string; username: string };
 type Participant = { id: number; seat: number; user: Player };
 type Room = {
@@ -14,17 +15,55 @@ export default function Show({
     room,
     isHost,
     inviteUrl,
+    expiresAt,
 }: {
     room: Room;
     isHost: boolean;
     inviteUrl?: string;
+    expiresAt: string;
 }) {
     const [busy, setBusy] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const code = inviteUrl?.split('/').filter(Boolean).pop();
+    const hasOtherParticipants = room.participants.some(
+        (participant) => participant.user.id !== room.host.id,
+    );
+    const canDelete =
+        isHost && room.status === 'waiting' && !hasOtherParticipants;
+    const hasWaitingDeadline =
+        room.status === 'waiting' && !hasOtherParticipants;
+    const roomTitle =
+        room.status === 'expired'
+            ? 'Sala expirada'
+            : room.participants.length === 4
+              ? 'Sala completa'
+              : 'Aguardando participantes';
+
+    useEffect(() => {
+        const refresh = () =>
+            router.reload({
+                only: ['room', 'expiresAt'],
+            });
+        if (!window.Echo) return;
+
+        const channelName = `rooms.${room.id}`;
+        const channel = window.Echo.private(channelName);
+        channel.listen('.room.state.changed', refresh);
+
+        const poll = window.setInterval(() => {
+            if (room.status === 'waiting') refresh();
+        }, 15000);
+
+        return () => {
+            window.clearInterval(poll);
+            window.Echo.leave(channelName);
+        };
+    }, [room.id, room.status]);
+
     const cancel = () => {
         setBusy(true);
         router.delete(route('rooms.cancel', room.id), {
+            onSuccess: () => setConfirming(false),
             onError: () => setBusy(false),
             onFinish: () => setBusy(false),
         });
@@ -32,8 +71,8 @@ export default function Show({
     return (
         <AuthenticatedLayout>
             <Head title={`Sala ${room.id.slice(0, 8)}`} />
-            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-4 py-8 text-[#1d1d1b]">
-                <div className="mx-auto max-w-4xl">
+            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-8 text-[#1d1d1b] sm:px-4 lg:px-6">
+                <div className="w-full">
                     <Link
                         href={route('dashboard')}
                         className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase shadow-[2px_2px_0_#b4da33]"
@@ -47,13 +86,25 @@ export default function Show({
                         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
                             <div>
                                 <h1 className="text-3xl font-black">
-                                    {room.participants.length === 4
-                                        ? 'Sala completa'
-                                        : 'Aguardando participantes'}
+                                    {roomTitle}
                                 </h1>
                                 <p className="mt-1 text-sm">
                                     A partida exige exatamente quatro jogadores.
                                 </p>
+                                {hasWaitingDeadline && (
+                                    <p className="mt-3 border-l-4 border-[#f0b429] bg-[#f0b429]/15 px-3 py-2">
+                                        <RoomCountdown expiresAt={expiresAt} />
+                                    </p>
+                                )}
+                                {room.status === 'expired' && (
+                                    <p
+                                        className="mt-3 border-l-4 border-[#d01600] bg-[#d01600]/10 px-3 py-2 font-mono text-xs font-black uppercase text-[#d01600]"
+                                        role="status"
+                                    >
+                                        Esta sala expirou e não aceita novos
+                                        jogadores.
+                                    </p>
+                                )}
                             </div>
                             <strong className="border-2 border-[#1d1d1b] bg-[#b4da33] px-4 py-2 font-mono">
                                 {room.participants.length}/4
@@ -106,17 +157,25 @@ export default function Show({
                                         Convide jogadores
                                     </h2>
                                     <p className="mt-1 text-sm text-white/70">
-                                        O código expira em 24 horas e pode ser
-                                        revogado.
+                                        Se ninguém entrar, a sala expira após
+                                        cinco minutos. Convites podem ser
+                                        revogados.
                                     </p>
                                 </div>
-                                <button
-                                    aria-label="Opções da sala"
-                                    onClick={() => setConfirming(true)}
-                                    className="border border-white/50 px-3 py-2 font-mono text-xs font-bold"
-                                >
-                                    Excluir sala
-                                </button>
+                                {canDelete ? (
+                                    <button
+                                        aria-label="Excluir sala"
+                                        onClick={() => setConfirming(true)}
+                                        className="border border-white/50 px-3 py-2 font-mono text-xs font-bold"
+                                    >
+                                        Excluir sala
+                                    </button>
+                                ) : (
+                                    <p className="max-w-sm text-xs font-bold text-white/60">
+                                        Outro jogador já entrou. Esta sala não
+                                        pode mais ser excluída.
+                                    </p>
+                                )}
                             </div>
                             {inviteUrl ? (
                                 <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -172,11 +231,12 @@ export default function Show({
                     <p className="font-mono text-xs font-black uppercase tracking-[.16em] text-[#d01600]">
                         Ação destrutiva
                     </p>
-                    <h2 className="mt-2 text-2xl font-black">Excluir sala?</h2>
+                    <h2 className="mt-2 text-2xl font-black">
+                        Excluir esta sala?
+                    </h2>
                     <p className="mt-3 text-sm leading-6 text-[#5b5953]">
-                        Esta ação encerrará a sala e invalidará o convite. Os
-                        participantes não poderão mais entrar. A ação não pode
-                        ser desfeita.
+                        Tem certeza de que deseja excluir esta sala? Essa ação
+                        não poderá ser desfeita.
                     </p>
                     <div className="mt-6 flex justify-end gap-3">
                         <button
@@ -184,7 +244,7 @@ export default function Show({
                             onClick={() => setConfirming(false)}
                             className="min-h-11 border-2 border-[#1d1d1b] bg-white px-4 font-mono text-xs font-bold uppercase"
                         >
-                            Manter sala
+                            Cancelar
                         </button>
                         <button
                             disabled={busy}

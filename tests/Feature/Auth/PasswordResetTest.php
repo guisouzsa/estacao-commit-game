@@ -70,4 +70,31 @@ class PasswordResetTest extends TestCase
             return true;
         });
     }
+
+    public function test_google_only_user_receives_google_login_notice_instead_of_reset_link(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'google_id' => 'google-123',
+            'password_set' => false,
+        ]);
+
+        $response = $this->from('/forgot-password')->post('/forgot-password', ['email' => $user->email]);
+
+        $response->assertRedirect('/forgot-password');
+        $response->assertSessionHas('status', 'Esta conta utiliza o login com Google. Acesse utilizando a opção "Continuar com Google".');
+        Notification::assertNothingSent();
+    }
+
+    public function test_non_existent_email_does_not_reveal_account_absence(): void
+    {
+        Notification::fake();
+
+        $response = $this->from('/forgot-password')->post('/forgot-password', ['email' => 'nonexistent@example.com']);
+
+        $response->assertRedirect('/forgot-password');
+        $response->assertSessionHas('status', 'Se este e-mail estiver cadastrado, enviaremos um link para redefinir sua senha.');
+        Notification::assertNothingSent();
+    }
 }

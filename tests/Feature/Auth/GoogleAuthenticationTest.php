@@ -99,6 +99,8 @@ class GoogleAuthenticationTest extends TestCase
 
         $user = User::where('google_id', 'google-123')->firstOrFail();
         $this->assertNotNull($user->email_verified_at);
+        $this->assertFalse($user->password_set);
+        $this->assertTrue($user->isGoogleOnly());
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $user->id);
     }
 
@@ -231,6 +233,32 @@ class GoogleAuthenticationTest extends TestCase
             ->assertSessionHas('status', 'O Google não forneceu um e-mail verificado válido para esta conta.');
 
         $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_google_callback_with_provider_error_redirects_to_login(): void
+    {
+        $response = $this->get(route('google.callback', ['error' => 'access_denied']));
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('status', 'A autenticação com Google foi cancelada ou não foi autorizada.');
+    }
+
+    public function test_google_callback_with_invalid_state_redirects_to_login(): void
+    {
+        $provider = Mockery::mock(Provider::class);
+        $provider->shouldReceive('user')
+            ->once()
+            ->andThrow(new \Laravel\Socialite\Two\InvalidStateException());
+
+        Socialite::shouldReceive('driver')
+            ->with('google')
+            ->once()
+            ->andReturn($provider);
+
+        $response = $this->get(route('google.callback'));
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('status', 'Não foi possível validar a resposta do Google. Tente novamente.');
     }
 
     private function mockGoogleUser(

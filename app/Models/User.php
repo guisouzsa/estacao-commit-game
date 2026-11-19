@@ -46,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'google_id',
         'password',
+        'password_set',
         'onboarding_completed_at',
     ];
 
@@ -75,10 +76,16 @@ class User extends Authenticatable implements MustVerifyEmail
             'cover_position_x' => 'integer',
             'cover_position_y' => 'integer',
             'onboarding_completed_at' => 'datetime',
+            'password_set' => 'boolean',
             'matches_played' => 'integer',
             'matches_won' => 'integer',
             'matches_lost' => 'integer',
         ];
+    }
+
+    public function isGoogleOnly(): bool
+    {
+        return filled($this->google_id) && ! $this->password_set;
     }
 
     public function historicalGameStatistics(): ?array
@@ -100,4 +107,5 @@ class User extends Authenticatable implements MustVerifyEmail
     public function badges(): BelongsToMany { return $this->belongsToMany(Badge::class)->withPivot(['unlocked_at','granted_by','progress']); }
     public function profileLinks(): HasMany { return $this->hasMany(ProfileLink::class)->orderBy('sort_order'); }
     public function achievementBadge(): BelongsTo { return $this->belongsTo(Badge::class, 'achievement_badge_id'); }
+    public function roomParticipants(): HasMany { return $this->hasMany(RoomParticipant::class); }
 }

@@ -304,8 +304,8 @@ export default function Edit({
     return (
         <AuthenticatedLayout>
             <Head title="Meu perfil" />
-            <main className="min-h-screen overflow-x-hidden bg-[#e8e5dc] px-4 py-6 text-[#1d1d1b] sm:px-6 sm:py-10">
-                <div className="mx-auto max-w-5xl">
+            <main className="min-h-screen overflow-x-hidden bg-[#e8e5dc] px-3 py-6 text-[#1d1d1b] sm:px-4 sm:py-10 lg:px-6">
+                <div className="w-full">
                     <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-[#464498]">
@@ -355,7 +355,15 @@ export default function Edit({
                         >
                             <ProfileExtras
                                 badges={profileExtras.badges}
-                                links={editing ? data.links.filter((link) => link.is_public) : profileExtras.links.filter((link) => link.is_public)}
+                                links={
+                                    editing
+                                        ? data.links.filter(
+                                              (link) => link.is_public,
+                                          )
+                                        : profileExtras.links.filter(
+                                              (link) => link.is_public,
+                                          )
+                                }
                                 share={!editing}
                                 statistics={profileExtras.statistics}
                                 username={data.username}
@@ -410,7 +418,11 @@ export default function Edit({
                                         <InputError message={errors.username} />
                                         {data.username !== user.username && (
                                             <div className="border-l-4 border-[#d01600] bg-[#fff2ef] px-3 py-2 text-sm leading-6 text-[#6e160d]">
-                                                <strong>Atenção:</strong> ao alterar seu identificador, o atual será liberado. Se outra pessoa o registrar, você poderá perdê-lo definitivamente.
+                                                <strong>Atenção:</strong> ao
+                                                alterar seu identificador, o
+                                                atual será liberado. Se outra
+                                                pessoa o registrar, você poderá
+                                                perdê-lo definitivamente.
                                             </div>
                                         )}
 
@@ -636,7 +648,9 @@ export default function Edit({
                                                 Banner de fundo
                                             </h3>
                                             <p className="mt-1 text-xs text-[#68665f]">
-                                                Imagem horizontal exibida ao fundo do seu perfil. JPG, PNG ou WebP, até 4 MB.
+                                                Imagem horizontal exibida ao
+                                                fundo do seu perfil. JPG, PNG ou
+                                                WebP, até 4 MB.
                                             </p>
                                             <input
                                                 accept="image/jpeg,image/png,image/webp"
@@ -897,40 +911,66 @@ export default function Edit({
                                         ))}
                                     </div>
                                 </fieldset>
-
                             </section>
                         )}
                         {editing && (
                             <div className="sticky bottom-3 z-30 mt-10 flex items-center justify-between gap-3 border-[3px] border-[#1d1d1b] bg-[#1d1d1b] p-3 text-white shadow-[6px_6px_0_#464498]">
-                                <p className={`hidden text-sm font-bold sm:block ${Object.keys(errors).length ? 'text-[#f481c6]' : ''}`}>{Object.keys(errors).length ? 'Revise os campos destacados antes de salvar.' : isDirty ? 'Existem alterações não salvas.' : 'Seu perfil está atualizado.'}</p>
-                                <div className="ml-auto flex gap-2"><button type="button" onClick={cancelEditing} className="min-h-12 border-2 border-white/60 px-4 font-mono text-xs font-bold uppercase">Cancelar</button><button type="submit" disabled={processing || !isDirty} className="min-h-12 border-2 border-white bg-[#b4da33] px-6 font-mono text-sm font-black uppercase text-[#1d1d1b] shadow-[3px_3px_0_#f481c6] disabled:opacity-50">{processing ? 'Salvando...' : 'Salvar alterações'}</button></div>
+                                <p
+                                    className={`hidden text-sm font-bold sm:block ${Object.keys(errors).length ? 'text-[#f481c6]' : ''}`}
+                                >
+                                    {Object.keys(errors).length
+                                        ? 'Revise os campos destacados antes de salvar.'
+                                        : isDirty
+                                          ? 'Existem alterações não salvas.'
+                                          : 'Seu perfil está atualizado.'}
+                                </p>
+                                <div className="ml-auto flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={cancelEditing}
+                                        className="min-h-12 border-2 border-white/60 px-4 font-mono text-xs font-bold uppercase"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={processing || !isDirty}
+                                        className="min-h-12 border-2 border-white bg-[#b4da33] px-6 font-mono text-sm font-black uppercase text-[#1d1d1b] shadow-[3px_3px_0_#f481c6] disabled:opacity-50"
+                                    >
+                                        {processing
+                                            ? 'Salvando...'
+                                            : 'Salvar alterações'}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </form>
 
-                    {!editing && <section className="mt-10 border-t-[3px] border-[#1d1d1b] pt-7">
-                        <div className="mb-5">
-                            <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-[#464498]">
-                                Conta e segurança
-                            </p>
-                            <h2 className="mt-1 text-2xl font-black">
-                                Acesso à conta
-                            </h2>
-                            <p className="mt-1 text-sm text-[#5b5953]">
-                                Configurações privadas, separadas do perfil
-                                público.
-                            </p>
-                        </div>
-                        <div className="grid items-stretch gap-4 lg:grid-cols-3">
-                            <UpdateProfileInformationForm
-                                className="h-full"
-                                mustVerifyEmail={mustVerifyEmail}
-                                status={status}
-                            />
-                            <UpdatePasswordForm />
-                            <DeleteUserForm />
-                        </div>
-                    </section>}
+                    {!editing && (
+                        <section className="mt-10 border-t-[3px] border-[#1d1d1b] pt-7">
+                            <div className="mb-5">
+                                <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-[#464498]">
+                                    Conta e segurança
+                                </p>
+                                <h2 className="mt-1 text-2xl font-black">
+                                    Acesso à conta
+                                </h2>
+                                <p className="mt-1 text-sm text-[#5b5953]">
+                                    Configurações privadas, separadas do perfil
+                                    público.
+                                </p>
+                            </div>
+                            <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                                <UpdateProfileInformationForm
+                                    className="h-full"
+                                    mustVerifyEmail={mustVerifyEmail}
+                                    status={status}
+                                />
+                                <UpdatePasswordForm />
+                                <DeleteUserForm />
+                            </div>
+                        </section>
+                    )}
                 </div>
             </main>
 
@@ -940,10 +980,19 @@ export default function Edit({
                     className="fixed right-4 top-4 z-50 flex max-w-sm items-start gap-3 border-[3px] border-[#1d1d1b] bg-[#b4da33] p-4 text-[#1d1d1b] shadow-[6px_6px_0_#464498] sm:right-6 sm:top-6"
                     role="status"
                 >
-                    <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full bg-[#1d1d1b] font-black text-white">✓</span>
+                    <span
+                        aria-hidden="true"
+                        className="grid size-7 shrink-0 place-items-center rounded-full bg-[#1d1d1b] font-black text-white"
+                    >
+                        ✓
+                    </span>
                     <div>
-                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em]">Tudo certo</p>
-                        <p className="mt-1 text-sm font-black">{toastMessage}</p>
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+                            Tudo certo
+                        </p>
+                        <p className="mt-1 text-sm font-black">
+                            {toastMessage}
+                        </p>
                     </div>
                     <button
                         aria-label="Fechar notificação"

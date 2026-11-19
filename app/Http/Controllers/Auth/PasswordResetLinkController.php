@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,8 +25,6 @@ class PasswordResetLinkController extends Controller
 
     /**
      * Handle an incoming password reset link request.
-     *
-     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
@@ -33,11 +32,20 @@ class PasswordResetLinkController extends Controller
             'email' => 'required|email',
         ]);
 
+        $email = Str::lower($request->string('email')->trim());
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if ($user && $user->isGoogleOnly()) {
+            return back()->with(
+                'status',
+                'Esta conta utiliza o login com Google. Acesse utilizando a opção "Continuar com Google".'
+            );
+        }
+
         Password::sendResetLink(
-            $request->only('email')
+            ['email' => $email]
         );
 
-        // Always show the same message to prevent account enumeration
         return back()->with('status', 'Se este e-mail estiver cadastrado, enviaremos um link para redefinir sua senha.');
     }
 }

@@ -1,11 +1,17 @@
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import { PlayerSummary } from '@/Components/PlayerSearch';
+import RoomCountdown from '@/Components/RoomCountdown';
 import WelcomeTutorial from '@/Components/WelcomeTutorial';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 
-type Room = { id: string; status: string; participants_count: number };
+type Room = {
+    id: string;
+    status: string;
+    participants_count: number;
+    expires_at: string | null;
+};
 
 export default function Dashboard({
     rooms = [],
@@ -19,6 +25,22 @@ export default function Dashboard({
     const [invite, setInvite] = useState('');
     const [creating, setCreating] = useState(false);
     const [joining, setJoining] = useState(false);
+
+    useEffect(() => {
+        if (
+            !rooms.some((room) => room.status === 'waiting' && room.expires_at)
+        ) {
+            return;
+        }
+
+        const interval = window.setInterval(
+            () => router.reload({ only: ['rooms'] }),
+            15000,
+        );
+
+        return () => window.clearInterval(interval);
+    }, [rooms]);
+
     const join = (event: FormEvent) => {
         event.preventDefault();
         const token = invite.trim().split('/').filter(Boolean).pop();
@@ -34,8 +56,8 @@ export default function Dashboard({
         <AuthenticatedLayout>
             <Head title="Vamos jogar?" />
             <WelcomeTutorial />
-            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-4 py-8 text-[#1d1d1b] sm:px-6">
-                <div className="mx-auto max-w-6xl">
+            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-8 text-[#1d1d1b] sm:px-4 lg:px-6">
+                <div className="w-full">
                     <header className="border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-6 shadow-[8px_8px_0_#1d1d1b]">
                         <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-[#464498]">
                             Estação Commit / central de jogo
@@ -141,12 +163,26 @@ export default function Dashboard({
                                             <strong className="font-mono text-xs uppercase">
                                                 {room.status === 'waiting'
                                                     ? 'Aguardando jogadores'
-                                                    : room.status}
+                                                    : room.status === 'expired'
+                                                      ? 'Sala expirada'
+                                                      : room.status}
                                             </strong>
                                             <span>
                                                 {room.participants_count}/4
                                             </span>
                                         </div>
+                                        {(room.expires_at ||
+                                            room.status === 'expired') && (
+                                            <div className="mt-3 border-t border-[#1d1d1b]/10 pt-2">
+                                                <RoomCountdown
+                                                    expiresAt={room.expires_at}
+                                                    expired={
+                                                        room.status ===
+                                                        'expired'
+                                                    }
+                                                />
+                                            </div>
+                                        )}
                                         <p className="mt-3 text-sm">
                                             Sala {room.id.slice(0, 8)}
                                         </p>

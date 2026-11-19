@@ -1,3 +1,4 @@
+
 FROM node:24-bookworm-slim AS frontend
 
 WORKDIR /app
@@ -18,6 +19,7 @@ ENV VITE_REVERB_PORT=${VITE_REVERB_PORT}
 ENV VITE_REVERB_SCHEME=${VITE_REVERB_SCHEME}
 
 RUN npm run build
+
 
 FROM php:8.2-apache-bookworm
 
@@ -60,6 +62,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 WORKDIR /var/www/html
 
 COPY composer.json composer.lock ./
+
 RUN composer install \
     --no-dev \
     --no-interaction \
@@ -69,6 +72,7 @@ RUN composer install \
     --no-autoloader
 
 COPY . .
+
 COPY --from=frontend /app/public/build ./public/build
 
 RUN composer dump-autoload --no-dev --optimize --no-interaction \
@@ -86,9 +90,18 @@ RUN composer dump-autoload --no-dev --optimize --no-interaction \
         bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R ug+rwX storage bootstrap/cache \
+    && printf '%s\n' \
+        '#!/bin/sh' \
+        'set -eu' \
+        'PORT="${PORT:-10000}"' \
+        'sed -ri "s/^Listen [0-9]+/Listen ${PORT}/" /etc/apache2/ports.conf' \
+        'sed -ri "s/<VirtualHost \*:([0-9]+)>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
+        'exec "$@"' \
+        > /usr/local/bin/docker-entrypoint \
     && chmod +x /usr/local/bin/docker-entrypoint
 
 EXPOSE 10000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
+
 CMD ["apache2-foreground"]

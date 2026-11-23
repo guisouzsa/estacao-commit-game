@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Support\GuestIdentity;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -23,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // Guard "visitor": quem é o visitante vem sempre do cookie HttpOnly.
+        Auth::viaRequest('visitor-token', fn (Request $request) => app(GuestIdentity::class)->resolve($request));
 
         Gate::define('manage-developer-badges', static function (User $user): bool {
             return $user->email_verified_at !== null

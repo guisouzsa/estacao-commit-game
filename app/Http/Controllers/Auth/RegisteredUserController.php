@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Rules\EmailDomainAcceptsMail;
+use App\Rules\PlayerNameAllowed;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -45,6 +46,7 @@ class RegisteredUserController extends Controller
                 'min:3',
                 'max:30',
                 'regex:/\A[a-zA-Z0-9_-]+\z/',
+                new PlayerNameAllowed,
                 function ($attribute, $value, $fail): void {
                     if (User::query()
                         ->whereRaw('LOWER(username) = ?', [strtolower($value)])

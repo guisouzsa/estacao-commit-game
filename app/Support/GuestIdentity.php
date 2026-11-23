@@ -41,7 +41,7 @@ class GuestIdentity
                 $this->names->lock($key);
 
                 // Perfis vencidos (e sem partida em andamento) liberam o nome.
-                GuestProfile::query()->where('name_key', $key)->expired()->withoutActiveMatch()->delete();
+                GuestProfile::query()->where('name_key', $key)->expired()->deletable()->delete();
 
                 if ($problem = $this->names->problem($display)) {
                     throw ValidationException::withMessages(['name' => $problem]);

@@ -76,9 +76,10 @@ class GameRoomTest extends TestCase
         $this->actingAs($host)->post(route('rooms.store'));
         $room = GameRoom::firstOrFail();
 
+        // Quem não participa recebe 404: não descobre que a sala existe.
         $this->actingAs(User::factory()->create())
             ->delete(route('rooms.cancel', $room))
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertDatabaseHas('game_rooms', ['id' => $room->id]);
     }

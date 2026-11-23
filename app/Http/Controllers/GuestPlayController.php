@@ -1,0 +1,89 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Support\GuestIdentity;
+use App\Support\PlayerNames;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
+
+/**
+ * "Jogar agora": entrar sem criar conta. O visitante escolhe nome e avatar e
+ * recebe um perfil temporário. A identidade fica num cookie HttpOnly.
+ */
+class GuestPlayController extends Controller
+{
+    public function create(Request $request): Response|RedirectResponse
+    {
+        if ($this->alreadyPlaying($request)) {
+            return to_route('dashboard');
+        }
+
+        return Inertia::render('Guest/Create', [
+            'styles' => config('players.avatar_styles'),
+            'name' => config('players.name'),
+        ]);
+    }
+
+    /** Verificação de disponibilidade enquanto a pessoa digita (limitada por rate limit na rota). */
+    public function availability(Request $request, PlayerNames $names): JsonResponse
+    {
+        $name = PlayerNames::display((string) $request->query('name', ''));
+        $problem = $name === '' ? null : $names->problem($name);
+
+        return response()->json([
+            'available' => $name !== '' && $problem === null,
+            'message' => $problem,
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    public function store(Request $request, GuestIdentity $identity): RedirectResponse
+    {
+        if ($this->alreadyPlaying($request)) {
+            return to_route('dashboard');
+        }
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:60'],
+            'avatar_style' => ['required', Rule::in(config('players.avatar_styles'))],
+            'avatar_seed' => ['required', 'string', 'regex:/^[a-z0-9]{6,32}$/'],
+        ], [
+            'name.required' => 'Escolha um nome para jogar.',
+            'avatar_style.in' => 'Escolha um dos estilos de avatar disponíveis.',
+            'avatar_seed.regex' => 'Avatar inválido. Escolha outro.',
+        ]);
+
+        ['profile' => $profile, 'token' => $token] = $identity->create(
+            $data['name'],
+            $data['avatar_style'],
+            $data['avatar_seed'],
+        );
+
+        return to_route('dashboard')
+            ->withCookie($identity->cookie($request, $token))
+            ->with('toast', [
+                'id' => (string) Str::uuid(),
+                'tone' => 'success',
+                'message' => "Bem-vindo, {$profile->display_name}! Crie uma sala ou entre com um convite.",
+            ]);
+    }
+
+    /** Sair do jogo: apaga o perfil temporário (libera o nome) e o cookie. */
+    public function destroy(Request $request, GuestIdentity $identity): RedirectResponse
+    {
+        Auth::guard('visitor')->user()?->delete();
+
+        return redirect('/')->withCookie($identity->forgetCookie());
+    }
+
+    private function alreadyPlaying(Request $request): bool
+    {
+        return $request->user() !== null || Auth::guard('visitor')->check();
+    }
+}

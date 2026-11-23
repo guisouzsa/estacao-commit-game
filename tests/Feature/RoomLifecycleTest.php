@@ -269,7 +269,8 @@ class RoomLifecycleTest extends TestCase
     {
         [, $room] = $this->newRoom();
 
-        $this->actingAs(User::factory()->create())->delete(route('rooms.cancel', $room))->assertForbidden();
+        // 404 (e não 403): quem não participa não descobre que a sala existe.
+        $this->actingAs(User::factory()->create())->delete(route('rooms.cancel', $room))->assertNotFound();
 
         $this->assertDatabaseHas('game_rooms', ['id' => $room->id]);
     }

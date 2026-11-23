@@ -4,12 +4,15 @@ namespace App\Services;
 
 use App\Models\GameRoom;
 use App\Notifications\RoomDeleted;
+use App\Support\Actor;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Exclui salas que ficaram vazias (só o anfitrião) por 5 minutos.
+ * Exclui salas que ficaram vazias (só o anfitrião humano; bots não contam)
+ * por 5 minutos.
  *
  * Toda a decisão é do servidor e é refeita dentro de uma transação, com a
  * linha da sala bloqueada. Assim uma execução atrasada do scheduler, duas
@@ -26,27 +29,30 @@ class RoomExpirationService
      */
     public function expireIfEligible(GameRoom $candidate): bool
     {
-        $hostId = DB::transaction(function () use ($candidate): ?string {
+        return DB::transaction(function () use ($candidate): bool {
             $room = GameRoom::query()
                 ->whereKey($candidate->getKey())
                 ->lockForUpdate()
                 ->first();
 
             if (! $room || ! $this->isOverdue($room)) {
-                return null;
+                return false;
             }
 
+            $host = $room->hostActor();
+
             // Mesma transação da exclusão: ou existem os dois, ou nenhum.
-            $room->host?->notify(new RoomDeleted($room->id, RoomDeleted::EMPTY_TIMEOUT));
+            $host?->notify(new RoomDeleted($room->id, RoomDeleted::EMPTY_TIMEOUT));
             $room->delete();
 
-            app(RoomStateBroadcaster::class)->publish($room->id, 'deleted');
-            app(RoomStateBroadcaster::class)->publishToUser($room->host_user_id);
+            $broadcaster = app(RoomStateBroadcaster::class);
+            $broadcaster->publish($room->id, 'deleted');
+            if ($host) {
+                $broadcaster->publishToActor($host);
+            }
 
-            return $room->host_user_id;
+            return true;
         }, 3);
-
-        return $hostId !== null;
     }
 
     /** Processa todas as salas vencidas. Idempotente: pode rodar a qualquer momento. */
@@ -69,13 +75,18 @@ class RoomExpirationService
 
     /**
      * Verificação complementar ao scheduler, limitada às salas de um anfitrião
-     * (usada ao abrir a Dashboard): poucas linhas, consulta indexada.
+     * (conta ou visitante), usada ao abrir a Dashboard: poucas linhas, consulta indexada.
      */
-    public function expireDueRoomsHostedBy(string $userId): int
+    public function expireDueRoomsHostedBy(Authenticatable $actor): int
     {
         $expiredCount = 0;
 
-        foreach ($this->dueRooms()->where('host_user_id', $userId)->limit(10)->get() as $room) {
+        $rooms = $this->dueRooms()
+            ->where(Actor::hostColumn($actor), Actor::id($actor))
+            ->limit(10)
+            ->get();
+
+        foreach ($rooms as $room) {
             if ($this->expireIfEligible($room)) {
                 $expiredCount++;
             }
@@ -86,17 +97,13 @@ class RoomExpirationService
 
     /**
      * Mantém `empty_since` coerente com os participantes: preenche quando a
-     * sala passa a ter só o anfitrião e limpa quando outro jogador está nela.
-     * Deve ser chamado por quem já bloqueou a sala.
+     * sala passa a ter só o anfitrião humano e limpa quando outro humano está
+     * nela. Deve ser chamado por quem já bloqueou a sala.
      */
     public function syncEmptiness(GameRoom $room): void
     {
         $waiting = $room->status === 'waiting' && $room->started_at === null;
-        $hasOthers = $room->participants()
-            ->where('user_id', '!=', $room->host_user_id)
-            ->exists();
-
-        $shouldBeEmpty = $waiting && ! $hasOthers;
+        $shouldBeEmpty = $waiting && ! $room->otherHumans()->exists();
 
         if ($shouldBeEmpty && $room->empty_since === null) {
             $room->forceFill(['empty_since' => now()])->save();
@@ -127,9 +134,7 @@ class RoomExpirationService
             && $room->started_at === null
             && $room->empty_since !== null
             && $room->empty_since->lte($this->cutoff())
-            && ! $room->participants()
-                ->where('user_id', '!=', $room->host_user_id)
-                ->exists();
+            && ! $room->otherHumans()->exists();
     }
 
     private function cutoff(): Carbon

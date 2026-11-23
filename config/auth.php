@@ -42,6 +42,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Visitante que joga sem conta: identificado só pelo cookie HttpOnly
+        // (ver App\Support\GuestIdentity). Não usa sessão nem tabela users.
+        'visitor' => [
+            'driver' => 'visitor-token',
+            'provider' => 'guests',
+        ],
     ],
 
     /*
@@ -65,6 +72,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'guests' => [
+            'driver' => 'eloquent',
+            'model' => \App\Models\GuestProfile::class,
         ],
 
         // 'users' => [

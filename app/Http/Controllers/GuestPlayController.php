@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * "Jogar agora": entrar sem criar conta. O visitante escolhe nome e avatar e
@@ -43,7 +44,7 @@ class GuestPlayController extends Controller
         ])->header('Cache-Control', 'no-store');
     }
 
-    public function store(Request $request, GuestIdentity $identity): RedirectResponse
+    public function store(Request $request, GuestIdentity $identity): SymfonyResponse
     {
         if ($this->alreadyPlaying($request)) {
             return to_route('dashboard');
@@ -65,13 +66,19 @@ class GuestPlayController extends Controller
             $data['avatar_seed'],
         );
 
-        return to_route('dashboard')
-            ->withCookie($identity->cookie($request, $token))
-            ->with('toast', [
-                'id' => (string) Str::uuid(),
-                'tone' => 'success',
-                'message' => "Bem-vindo, {$profile->display_name}! Crie uma sala ou entre com um convite.",
-            ]);
+        $request->session()->flash('toast', [
+            'id' => (string) Str::uuid(),
+            'tone' => 'success',
+            'message' => "Bem-vindo, {$profile->display_name}! Crie uma sala ou entre com um convite.",
+        ]);
+
+        // Navegação COMPLETA (e não uma visita em XHR do Inertia): o navegador envia o
+        // cookie recém-criado com certeza, e qualquer falha aparece como página de erro
+        // em vez de deixar a pessoa parada no formulário sem explicação.
+        $response = Inertia::location(route('dashboard'));
+        $response->headers->setCookie($identity->cookie($request, $token));
+
+        return $response;
     }
 
     /** Sair do jogo: apaga o perfil temporário (libera o nome) e o cookie. */

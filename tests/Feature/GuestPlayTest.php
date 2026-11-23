@@ -84,6 +84,25 @@ class GuestPlayTest extends TestCase
         $this->assertDatabaseCount('users', 0); // não cria conta falsa
     }
 
+    public function test_the_browser_flow_ends_in_a_full_navigation_to_the_dashboard_with_the_cookie(): void
+    {
+        // É assim que o navegador envia o formulário (visita do Inertia em XHR).
+        $response = $this->withHeaders(['X-Inertia' => 'true', 'X-Requested-With' => 'XMLHttpRequest'])
+            ->post(route('guest.store'), ['name' => 'Viajante', 'avatar_style' => 'pixel', 'avatar_seed' => 'abc123xyz']);
+
+        // 409 + X-Inertia-Location = o Inertia faz uma navegação completa, que envia o cookie novo.
+        $response->assertStatus(409)->assertHeader('X-Inertia-Location', route('dashboard'));
+        $token = $response->getCookie(config('players.guest_cookie'))->getValue();
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $token);
+
+        // A navegação completa já entra como visitante e mostra as boas-vindas uma única vez.
+        $this->defaultCookies = [];
+        $this->defaultHeaders = []; // withHeaders() é persistente: agora é uma carga normal de página
+        $this->asGuest($token)->get(route('dashboard'))->assertOk()->assertInertia(fn ($page) => $page
+            ->where('auth.kind', 'guest')
+            ->where('flash.toast.tone', 'success'));
+    }
+
     public function test_every_visitor_gets_a_different_unpredictable_token(): void
     {
         [, $first] = $this->becomeGuest('Primeiro');

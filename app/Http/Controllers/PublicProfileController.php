@@ -37,9 +37,7 @@ class PublicProfileController extends Controller
             'profile' => [
                 'username' => $user->username,
                 'bio' => $user->bio,
-                'avatar' => AvatarUrl::for($user->avatar),
-                'avatar_style' => 'pixel',
-                'avatar_seed' => PlayerPresenter::seed((string) $user->id),
+                ...PlayerPresenter::avatarFields($user),
                 'avatar_position_x' => $user->avatar_position_x ?? 50,
                 'avatar_position_y' => $user->avatar_position_y ?? 50,
                 'avatar_zoom' => $user->avatar_zoom ?? 100,

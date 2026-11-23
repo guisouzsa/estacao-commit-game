@@ -30,6 +30,8 @@ class ProfileAppearanceUpdateRequest extends FormRequest
             'bio' => ['nullable', 'string', 'max:500'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:max_width=4000,max_height=4000'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096', 'dimensions:max_width=4000,max_height=4000'],
+            // Ícone gerado ("estilo:semente"), alternativa à foto. A foto enviada tem prioridade.
+            'avatar_generated' => ['nullable', 'string', 'regex:/^('.implode('|', config('players.selectable_avatar_styles')).'):[a-z0-9]{6,32}$/'],
             'remove_avatar' => ['sometimes', 'boolean'],
             'remove_cover' => ['sometimes', 'boolean'],
             'avatar_position_x' => ['required', 'integer', 'between:0,100'],
@@ -65,6 +67,7 @@ class ProfileAppearanceUpdateRequest extends FormRequest
     {
         return [
             'username.unique' => 'Este nome de usuário já está sendo utilizado. Escolha outro.',
+            'avatar_generated.regex' => 'Escolha um dos ícones disponíveis.',
             'avatar.image' => 'Escolha uma imagem válida para o avatar.',
             'avatar.mimes' => 'O avatar deve estar em JPG, PNG ou WebP.',
             'avatar.max' => 'O avatar deve ter no máximo 2 MB.',

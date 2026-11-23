@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Support\AvatarUrl;
 use App\Support\PlayerPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,9 +28,7 @@ class PlayerSearchController extends Controller
             ->map(fn (User $user) => [
                 'username' => $user->username,
                 'display_name' => $user->display_name ?: $user->username,
-                'avatar' => AvatarUrl::for($user->avatar),
-                'avatar_style' => 'pixel',
-                'avatar_seed' => PlayerPresenter::seed((string) $user->id),
+                ...PlayerPresenter::avatarFields($user),
                 'profile_frame' => $user->profile_frame,
                 'profile_title' => $user->profile_title,
             ]);

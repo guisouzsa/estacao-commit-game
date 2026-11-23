@@ -90,9 +90,7 @@ class HandleInertiaRequests extends Middleware
         ]);
 
         // Mesmo formato de avatar em toda a aplicação (URL relativa, com fallback por semente).
-        $authUser['avatar'] = AvatarUrl::for($actor->avatar);
-        $authUser['avatar_style'] = 'pixel';
-        $authUser['avatar_seed'] = PlayerPresenter::seed((string) $actor->id);
+        $authUser = [...$authUser, ...PlayerPresenter::avatarFields($actor)];
         $authUser['kind'] = 'user';
         // A capa pode pesar centenas de KB (a imagem fica no banco) e só a tela de
         // edição do perfil a usa: não vai no JSON de todas as outras páginas.

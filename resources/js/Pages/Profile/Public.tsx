@@ -14,13 +14,16 @@ type Social = {
     is_following: boolean;
 };
 
-/** Contagens e botão de seguir. Só contas permanentes seguem; os números são públicos. */
+/** Ações sociais exibidas dentro do cabeçalho do card, como em redes sociais. */
 function SocialBar({ username, social }: { username: string; social: Social }) {
     const [busy, setBusy] = useState(false);
 
     const toggle = () => {
         setBusy(true);
-        const options = { preserveScroll: true, onFinish: () => setBusy(false) };
+        const options = {
+            preserveScroll: true,
+            onFinish: () => setBusy(false),
+        };
         if (social.is_following) {
             router.delete(route('follow.destroy', username), options);
         } else {
@@ -31,36 +34,52 @@ function SocialBar({ username, social }: { username: string; social: Social }) {
     const counter = (label: string, value: number, href: string) =>
         social.logged_in ? (
             <Link
-                className="font-mono text-xs uppercase text-white/85 hover:text-white"
+                className="font-mono text-[10px] uppercase text-[#5b5953] hover:text-[#464498] sm:text-xs"
                 href={href}
             >
-                <strong className="text-lg text-white">{value}</strong> {label}
+                <strong className="text-base text-[#1d1d1b] sm:text-lg">
+                    {value}
+                </strong>{' '}
+                {label}
             </Link>
         ) : (
-            <span className="font-mono text-xs uppercase text-white/85">
-                <strong className="text-lg text-white">{value}</strong> {label}
+            <span className="font-mono text-[10px] uppercase text-[#5b5953] sm:text-xs">
+                <strong className="text-base text-[#1d1d1b] sm:text-lg">
+                    {value}
+                </strong>{' '}
+                {label}
             </span>
         );
 
     return (
-        <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-3 border-2 border-white/20 bg-white/5 p-3">
-            {counter('seguidores', social.followers_count, route('profile.followers', username))}
-            {counter('seguindo', social.following_count, route('profile.following', username))}
-            <div className="ml-auto">
+        <div className="flex max-w-full flex-wrap items-center justify-end gap-x-4 gap-y-2 sm:gap-x-5">
+            <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 sm:gap-x-5">
+                {counter(
+                    'seguidores',
+                    social.followers_count,
+                    route('profile.followers', username),
+                )}
+                {counter(
+                    'seguindo',
+                    social.following_count,
+                    route('profile.following', username),
+                )}
+            </div>
+            <div>
                 {social.can_follow && (
                     <button
                         type="button"
                         disabled={busy}
                         onClick={toggle}
                         aria-pressed={social.is_following}
-                        className={`min-h-10 border-2 border-white px-4 font-mono text-xs font-black uppercase disabled:opacity-60 ${social.is_following ? 'bg-transparent text-white' : 'bg-[#b4da33] text-[#1d1d1b]'}`}
+                        className={`min-h-10 border-2 border-[#1d1d1b] px-4 font-mono text-xs font-black uppercase shadow-[3px_3px_0_#1d1d1b] transition disabled:opacity-60 ${social.is_following ? 'bg-white text-[#1d1d1b] hover:bg-[#f3f1ec]' : 'bg-[#b4da33] text-[#1d1d1b] hover:bg-[#c8ee46]'}`}
                     >
                         {social.is_following ? 'Seguindo' : 'Seguir'}
                     </button>
                 )}
                 {!social.logged_in && (
                     <Link
-                        className="font-mono text-xs uppercase text-[#b4da33] underline decoration-2 underline-offset-4"
+                        className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-white px-3 font-mono text-[10px] font-black uppercase text-[#464498] shadow-[3px_3px_0_#b4da33]"
                         href={route('login')}
                     >
                         Entre para seguir
@@ -123,8 +142,15 @@ export default function Public({
                 </Link>
             </header>
             <main className="w-full">
-                <SocialBar username={profile.username} social={social} />
-                <PlayerProfileCard profile={profile}>
+                <PlayerProfileCard
+                    profile={profile}
+                    headerActions={
+                        <SocialBar
+                            username={profile.username}
+                            social={social}
+                        />
+                    }
+                >
                     <ProfileExtras
                         username={profile.username}
                         links={profile.links}

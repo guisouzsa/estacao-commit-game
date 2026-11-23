@@ -1,3 +1,4 @@
+import AvatarPicker from '@/Components/AvatarPicker';
 import InputError from '@/Components/InputError';
 import PlayerProfileCard, {
     PlayerProfile,
@@ -39,6 +40,8 @@ type FormData = {
     username: string;
     bio: string;
     avatar: File | null;
+    /** Ícone gerado escolhido, no formato "estilo:semente" (alternativa à foto). */
+    avatar_generated: string | null;
     cover: File | null;
     remove_avatar: boolean;
     remove_cover: boolean;
@@ -93,6 +96,7 @@ function initialFormData(
         username: user.username,
         bio: user.bio ?? '',
         avatar: null,
+        avatar_generated: null,
         cover: null,
         remove_avatar: false,
         remove_cover: false,
@@ -111,11 +115,13 @@ function initialFormData(
 
 export default function Edit({
     appearanceOptions,
+    avatarStyles = ['pixel', 'robot', 'terminal'],
     profileExtras = emptyExtras,
     status,
 }: {
     status?: string;
     appearanceOptions: Options;
+    avatarStyles?: string[];
     profileExtras: ProfileExtrasData;
 }) {
     const page = usePage();
@@ -167,11 +173,18 @@ export default function Edit({
         return () => window.clearTimeout(timer);
     }, [toastMessage]);
 
+    const generated = data.avatar_generated
+        ? data.avatar_generated.split(':')
+        : null;
+
     const preview = useMemo<PlayerProfile>(
         () => ({
             ...user,
             ...data,
-            avatar: data.remove_avatar ? null : avatarUrl,
+            ...(generated
+                ? { avatar_style: generated[0], avatar_seed: generated[1] }
+                : {}),
+            avatar: generated || data.remove_avatar ? null : avatarUrl,
             cover: data.remove_cover ? null : coverUrl,
             badges: profileExtras.badges,
             statistics: profileExtras.statistics,
@@ -183,6 +196,7 @@ export default function Edit({
         [
             user,
             data,
+            generated,
             avatarUrl,
             coverUrl,
             profileExtras.badges,
@@ -252,6 +266,7 @@ export default function Edit({
             setData((current) => ({
                 ...current,
                 avatar: file,
+                avatar_generated: null,
                 remove_avatar: false,
             }));
         } else {
@@ -608,7 +623,7 @@ export default function Edit({
                                                 >
                                                     Trocar foto
                                                 </button>
-                                                {avatarUrl && (
+                                                {avatarUrl && !data.avatar_generated && (
                                                     <button
                                                         className="min-h-11 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase"
                                                         onClick={() =>
@@ -627,6 +642,10 @@ export default function Edit({
                                                             !data.remove_avatar,
                                                         );
                                                         setData('avatar', null);
+                                                        setData(
+                                                            'avatar_generated',
+                                                            null,
+                                                        );
                                                     }}
                                                     type="button"
                                                 >
@@ -639,6 +658,48 @@ export default function Edit({
                                                 className="mt-2"
                                                 message={errors.avatar}
                                             />
+
+                                            <div className="mt-5 border-t-2 border-[#1d1d1b]/15 pt-4">
+                                                <h4 className="text-sm font-bold">
+                                                    Ou escolha um ícone
+                                                </h4>
+                                                <p className="mb-3 mt-1 text-xs text-[#68665f]">
+                                                    Sem foto? Use um ícone
+                                                    gerado. Se você enviar uma
+                                                    foto, ela tem prioridade.
+                                                </p>
+                                                <AvatarPicker
+                                                    styles={avatarStyles}
+                                                    style={
+                                                        generated?.[0] ??
+                                                        user.avatar_style ??
+                                                        avatarStyles[0]
+                                                    }
+                                                    seed={
+                                                        generated
+                                                            ? generated[1]
+                                                            : avatarUrl
+                                                              ? null
+                                                              : (user.avatar_seed ??
+                                                                null)
+                                                    }
+                                                    previewName={user.username}
+                                                    onChange={(style, seed) =>
+                                                        setData((current) => ({
+                                                            ...current,
+                                                            avatar: null,
+                                                            remove_avatar: false,
+                                                            avatar_generated: `${style}:${seed}`,
+                                                        }))
+                                                    }
+                                                />
+                                                <InputError
+                                                    className="mt-2"
+                                                    message={
+                                                        errors.avatar_generated
+                                                    }
+                                                />
+                                            </div>
                                         </section>
 
                                         <section className="border-t-2 border-[#1d1d1b]/15 pt-5">

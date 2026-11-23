@@ -86,10 +86,12 @@ const titleLabels: Record<string, string> = {
 export default function PlayerProfileCard({
     profile,
     compact = false,
+    headerActions,
     children,
 }: {
     profile: PlayerProfile;
     compact?: boolean;
+    headerActions?: ReactNode;
     children?: ReactNode;
 }) {
     const title = profile.profile_title
@@ -127,8 +129,13 @@ export default function PlayerProfileCard({
                 />
             </div>
             <div className="relative px-5 pb-6 sm:px-7">
-                <div className="relative -mt-12 w-fit sm:-mt-14">
+                <div className="relative -mt-12 flex items-start justify-between gap-4 sm:-mt-14">
                     <PlayerAvatar profile={profile} size="lg" />
+                    {headerActions && (
+                        <div className="mt-14 min-w-0 sm:mt-16">
+                            {headerActions}
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-4 flex min-w-0 flex-wrap items-end justify-between gap-4">

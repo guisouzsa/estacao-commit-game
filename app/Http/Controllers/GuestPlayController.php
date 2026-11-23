@@ -27,7 +27,7 @@ class GuestPlayController extends Controller
         }
 
         return Inertia::render('Guest/Create', [
-            'styles' => config('players.avatar_styles'),
+            'styles' => config('players.selectable_avatar_styles'),
             'name' => config('players.name'),
         ]);
     }
@@ -52,7 +52,7 @@ class GuestPlayController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:60'],
-            'avatar_style' => ['required', Rule::in(config('players.avatar_styles'))],
+            'avatar_style' => ['required', Rule::in(config('players.selectable_avatar_styles'))],
             'avatar_seed' => ['required', 'string', 'regex:/^[a-z0-9]{6,32}$/'],
         ], [
             'name.required' => 'Escolha um nome para jogar.',

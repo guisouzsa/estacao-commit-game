@@ -25,6 +25,9 @@ class ProfileAppearanceController extends Controller
 
         if ($request->hasFile('avatar')) {
             $user->avatar = $imageOptimizer->encode($request->file('avatar'), 800);
+        } elseif (! empty($validated['avatar_generated'])) {
+            // Ícone gerado no lugar da foto: guardado como "gen:estilo:semente".
+            $user->avatar = 'gen:'.$validated['avatar_generated'];
         } elseif ($validated['remove_avatar'] ?? false) {
             $user->avatar = null;
         }

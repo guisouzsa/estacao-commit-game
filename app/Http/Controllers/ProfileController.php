@@ -20,6 +20,7 @@ class ProfileController extends Controller
         $user = $request->user()->load(['badges' => fn ($query) => $query->whereRaw('active IS TRUE'), 'profileLinks', 'achievementBadge']);
         return Inertia::render('Profile/Edit', [
             'status' => session('status'),
+            'avatarStyles' => config('players.selectable_avatar_styles'),
             'googleLinked' => filled($request->user()->google_id),
             'appearanceOptions' => [
                 'frames' => config('profiles.frames'),

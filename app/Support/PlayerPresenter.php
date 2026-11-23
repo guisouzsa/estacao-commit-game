@@ -25,6 +25,29 @@ class PlayerPresenter
         return substr(hash('sha256', 'avatar-seed|'.$userId), 0, 12);
     }
 
+    /**
+     * Como a conta aparece: foto enviada, ícone gerado escolhido ("gen:estilo:semente"
+     * em users.avatar) ou, sem nada disso, o ícone padrão derivado do ID.
+     * Único ponto que decide isso: navbar, Dashboard, sala, busca e perfil usam este.
+     *
+     * @return array{avatar: ?string, avatar_style: string, avatar_seed: string}
+     */
+    public static function avatarFields(User $user): array
+    {
+        $raw = (string) $user->avatar;
+
+        if (preg_match('/^gen:([a-z]+):([a-z0-9]{6,32})$/', $raw, $match)
+            && in_array($match[1], config('players.avatar_styles'), true)) {
+            return ['avatar' => null, 'avatar_style' => $match[1], 'avatar_seed' => $match[2]];
+        }
+
+        return [
+            'avatar' => AvatarUrl::for($user->avatar),
+            'avatar_style' => 'pixel',
+            'avatar_seed' => self::seed((string) $user->id),
+        ];
+    }
+
     public static function actor(Authenticatable $actor): array
     {
         return $actor instanceof GuestProfile ? self::guest($actor) : self::user($actor);
@@ -38,10 +61,8 @@ class PlayerPresenter
             'is_bot' => false,
             'username' => $user->username,
             'name' => $user->username,
-            // Foto enviada pelo usuário (opcional). Sem ela, o front gera o avatar pela semente.
-            'avatar' => AvatarUrl::for($user->avatar),
-            'avatar_style' => 'pixel',
-            'avatar_seed' => self::seed((string) $user->id),
+            // Foto enviada ou ícone escolhido (ver avatarFields). Sem foto, o front desenha pela semente.
+            ...self::avatarFields($user),
             'avatar_position_x' => $user->avatar_position_x ?? 50,
             'avatar_position_y' => $user->avatar_position_y ?? 50,
             'avatar_zoom' => $user->avatar_zoom ?? 100,

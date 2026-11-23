@@ -18,8 +18,12 @@ return [
     // Cookie que guarda o token do visitante (HttpOnly; o valor nunca vai para o JavaScript).
     'guest_cookie' => 'ec_visitor',
 
-    // Estilos de avatar gerados localmente a partir de uma semente (ver resources/js/lib/avatarArt.ts).
+    // Estilos que o front sabe DESENHAR (ver resources/js/lib/avatarArt.ts). "blocks" segue
+    // valendo para bots e para perfis que já o usam, mas não é mais oferecido para escolha.
     'avatar_styles' => ['pixel', 'robot', 'terminal', 'blocks'],
+
+    // Estilos que a pessoa pode ESCOLHER (visitante ao entrar e conta no editor de perfil).
+    'selectable_avatar_styles' => ['pixel', 'robot', 'terminal'],
 
     'name' => ['min' => 3, 'max' => 24],
 

@@ -1,11 +1,8 @@
 import InputError from '@/Components/InputError';
+import AvatarPicker from '@/Components/AvatarPicker';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import GuestLayout from '@/Layouts/GuestLayout';
-import {
-    AVATAR_STYLE_LABELS,
-    type AvatarStyle,
-    randomSeed,
-} from '@/lib/avatarArt';
+import { type AvatarStyle, randomSeed } from '@/lib/avatarArt';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 
@@ -14,9 +11,6 @@ type Availability =
     | { state: 'checking' }
     | { state: 'available' }
     | { state: 'unavailable'; message: string };
-
-const OPTIONS = 8;
-const newSeeds = () => Array.from({ length: OPTIONS }, () => randomSeed());
 
 /**
  * "Jogar agora": o visitante escolhe nome e avatar e entra, sem e-mail nem senha.
@@ -30,11 +24,11 @@ export default function Create({
     styles: AvatarStyle[];
     name: { min: number; max: number };
 }) {
-    const [seeds, setSeeds] = useState(newSeeds);
+    const [initialSeed] = useState(() => randomSeed());
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         avatar_style: styles[0] ?? 'pixel',
-        avatar_seed: seeds[0],
+        avatar_seed: initialSeed,
     });
     const [availability, setAvailability] = useState<Availability>({
         state: 'idle',
@@ -82,12 +76,6 @@ export default function Create({
 
         return () => window.clearTimeout(timer);
     }, [data.name, nameRules.min]);
-
-    const reroll = () => {
-        const next = newSeeds();
-        setSeeds(next);
-        setData('avatar_seed', next[0]);
-    };
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -159,67 +147,21 @@ export default function Create({
                 </p>
                 <InputError className="mt-1" message={errors.name} />
 
-                <fieldset className="mt-5">
-                    <legend className="auth-label">Estilo do avatar</legend>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                        {styles.map((style) => (
-                            <button
-                                key={style}
-                                type="button"
-                                aria-pressed={data.avatar_style === style}
-                                onClick={() => setData('avatar_style', style)}
-                                className={`min-h-10 border-2 border-[#1d1d1b] px-3 font-mono text-[11px] font-black uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498] ${
-                                    data.avatar_style === style
-                                        ? 'bg-[#b4da33]'
-                                        : 'bg-white'
-                                }`}
-                            >
-                                {AVATAR_STYLE_LABELS[style] ?? style}
-                            </button>
-                        ))}
-                    </div>
-                </fieldset>
-
-                <fieldset className="mt-4">
-                    <legend className="auth-label">Escolha seu avatar</legend>
-                    <div
-                        className="mt-2 grid grid-cols-4 gap-3"
-                        role="radiogroup"
-                        aria-label="Avatares disponíveis"
-                    >
-                        {seeds.map((seed) => (
-                            <button
-                                key={seed}
-                                type="button"
-                                role="radio"
-                                aria-checked={data.avatar_seed === seed}
-                                aria-label="Avatar"
-                                onClick={() => setData('avatar_seed', seed)}
-                                className={`grid place-items-center p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498] ${
-                                    data.avatar_seed === seed
-                                        ? 'bg-[#b4da33]'
-                                        : 'bg-transparent hover:bg-ink/5'
-                                }`}
-                            >
-                                <PlayerAvatar
-                                    profile={{
-                                        username: preview.username,
-                                        avatar_style: data.avatar_style,
-                                        avatar_seed: seed,
-                                    }}
-                                    size="sm"
-                                />
-                            </button>
-                        ))}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={reroll}
-                        className="mt-3 font-mono text-xs font-bold uppercase text-purple-700 underline decoration-2 underline-offset-4"
-                    >
-                        Sortear outros avatares
-                    </button>
-                </fieldset>
+                <div className="mt-5">
+                    <AvatarPicker
+                        styles={styles}
+                        style={data.avatar_style}
+                        seed={data.avatar_seed}
+                        previewName={preview.username}
+                        onChange={(style, seed) =>
+                            setData((current) => ({
+                                ...current,
+                                avatar_style: style as AvatarStyle,
+                                avatar_seed: seed,
+                            }))
+                        }
+                    />
+                </div>
                 <InputError className="mt-1" message={errors.avatar_style ?? errors.avatar_seed} />
 
                 <button

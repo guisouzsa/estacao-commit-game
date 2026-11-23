@@ -19,6 +19,11 @@ class AvatarUrl
             return null;
         }
 
+        // "gen:estilo:semente" é um ícone gerado, não uma imagem: não há URL.
+        if (Str::startsWith($path, 'gen:')) {
+            return null;
+        }
+
         if (Str::startsWith($path, ['http://', 'https://', 'data:image/'])) {
             return $path;
         }

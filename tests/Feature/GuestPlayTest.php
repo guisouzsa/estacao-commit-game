@@ -57,7 +57,7 @@ class GuestPlayTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Guest/Create')
-                ->where('styles', config('players.avatar_styles')));
+                ->where('styles', config('players.selectable_avatar_styles')));
     }
 
     public function test_creating_the_profile_issues_a_secure_http_only_cookie_and_stores_only_the_token_hash(): void

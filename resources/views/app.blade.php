@@ -4,6 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        {{-- Chave PÚBLICA do Reverb em tempo de execução: o front não depende de variáveis VITE_* no build. --}}
+        <meta name="reverb-key" content="{{ config('broadcasting.connections.reverb.key') }}">
+
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->

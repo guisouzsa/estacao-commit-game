@@ -16,17 +16,32 @@ declare global {
 
 window.Pusher = Pusher;
 
-const reverbKey = import.meta.env.VITE_REVERB_APP_KEY;
-const reverbHost = import.meta.env.VITE_REVERB_HOST;
+// Variáveis VITE_* (definidas no build) têm prioridade. Sem elas, usa a chave pública
+// entregue pelo servidor (meta tag) e o próprio endereço do site: o Apache já encaminha
+// /app para o Reverb na mesma porta. Assim o tempo real funciona mesmo se o build do
+// Render não recebeu os argumentos VITE_REVERB_*.
+const metaKey =
+    document
+        .querySelector<HTMLMetaElement>('meta[name="reverb-key"]')
+        ?.content?.trim() || undefined;
+const reverbKey = import.meta.env.VITE_REVERB_APP_KEY || metaKey;
+const reverbHost = import.meta.env.VITE_REVERB_HOST || window.location.hostname;
+const secure = window.location.protocol === 'https:';
+const reverbPort =
+    import.meta.env.VITE_REVERB_PORT ||
+    window.location.port ||
+    (secure ? '443' : '80');
+const reverbScheme =
+    import.meta.env.VITE_REVERB_SCHEME || (secure ? 'https' : 'http');
 
 if (reverbKey && reverbHost) {
     window.Echo = new Echo({
         broadcaster: 'reverb',
         key: reverbKey,
         wsHost: reverbHost,
-        wsPort: Number(import.meta.env.VITE_REVERB_PORT ?? 80),
-        wssPort: Number(import.meta.env.VITE_REVERB_PORT ?? 443),
-        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+        wsPort: Number(reverbPort),
+        wssPort: Number(reverbPort),
+        forceTLS: reverbScheme === 'https',
         enabledTransports: ['ws', 'wss'],
     });
     // Avisa quando a conexão em tempo real cai e quando volta. Um único aviso por
@@ -62,7 +77,7 @@ if (reverbKey && reverbHost) {
     }
 } else {
     window.Echo = null;
-    console.error(
-        'Laravel Echo is disabled: VITE_REVERB_APP_KEY and VITE_REVERB_HOST are required.',
+    console.warn(
+        'Tempo real desativado: a chave do Reverb não foi configurada no servidor (REVERB_APP_KEY). A página continua se atualizando por consulta periódica.',
     );
 }

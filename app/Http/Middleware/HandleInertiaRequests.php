@@ -2,8 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\NotificationController;
+use App\Models\GuestProfile;
+use App\Models\User;
+use App\Support\Actor;
+use App\Support\AvatarUrl;
+use App\Support\PlayerPresenter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -30,12 +36,45 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $user = $request->user();
-        $authUser = $user?->only([
+        // Conta permanente ou visitante. Em rotas públicas o guard padrão (web)
+        // não conhece o visitante, então ele é consultado à parte (sem cookie, sem consulta).
+        $actor = $request->user() ?? Auth::guard('visitor')->user();
+
+        return [
+            ...parent::share($request),
+            'auth' => [
+                'user' => $this->authUser($actor),
+                'kind' => $actor ? Actor::kind($actor) : null,
+                // Canal privado para avisos em tempo real desta pessoa.
+                'channel' => $actor ? Actor::channel($actor) : null,
+                // Só contas têm central de notificações. Closure: uma consulta por resposta
+                // de página, e nenhuma em recarregamentos parciais que não pedem "auth".
+                'unread_notifications' => fn () => $actor instanceof User
+                    ? $actor->unreadNotifications()->whereIn('type', NotificationController::TYPES)->count()
+                    : 0,
+            ],
+            'flash' => [
+                'toast' => fn () => $request->session()->get('toast'),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function authUser(mixed $actor): ?array
+    {
+        if ($actor instanceof GuestProfile) {
+            // Visitante: só o necessário para exibir nome e avatar. Sem e-mail nem dados de conta.
+            return [...PlayerPresenter::guest($actor), 'id' => $actor->id, 'kind' => 'guest'];
+        }
+
+        if (! $actor instanceof User) {
+            return null;
+        }
+
+        $authUser = $actor->only([
             'id',
             'username',
             'bio',
-            'avatar',
             'avatar_position_x',
             'avatar_position_y',
             'avatar_zoom',
@@ -51,28 +90,18 @@ class HandleInertiaRequests extends Middleware
             'onboarding_completed_at',
         ]);
 
-        if ($user && $authUser) {
-            $authUser['avatar'] = $user->avatar
-                ? (str_starts_with($user->avatar, 'http')
-                    ? $user->avatar
-                    : Storage::disk('public')->url($user->avatar))
-                : null;
-            $authUser['cover'] = $user->profile_cover
-                ? Storage::disk('public')->url($user->profile_cover)
-                : null;
-            $authUser['developer_badge'] = $user->developer_badge
-                ? config('profiles.developer_badges.'.$user->developer_badge)
-                : null;
-        }
+        // Mesmo formato de avatar em toda a aplicação (URL relativa, com fallback por semente).
+        $authUser['avatar'] = AvatarUrl::for($actor->avatar);
+        $authUser['avatar_style'] = 'pixel';
+        $authUser['avatar_seed'] = PlayerPresenter::seed((string) $actor->id);
+        $authUser['kind'] = 'user';
+        $authUser['cover'] = $actor->profile_cover
+            ? AvatarUrl::for($actor->profile_cover)
+            : null;
+        $authUser['developer_badge'] = $actor->developer_badge
+            ? config('profiles.developer_badges.'.$actor->developer_badge)
+            : null;
 
-        return [
-            ...parent::share($request),
-            'auth' => [
-                'user' => $authUser,
-            ],
-            'flash' => [
-                'toast' => fn () => $request->session()->get('toast'),
-            ],
-        ];
+        return $authUser;
     }
 }

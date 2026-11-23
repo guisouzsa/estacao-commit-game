@@ -2,6 +2,12 @@ export interface PlayerProfile {
     username: string;
     bio?: string | null;
     avatar?: string | null;
+    /** Estilo e semente do avatar gerado localmente (estável por jogador). */
+    avatar_style?: string | null;
+    avatar_seed?: string | null;
+    /** Bots são identificados visualmente com a etiqueta BOT. */
+    is_bot?: boolean;
+    kind?: 'user' | 'guest' | 'bot';
     avatar_position_x?: number;
     avatar_position_y?: number;
     avatar_zoom?: number;

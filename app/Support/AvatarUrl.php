@@ -19,7 +19,7 @@ class AvatarUrl
             return null;
         }
 
-        if (Str::startsWith($path, ['http://', 'https://'])) {
+        if (Str::startsWith($path, ['http://', 'https://', 'data:image/'])) {
             return $path;
         }
 

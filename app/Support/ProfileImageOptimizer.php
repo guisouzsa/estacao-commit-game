@@ -3,20 +3,21 @@
 namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
-use Illuminate\Support\Str;
 
 class ProfileImageOptimizer
 {
-    public function store(UploadedFile $file, string $directory, int $maxDimension): string
+    /**
+     * Otimiza a imagem e devolve um data URI pronto para persistência no banco.
+     * Assim, perfis não dependem do disco efêmero do container de produção.
+     */
+    public function encode(UploadedFile $file, int $maxDimension): string
     {
         if (! function_exists('imagecreatefromstring') || ! function_exists('imagecreatetruecolor')) {
-            $path = $file->storePublicly($directory, 'public');
-            if ($path === false) {
-                throw new RuntimeException('Não foi possível armazenar a imagem de perfil.');
-            }
-            return $path;
+            $contents = $file->get();
+            $mime = $file->getMimeType() ?: 'application/octet-stream';
+
+            return "data:{$mime};base64,".base64_encode($contents);
         }
 
         $image = @imagecreatefromstring($file->get());
@@ -74,14 +75,9 @@ class ProfileImageOptimizer
                 throw new RuntimeException('Não foi possível codificar a imagem otimizada.');
             }
 
-            $extension = function_exists('imagewebp') ? 'webp' : 'jpg';
-            $path = "{$directory}/".Str::uuid().".{$extension}";
+            $mime = function_exists('imagewebp') ? 'image/webp' : 'image/jpeg';
 
-            if (! Storage::disk('public')->put($path, $contents)) {
-                throw new RuntimeException('Não foi possível armazenar a imagem otimizada.');
-            }
-
-            return $path;
+            return "data:{$mime};base64,".base64_encode($contents);
         } finally {
             imagedestroy($image);
 

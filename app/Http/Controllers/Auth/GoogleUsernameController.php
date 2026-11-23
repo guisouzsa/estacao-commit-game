@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\PlayerNameAllowed;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -48,6 +49,7 @@ class GoogleUsernameController extends Controller
                 'min:3',
                 'max:30',
                 'regex:/\A[a-zA-Z0-9_-]+\z/',
+                new PlayerNameAllowed,
                 Rule::unique('users', 'username')->where(
                     fn ($query) => $query->whereRaw('LOWER(username) = ?', [Str::lower($request->string('username')->toString())])
                 ),

@@ -14,11 +14,14 @@ class UserNoticesChanged implements ShouldBroadcastNow
 {
     use Dispatchable;
 
-    public function __construct(public readonly string $userId) {}
+    /** @param  string  $userId  id da conta ou do visitante (nome mantido por compatibilidade) */
+    public function __construct(public readonly string $userId, public readonly string $kind = 'user') {}
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('App.Models.User.'.$this->userId)];
+        $prefix = $this->kind === 'guest' ? 'App.Models.GuestProfile.' : 'App.Models.User.';
+
+        return [new PrivateChannel($prefix.$this->userId)];
     }
 
     public function broadcastAs(): string

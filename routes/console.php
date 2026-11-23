@@ -9,3 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('rooms:expire-waiting')->everyMinute();
+
+// Perfis de visitante sem atividade (consulta indexada, em lotes).
+Schedule::command('guests:prune')->hourly();

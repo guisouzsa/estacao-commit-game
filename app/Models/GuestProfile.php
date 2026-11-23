@@ -72,4 +72,21 @@ class GuestProfile extends Model implements AuthenticatableContract
             ->whereNotNull('game_rooms.started_at')
             ->whereNull('game_rooms.finished_at'));
     }
+
+    /**
+     * Perfis que a limpeza pode apagar: sem partida em andamento e sem ser
+     * anfitrião de uma sala que tenha outros humanos (apagar o anfitrião
+     * excluiria a sala deles em silêncio).
+     */
+    public function scopeDeletable(Builder $query): Builder
+    {
+        return $query->withoutActiveMatch()->whereNotExists(fn ($sub) => $sub
+            ->from('game_rooms')
+            ->whereColumn('game_rooms.host_guest_id', 'guest_profiles.id')
+            ->whereExists(fn ($humans) => $humans
+                ->from('room_participants as others')
+                ->whereColumn('others.room_id', 'game_rooms.id')
+                ->where('others.is_host', false)
+                ->where('others.kind', '!=', 'bot')));
+    }
 }

@@ -1,0 +1,244 @@
+import InputError from '@/Components/InputError';
+import PlayerAvatar from '@/Components/PlayerAvatar';
+import GuestLayout from '@/Layouts/GuestLayout';
+import {
+    AVATAR_STYLE_LABELS,
+    type AvatarStyle,
+    randomSeed,
+} from '@/lib/avatarArt';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+
+type Availability =
+    | { state: 'idle' }
+    | { state: 'checking' }
+    | { state: 'available' }
+    | { state: 'unavailable'; message: string };
+
+const OPTIONS = 8;
+const newSeeds = () => Array.from({ length: OPTIONS }, () => randomSeed());
+
+/**
+ * "Jogar agora": o visitante escolhe nome e avatar e entra, sem e-mail nem senha.
+ * A disponibilidade do nome é conferida enquanto digita, mas quem decide de verdade
+ * é o servidor (duas pessoas podem escolher o mesmo nome ao mesmo tempo).
+ */
+export default function Create({
+    styles,
+    name: nameRules,
+}: {
+    styles: AvatarStyle[];
+    name: { min: number; max: number };
+}) {
+    const [seeds, setSeeds] = useState(newSeeds);
+    const { data, setData, post, processing, errors } = useForm({
+        name: '',
+        avatar_style: styles[0] ?? 'pixel',
+        avatar_seed: seeds[0],
+    });
+    const [availability, setAvailability] = useState<Availability>({
+        state: 'idle',
+    });
+    const latestCheck = useRef(0);
+
+    // Confere o nome com um pequeno atraso (e ignora respostas atrasadas).
+    useEffect(() => {
+        const trimmed = data.name.trim();
+        if (trimmed.length < nameRules.min) {
+            setAvailability({ state: 'idle' });
+            return;
+        }
+
+        setAvailability({ state: 'checking' });
+        const check = ++latestCheck.current;
+        const timer = window.setTimeout(async () => {
+            try {
+                const response = await fetch(
+                    route('guest.name', { name: trimmed }),
+                    { headers: { Accept: 'application/json' } },
+                );
+                if (!response.ok) throw new Error('indisponível');
+                const result = (await response.json()) as {
+                    available: boolean;
+                    message: string | null;
+                };
+                if (check !== latestCheck.current) return;
+                setAvailability(
+                    result.available
+                        ? { state: 'available' }
+                        : {
+                              state: 'unavailable',
+                              message:
+                                  result.message ?? 'Esse nome não está disponível.',
+                          },
+                );
+            } catch {
+                // Sem a verificação instantânea o envio continua funcionando.
+                if (check === latestCheck.current) {
+                    setAvailability({ state: 'idle' });
+                }
+            }
+        }, 400);
+
+        return () => window.clearTimeout(timer);
+    }, [data.name, nameRules.min]);
+
+    const reroll = () => {
+        const next = newSeeds();
+        setSeeds(next);
+        setData('avatar_seed', next[0]);
+    };
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        post(route('guest.store'));
+    };
+
+    const preview = {
+        username: data.name.trim() || 'Você',
+        avatar_style: data.avatar_style,
+        avatar_seed: data.avatar_seed,
+    };
+    const nameError =
+        errors.name ??
+        (availability.state === 'unavailable' ? availability.message : undefined);
+
+    return (
+        <GuestLayout>
+            <Head title="Jogar agora" />
+            <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">
+                Jogar agora
+            </p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight">
+                Quem vai jogar?
+            </h1>
+            <p className="mt-3 text-ink/55">
+                Escolha um nome e um avatar. Sem e-mail, sem senha.
+            </p>
+
+            <form className="mt-6" onSubmit={submit} noValidate>
+                <div className="flex items-center gap-4">
+                    <PlayerAvatar profile={preview} size="lg" />
+                    <div className="min-w-0 flex-1">
+                        <label className="auth-label" htmlFor="guest-name">
+                            Seu nome
+                        </label>
+                        <input
+                            id="guest-name"
+                            className="auth-input"
+                            value={data.name}
+                            onChange={(event) =>
+                                setData('name', event.target.value)
+                            }
+                            maxLength={nameRules.max + 12}
+                            autoComplete="nickname"
+                            autoFocus
+                            required
+                            aria-invalid={Boolean(nameError)}
+                            aria-describedby="guest-name-status"
+                        />
+                    </div>
+                </div>
+                <p
+                    id="guest-name-status"
+                    aria-live="polite"
+                    className={`mt-2 min-h-5 text-sm font-semibold ${
+                        nameError
+                            ? 'text-[#d01600]'
+                            : availability.state === 'available'
+                              ? 'text-[#2d6a00]'
+                              : 'text-ink/55'
+                    }`}
+                >
+                    {nameError ??
+                        (availability.state === 'checking'
+                            ? 'Verificando...'
+                            : availability.state === 'available'
+                              ? 'Nome disponível!'
+                              : `De ${nameRules.min} a ${nameRules.max} caracteres.`)}
+                </p>
+                <InputError className="mt-1" message={errors.name} />
+
+                <fieldset className="mt-5">
+                    <legend className="auth-label">Estilo do avatar</legend>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {styles.map((style) => (
+                            <button
+                                key={style}
+                                type="button"
+                                aria-pressed={data.avatar_style === style}
+                                onClick={() => setData('avatar_style', style)}
+                                className={`min-h-10 border-2 border-[#1d1d1b] px-3 font-mono text-[11px] font-black uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498] ${
+                                    data.avatar_style === style
+                                        ? 'bg-[#b4da33]'
+                                        : 'bg-white'
+                                }`}
+                            >
+                                {AVATAR_STYLE_LABELS[style] ?? style}
+                            </button>
+                        ))}
+                    </div>
+                </fieldset>
+
+                <fieldset className="mt-4">
+                    <legend className="auth-label">Escolha seu avatar</legend>
+                    <div
+                        className="mt-2 grid grid-cols-4 gap-3"
+                        role="radiogroup"
+                        aria-label="Avatares disponíveis"
+                    >
+                        {seeds.map((seed) => (
+                            <button
+                                key={seed}
+                                type="button"
+                                role="radio"
+                                aria-checked={data.avatar_seed === seed}
+                                aria-label="Avatar"
+                                onClick={() => setData('avatar_seed', seed)}
+                                className={`grid place-items-center p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498] ${
+                                    data.avatar_seed === seed
+                                        ? 'bg-[#b4da33]'
+                                        : 'bg-transparent hover:bg-ink/5'
+                                }`}
+                            >
+                                <PlayerAvatar
+                                    profile={{
+                                        username: preview.username,
+                                        avatar_style: data.avatar_style,
+                                        avatar_seed: seed,
+                                    }}
+                                    size="sm"
+                                />
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={reroll}
+                        className="mt-3 font-mono text-xs font-bold uppercase text-purple-700 underline decoration-2 underline-offset-4"
+                    >
+                        Sortear outros avatares
+                    </button>
+                </fieldset>
+                <InputError className="mt-1" message={errors.avatar_style ?? errors.avatar_seed} />
+
+                <button
+                    className="auth-submit mt-6"
+                    disabled={processing || availability.state === 'unavailable'}
+                >
+                    {processing ? 'Entrando...' : 'Entrar e jogar'}
+                </button>
+            </form>
+
+            <p className="mt-8 text-center text-sm text-ink/55">
+                Já tem uma conta?{' '}
+                <Link
+                    href={route('login')}
+                    className="font-bold text-purple-700 hover:underline"
+                >
+                    Entrar
+                </Link>
+            </p>
+        </GuestLayout>
+    );
+}

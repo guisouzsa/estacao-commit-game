@@ -18,7 +18,7 @@ export interface User {
     created_at?: string;
 }
 
-export type ToastTone = 'success' | 'warning' | 'info';
+export type ToastTone = 'success' | 'warning' | 'info' | 'error';
 
 export type ToastPayload = {
     id: string;
@@ -31,6 +31,12 @@ export type PageProps<
 > = T & {
     auth: {
         user: User;
+        /** conta permanente, visitante (sem login) ou ninguém. */
+        kind: 'user' | 'guest' | null;
+        /** Canal privado de avisos em tempo real desta pessoa. */
+        channel: string | null;
+        /** Não lidas na central (só contas permanentes). */
+        unread_notifications?: number;
     };
     flash?: {
         toast?: ToastPayload | null;

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\User;
 use App\Rules\EmailDomainAcceptsMail;
+use App\Rules\PlayerNameAllowed;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -23,6 +24,10 @@ class ProfileUpdateRequest extends FormRequest
                 'min:3',
                 'max:30',
                 'regex:/\A[a-zA-Z0-9_-]+\z/',
+                // Só valida quando o nome realmente muda (não mexe em nomes já existentes).
+                fn ($attribute, $value, $fail) => strtolower((string) $value) === strtolower((string) $this->user()->username)
+                    ? null
+                    : (new PlayerNameAllowed)->validate($attribute, $value, $fail),
                 function ($attribute, $value, $fail): void {
                     $exists = User::query()
                         ->whereRaw('LOWER(username) = ?', [strtolower($value)])

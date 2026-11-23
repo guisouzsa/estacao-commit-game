@@ -27,11 +27,12 @@ class GameRoomController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $actor = $request->user();
-        $botCount = (int) $request->validate([
+        $validated = $request->validate([
             'bots' => ['nullable', 'integer', 'between:0,'.config('bots.max_per_room')],
         ], [
             'bots.between' => 'Escolha de 0 a '.config('bots.max_per_room').' bots.',
-        ])['bots'] ?? 0;
+        ]);
+        $botCount = (int) ($validated['bots'] ?? 0);
 
         $result = DB::transaction(function () use ($actor, $botCount): array {
             // A sala nasce só com o anfitrião humano: a contagem de 5 minutos começa agora.

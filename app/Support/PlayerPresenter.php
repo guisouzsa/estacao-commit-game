@@ -16,6 +16,15 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 class PlayerPresenter
 {
+    /**
+     * Semente do avatar de uma conta: estável, mas derivada por hash para não
+     * expor o ID do usuário em páginas públicas.
+     */
+    public static function seed(string $userId): string
+    {
+        return substr(hash('sha256', 'avatar-seed|'.$userId), 0, 12);
+    }
+
     public static function actor(Authenticatable $actor): array
     {
         return $actor instanceof GuestProfile ? self::guest($actor) : self::user($actor);
@@ -32,7 +41,7 @@ class PlayerPresenter
             // Foto enviada pelo usuário (opcional). Sem ela, o front gera o avatar pela semente.
             'avatar' => AvatarUrl::for($user->avatar),
             'avatar_style' => 'pixel',
-            'avatar_seed' => (string) $user->id,
+            'avatar_seed' => self::seed((string) $user->id),
             'avatar_position_x' => $user->avatar_position_x ?? 50,
             'avatar_position_y' => $user->avatar_position_y ?? 50,
             'avatar_zoom' => $user->avatar_zoom ?? 100,

@@ -2,11 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Badge;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use App\Models\Badge;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -126,9 +125,8 @@ class ProfileTest extends TestCase
         ]);
     }
 
-    public function test_avatar_upload_is_stored_as_a_file_reference(): void
+    public function test_avatar_upload_is_stored_in_the_database(): void
     {
-        Storage::fake('public');
         $user = User::factory()->create();
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/U3QAAAAASUVORK5CYII=');
 
@@ -144,13 +142,12 @@ class ProfileTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $user->refresh();
-        $this->assertStringStartsWith("avatars/{$user->id}/", $user->avatar);
-        Storage::disk('public')->assertExists($user->avatar);
+        $this->assertStringStartsWith('data:image/', $user->avatar);
+        $this->assertStringContainsString(';base64,', $user->avatar);
     }
 
     public function test_cover_upload_and_position_are_persisted(): void
     {
-        Storage::fake('public');
         $user = User::factory()->create();
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/U3QAAAAASUVORK5CYII=');
 
@@ -162,11 +159,10 @@ class ProfileTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $user->refresh();
-        $this->assertStringStartsWith("covers/{$user->id}/", $user->profile_cover);
+        $this->assertStringStartsWith('data:image/', $user->profile_cover);
         $this->assertSame(35, $user->cover_position_x);
         $this->assertSame(70, $user->cover_position_y);
         $this->assertSame(125, $user->avatar_zoom);
-        Storage::disk('public')->assertExists($user->profile_cover);
     }
 
     public function test_profile_appearance_rejects_unavailable_cosmetics(): void
@@ -252,13 +248,13 @@ class ProfileTest extends TestCase
             'avatar_zoom' => 100, 'cover_position_x' => 50, 'cover_position_y' => 50,
             'profile_frame' => 'standard', 'primary_badge' => 'terminal', 'profile_title' => null,
             'links' => [
-                ['platform'=>'github','label'=>'Meu GitHub','url'=>'https://github.com/player','is_public'=>true],
-                ['platform'=>'portfolio','label'=>'Portfólio','url'=>'https://example.com','is_public'=>false],
+                ['platform' => 'github', 'label' => 'Meu GitHub', 'url' => 'https://github.com/player', 'is_public' => true],
+                ['platform' => 'portfolio', 'label' => 'Portfólio', 'url' => 'https://example.com', 'is_public' => false],
             ],
         ];
         $this->actingAs($user)->patch('/profile/appearance', $payload)->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('profile_links', ['user_id'=>$user->id,'label'=>'Meu GitHub','sort_order'=>0]);
-        $this->assertDatabaseHas('profile_links', ['user_id'=>$user->id,'label'=>'Portfólio','sort_order'=>1,'is_public'=>false]);
+        $this->assertDatabaseHas('profile_links', ['user_id' => $user->id, 'label' => 'Meu GitHub', 'sort_order' => 0]);
+        $this->assertDatabaseHas('profile_links', ['user_id' => $user->id, 'label' => 'Portfólio', 'sort_order' => 1, 'is_public' => false]);
 
         $payload['links'][0]['url'] = 'javascript:alert(1)';
         $this->actingAs($user)->patch('/profile/appearance', $payload)->assertSessionHasErrors('links.0.url');
@@ -268,9 +264,9 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
         $badge = Badge::query()->firstOrFail();
-        $payload = ['avatar_position_x'=>50,'avatar_position_y'=>50,'profile_frame'=>'standard','primary_badge'=>'terminal','profile_title'=>null,'achievement_badge_id'=>$badge->id];
+        $payload = ['avatar_position_x' => 50, 'avatar_position_y' => 50, 'profile_frame' => 'standard', 'primary_badge' => 'terminal', 'profile_title' => null, 'achievement_badge_id' => $badge->id];
         $this->actingAs($user)->patch('/profile/appearance', $payload)->assertSessionHasErrors('achievement_badge_id');
-        $user->badges()->attach($badge->id, ['unlocked_at'=>now(),'granted_by'=>'test']);
+        $user->badges()->attach($badge->id, ['unlocked_at' => now(), 'granted_by' => 'test']);
         $this->actingAs($user)->patch('/profile/appearance', $payload)->assertSessionHasNoErrors();
         $this->assertSame($badge->id, $user->fresh()->achievement_badge_id);
     }

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Events\RoomStateChanged;
 use App\Events\UserNoticesChanged;
+use App\Support\Actor;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -25,6 +27,14 @@ class RoomStateBroadcaster
     public function publishToUser(string $userId): void
     {
         $this->afterCommit(new UserNoticesChanged($userId), ['user_id' => $userId]);
+    }
+
+    /** Igual a publishToUser, mas para uma conta OU um visitante. */
+    public function publishToActor(Authenticatable $actor): void
+    {
+        $id = Actor::id($actor);
+
+        $this->afterCommit(new UserNoticesChanged($id, Actor::kind($actor)), ['actor_id' => $id]);
     }
 
     /**

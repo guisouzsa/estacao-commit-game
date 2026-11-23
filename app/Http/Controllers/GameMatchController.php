@@ -125,6 +125,21 @@ class GameMatchController extends Controller
         });
     }
 
+    private function turnSecondsLeft(GameRoom $room, GameMatch $match): ?int
+    {
+        $timeout = (int) config('game.turn_timeout_seconds');
+        if ($timeout <= 0 || $match->status !== 'active') {
+            return null;
+        }
+
+        $current = $room->participants->firstWhere('seat', $match->current_seat);
+        if (! $current || $current->isBot()) {
+            return null;
+        }
+
+        return max(0, $timeout - (int) $match->updated_at->diffInSeconds(now(), true));
+    }
+
     private function present(GameRoom $room, GameMatch $match, int $viewerId): array
     {
         $state = $match->state;
@@ -150,6 +165,9 @@ class GameMatchController extends Controller
                 'turn_number' => $match->turn_number, 'version' => $match->version,
                 'winner_participant_id' => $match->winner_participant_id,
                 'deck_count' => count($state['deck']), 'discard_count' => count($state['discard']),
+                // Tempo que o jogador da vez ainda tem antes de um bot assumir (ver GameInactivityService).
+                // Só faz sentido para jogadores humanos em partida ativa.
+                'turn_seconds_left' => $this->turnSecondsLeft($room, $match),
                 'history' => array_reverse(array_slice($state['history'], -12)),
             ],
             'participants' => $participants,

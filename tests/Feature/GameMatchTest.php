@@ -303,6 +303,39 @@ class GameMatchTest extends TestCase
         $this->assertSame('user', $room->participants()->where('user_id', $users[1]->id)->firstOrFail()->kind);
     }
 
+    public function test_a_partial_reload_returns_only_the_requested_match_props(): void
+    {
+        [$room, $users] = $this->humanRoom();
+        $this->actingAs($users[0])->post(route('games.start', $room));
+
+        $response = $this->actingAs($users[0])->get(route('games.show', $room), [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => \Inertia\Inertia::getVersion(),
+            'X-Inertia-Partial-Component' => 'Games/Show',
+            'X-Inertia-Partial-Data' => 'game,hand',
+        ])->assertOk();
+
+        $props = $response->json('props');
+        $this->assertArrayHasKey('game', $props);
+        $this->assertArrayHasKey('hand', $props);
+        $this->assertArrayNotHasKey('participants', $props);
+        $this->assertArrayNotHasKey('requiredCard', $props);
+    }
+
+    public function test_the_page_tells_how_long_the_current_human_has_left_and_never_for_bots(): void
+    {
+        [$room, $users] = $this->humanRoom();
+        $this->actingAs($users[0])->post(route('games.start', $room));
+        GameMatch::firstOrFail()->forceFill(['current_seat' => 1])->save();
+
+        $this->actingAs($users[0])->get(route('games.show', $room))->assertInertia(fn (Assert $page) => $page
+            ->where('game.turn_seconds_left', config('game.turn_timeout_seconds')));
+
+        $this->travel(30)->seconds();
+        $this->actingAs($users[0])->get(route('games.show', $room))->assertInertia(fn (Assert $page) => $page
+            ->where('game.turn_seconds_left', config('game.turn_timeout_seconds') - 30));
+    }
+
     private function botRoom(): array
     {
         $host = User::factory()->create();

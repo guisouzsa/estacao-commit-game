@@ -54,17 +54,28 @@ const CARD_META: Record<
 
 export const cardLabel = (card: string) => CARD_META[card]?.label ?? card;
 
+/** Arte e cores de uma carta (usada também pelo tabuleiro e pelas cartas em voo). */
+export const cardMeta = (card: string) =>
+    CARD_META[card] ?? { label: card, tone: '#464498' };
+export const cardImageUrl = (card: string) => {
+    const image = CARD_META[card]?.image;
+    return image ? `/images/estacao-commit/corrected/${image}` : null;
+};
+
 export default function GameCard({
     card,
     selected = false,
     playable = false,
     compact = false,
+    dataKey,
     onClick,
 }: {
     card: string;
     selected?: boolean;
     playable?: boolean;
     compact?: boolean;
+    /** Identifica a carta na mão (de onde a animação de jogada parte). */
+    dataKey?: string;
     onClick?: () => void;
 }) {
     const reduced = useReducedMotion();
@@ -73,22 +84,33 @@ export default function GameCard({
     return (
         <motion.button
             type="button"
+            data-hand-key={dataKey}
             disabled={!onClick}
             onClick={onClick}
-            initial={reduced ? false : { opacity: 0, y: 18 }}
+            layout={!reduced}
+            exit={
+                reduced
+                    ? undefined
+                    : { opacity: 0, transition: { duration: 0.08 } }
+            }
+            initial={reduced ? false : { opacity: 0, y: -90, scale: 0.7 }}
             animate={{
                 opacity: 1,
-                y: selected ? -12 : 0,
-                scale: selected ? 1.04 : 1,
+                y: selected ? -16 : 0,
+                scale: selected ? 1.2 : 1,
+                zIndex: selected ? 30 : 0,
             }}
             whileHover={
-                !reduced && onClick ? { y: -8, scale: 1.03 } : undefined
+                !reduced && onClick
+                    ? { y: -10, scale: 1.14, zIndex: 20 }
+                    : undefined
             }
             transition={{ duration: 0.18 }}
             aria-pressed={selected}
             aria-label={`${meta.label}${playable ? ', pode ser jogada' : ''}`}
-            className={`focus-visible:outline-3 relative shrink-0 overflow-hidden rounded-xl border-[3px] bg-[#f3f1ec] text-left shadow-[4px_5px_0_#10100f] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#b4da33] ${compact ? 'h-24 w-[4.25rem]' : 'h-36 w-24 sm:h-40 sm:w-[6.7rem]'} ${selected ? 'border-[#b4da33]' : playable ? 'border-white' : 'border-[#1d1d1b]'} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
+            className={`focus-visible:outline-3 relative shrink-0 overflow-hidden rounded-xl border-[3px] bg-[#f3f1ec] text-left shadow-[4px_5px_0_#10100f] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#b4da33] ${compact ? 'h-24 w-[4.25rem]' : 'h-28 w-[5rem] sm:h-32 sm:w-[5.75rem] lg:h-[8.25rem] lg:w-[5.9rem]'} ${onClick && !playable && !selected ? 'brightness-[.7]' : ''} ${selected ? 'border-[#b4da33]' : playable ? 'border-white' : 'border-[#1d1d1b]'} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
             style={{
+                transformOrigin: '50% 100%',
                 boxShadow: selected
                     ? `0 0 0 3px ${meta.tone}, 5px 7px 0 #10100f`
                     : undefined,

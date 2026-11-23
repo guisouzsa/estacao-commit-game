@@ -18,7 +18,7 @@
     </head>
     <body class="font-sans antialiased">
         {{-- Tela de abertura: aparece enquanto o JavaScript baixa (evita a tela preta). Sai quando o app monta. --}}
-        <div id="boot-splash" role="status" aria-live="polite" style="position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px;background:#1d1d1b;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
+        <div id="boot-splash" role="status" aria-live="polite" style="position:fixed;inset:0;z-index:90;display:grid;opacity:0;animation:boot-in .2s ease-out 2s forwards;place-items:center;padding:16px;background:#1d1d1b;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
             <div style="width:100%;max-width:24rem;border:3px solid #000;background:#f3f1ec;color:#1d1d1b;padding:28px;text-align:center;box-shadow:8px 8px 0 #464498">
                 <div style="font:700 10px ui-monospace,Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;color:#464498">Estação Commit</div>
                 <h1 style="margin:6px 0 0;font-size:1.5rem;font-weight:900">Aguarde um instante…</h1>
@@ -26,7 +26,7 @@
                 <div style="margin-top:18px;height:8px;border:2px solid #1d1d1b;background:#fff;overflow:hidden"><div style="height:100%;width:35%;background:#b4da33;animation:boot-bar 1.1s ease-in-out infinite"></div></div>
             </div>
         </div>
-        <style>@keyframes boot-bar{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}@media (prefers-reduced-motion:reduce){#boot-splash div div div{animation:none!important;width:100%!important}}</style>
+        <style>@keyframes boot-in{to{opacity:1}}@keyframes boot-bar{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}@media (prefers-reduced-motion:reduce){#boot-splash div div div{animation:none!important;width:100%!important}}</style>
         @inertia
     </body>
 </html>

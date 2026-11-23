@@ -2,7 +2,7 @@ import Modal from '@/Components/Modal';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import type { PlayerProfile } from '@/Components/PlayerProfileCard';
 import { router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export type BotPreview = PlayerProfile & {
     key: string;
@@ -29,6 +29,7 @@ export default function RoomCreationModal({
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+    const botsPicker = useRef<HTMLFieldSetElement>(null);
 
     useEffect(() => {
         if (!show) return;
@@ -39,6 +40,23 @@ export default function RoomCreationModal({
         setCreating(false);
         setRequestId(crypto.randomUUID());
     }, [show]);
+
+    // No celular a escolha de bots aparece abaixo da dobra (atrás do rodapé): leva a pessoa até ela.
+    useEffect(() => {
+        if (mode !== 'bots') return;
+        const reduce = window.matchMedia(
+            '(prefers-reduced-motion: reduce)',
+        ).matches;
+        const timer = window.setTimeout(
+            () =>
+                botsPicker.current?.scrollIntoView({
+                    behavior: reduce ? 'auto' : 'smooth',
+                    block: 'center',
+                }),
+            60, // espera o bloco entrar na tela
+        );
+        return () => window.clearTimeout(timer);
+    }, [mode]);
 
     const selectedBots = mode === 'friends' ? 0 : bots;
     const humanVacancies = 3 - selectedBots;
@@ -142,7 +160,10 @@ export default function RoomCreationModal({
                             </div>
 
                             {mode === 'bots' && (
-                                <fieldset className="mt-5 border-[3px] border-[#1d1d1b] bg-white p-4 motion-safe:animate-[fade-in_.2s_ease-out]">
+                                <fieldset
+                                    ref={botsPicker}
+                                    className="mt-5 scroll-mb-28 scroll-mt-4 border-[3px] border-[#1d1d1b] bg-white p-4 motion-safe:animate-[fade-in_.2s_ease-out]"
+                                >
                                     <legend className="px-2 font-mono text-xs font-black uppercase tracking-[.12em] text-[#464498]">
                                         Quantos bots?
                                     </legend>

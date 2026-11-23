@@ -1,12 +1,16 @@
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import FlightLayer, { type Flight } from '@/Components/game/FlightLayer';
+import GameBoard from '@/Components/game/GameBoard';
+import GameLog, { type LogActor } from '@/Components/game/GameLog';
+import PlayerPanel, { type PanelPlayer } from '@/Components/game/PlayerPanel';
 import GameCard, { cardLabel } from '@/Components/GameCard';
-import PlayerAvatar from '@/Components/PlayerAvatar';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { AREAS, sideOf, type Side } from '@/lib/gameGeometry';
 import { startRoomSync } from '@/lib/roomSync';
 import { toast } from '@/lib/toast';
 import { Head, Link, router } from '@inertiajs/react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Player = {
     key: string;
@@ -30,6 +34,13 @@ type Participant = {
     blocked: boolean;
     pending_discard: number;
 };
+type HistoryItem = {
+    id: string;
+    participant_id?: number;
+    message: string;
+    turn: number;
+    notify?: boolean;
+};
 type Game = {
     id: string;
     status: string;
@@ -39,14 +50,36 @@ type Game = {
     winner_participant_id?: number | null;
     deck_count: number;
     discard_count: number;
-    history: {
-        id: string;
-        participant_id?: number;
-        message: string;
-        turn: number;
-        notify?: boolean;
-    }[];
+    turn_seconds_left?: number | null;
+    history: HistoryItem[];
 };
+
+const PARTIAL = ['game', 'participants', 'hand', 'requiredCard'];
+
+/** Primeiro elemento VISÍVEL que combina com o seletor (a mesa só tem um de cada, mas é barato garantir). */
+function rectOf(selector: string): DOMRect | null {
+    for (const element of document.querySelectorAll(selector)) {
+        const rect = element.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) return rect;
+    }
+    return null;
+}
+
+/** Cada jogador sempre guarda o Bloco da vez (1 a 4) ALÉM das cartas comuns: começa com 5. */
+const blocksPlayed = (participant: Participant) =>
+    participant.path.filter((card) => card.startsWith('block_')).length;
+const holdsBlock = (participant: Participant) => blocksPlayed(participant) < 4;
+
+const toPanel = (participant: Participant): PanelPlayer => ({
+    id: participant.id,
+    username: participant.player.username,
+    is_host: participant.is_host,
+    is_bot: participant.player.is_bot,
+    hand_count: participant.hand_count + (holdsBlock(participant) ? 1 : 0),
+    step: participant.step,
+    blocked: participant.blocked,
+    profile: participant.player,
+});
 
 export default function Show({
     room,
@@ -64,17 +97,43 @@ export default function Show({
     const [selected, setSelected] = useState<number | null>(null);
     const [target, setTarget] = useState('');
     const [busy, setBusy] = useState(false);
+    // Jogada otimista: a carta sai da mão na hora; o servidor continua sendo a autoridade.
+    // A remoção só vale enquanto a versão da partida é a mesma da jogada (ao chegar o estado
+    // novo, ele manda). Se o servidor recusar, a carta volta com a animação de entrada.
+    const [optimistic, setOptimistic] = useState<{
+        index: number;
+        version: number;
+    } | null>(null);
+    const busyRef = useRef(false);
+    const staleDuringAction = useRef(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
+    const [historyOpen, setHistoryOpen] = useState(false);
     const [online, setOnline] = useState(() => navigator.onLine);
     const reduced = useReducedMotion();
     const statusRef = useRef(game.status);
     statusRef.current = game.status;
+
     const viewer = participants.find((participant) => participant.is_viewer)!;
     const opponents = participants.filter(
         (participant) => !participant.is_viewer,
     );
     const isTurn =
         game.status === 'active' && game.current_seat === viewer.seat;
+    const currentPlayer = participants.find(
+        (participant) => participant.seat === game.current_seat,
+    );
+    const hiddenIndex =
+        optimistic && optimistic.version === game.version
+            ? optimistic.index
+            : null;
+
+    const handKeys = useMemo(() => {
+        const seen: Record<string, number> = {};
+        return hand.map((card, index) => {
+            seen[card] = (seen[card] ?? 0) + 1;
+            return { card, index, key: `${card}#${seen[card]}` };
+        });
+    }, [hand]);
     const selectedCard = selected === null ? null : hand[selected];
     const needsTarget =
         selectedCard === 'clear_credentials' ||
@@ -86,17 +145,28 @@ export default function Show({
             needsTarget),
     );
     const blockRequired = requiredCard?.startsWith('block_') ?? false;
+    const isPlayable = (card: string) =>
+        isTurn &&
+        (card === requiredCard ||
+            (card === 'git_pull' && viewer.step < 3) ||
+            ['clear_credentials', 'merge_conflict'].includes(card));
 
+    // ---------- Sincronização (inalterada: o servidor é a fonte da verdade) ----------
     useEffect(
         () =>
             startRoomSync({
                 echo: window.Echo,
                 roomId: room.id,
-                reload: (done) =>
-                    router.reload({
-                        only: ['game', 'participants', 'hand', 'requiredCard'],
-                        onFinish: done,
-                    }),
+                reload: (done) => {
+                    // Minha própria jogada já traz o estado novo na resposta: um reload agora
+                    // seria redundante. Se algo chegou nesse intervalo, recarrego UMA vez depois.
+                    if (busyRef.current) {
+                        staleDuringAction.current = true;
+                        done();
+                        return;
+                    }
+                    router.reload({ only: PARTIAL, onFinish: done });
+                },
                 shouldPoll: () => statusRef.current === 'active',
                 onSubscriptionError: () =>
                     toast.warning(
@@ -134,8 +204,7 @@ export default function Show({
         setTarget('');
     }, [game.version]);
 
-    // Eventos que merecem aviso (ex.: bot assumiu um lugar). O id evita repetir o aviso
-    // quando o mesmo estado chega por Reverb e pela sincronização de segurança.
+    // Avisos de eventos especiais (ex.: bot assumiu). O id evita repetir com Reverb + polling.
     useEffect(() => {
         game.history
             .filter((item) => item.notify)
@@ -147,8 +216,133 @@ export default function Show({
             );
     }, [game.history]);
 
+    // ---------- Cartas em voo ----------
+    const [flights, setFlights] = useState<Flight[]>([]);
+    const [freshSlot, setFreshSlot] = useState<string | null>(null);
+    const ownFlights = useRef<string[]>([]);
+
+    const finishFlight = useCallback((id: string) => {
+        setFlights((current) => {
+            const done = current.find((flight) => flight.id === id);
+            if (done?.slotKey) setFreshSlot(done.slotKey);
+            return current.filter((flight) => flight.id !== id);
+        });
+    }, []);
+
+    const launch = useCallback(
+        (flight: Omit<Flight, 'id'>) => {
+            if (reduced) {
+                if (flight.slotKey) setFreshSlot(flight.slotKey);
+                return null;
+            }
+            const id = crypto.randomUUID();
+            setFlights((current) => [...current.slice(-5), { ...flight, id }]);
+            return id;
+        },
+        [reduced],
+    );
+
+    // Casas do tabuleiro que ainda estão "recebendo" uma carta em voo ficam vazias até ela chegar.
+    const pendingSlots = useMemo(
+        () =>
+            new Set(
+                flights
+                    .map((flight) => flight.slotKey)
+                    .filter(Boolean) as string[],
+            ),
+        [flights],
+    );
+
+    // Jogadas dos OUTROS (bots inclusive): a carta sai do painel do jogador até o espaço dele.
+    // Compara com o estado anterior, então eventos repetidos ou um reload não repetem animações.
+    const previousSteps = useRef<Record<number, number> | null>(null);
+    useEffect(() => {
+        const current = Object.fromEntries(
+            participants.map((participant) => [
+                participant.id,
+                participant.path.length,
+            ]),
+        );
+        const previous = previousSteps.current;
+        previousSteps.current = current;
+        if (!previous) return; // primeira renderização: nada de reprise
+
+        for (const participant of participants) {
+            const before = previous[participant.id] ?? current[participant.id];
+            const grew = current[participant.id] - before;
+            if (grew <= 0) continue;
+
+            const lastIndex = current[participant.id] - 1;
+            if (participant.is_viewer) {
+                // Minha jogada confirmada: o encaixe é tratado no voo da própria carta (ou aqui, sem voo).
+                if (ownFlights.current.length === 0)
+                    setFreshSlot(`${participant.id}:${lastIndex}`);
+                continue;
+            }
+            // Muitas cartas de uma vez = voltei de uma queda de conexão: só mostra o estado atual.
+            if (grew > 2) {
+                setFreshSlot(`${participant.id}:${lastIndex}`);
+                continue;
+            }
+            const side = sideOf(participant.seat, viewer.seat);
+            for (let index = before; index <= lastIndex; index++) {
+                const from = rectOf(`[data-panel="${participant.id}"]`);
+                const to = rectOf(`[data-slot="${participant.id}:${index}"]`);
+                if (!from || !to) {
+                    setFreshSlot(`${participant.id}:${index}`);
+                    continue;
+                }
+                launch({
+                    card: participant.path[index],
+                    from,
+                    to,
+                    rotate: AREAS[side].rotate,
+                    hold: false,
+                    small: true,
+                    slotKey: `${participant.id}:${index}`,
+                });
+            }
+        }
+    }, [participants, viewer.seat, launch]);
+
+    // ---------- Jogar ----------
     const send = (action: string, card?: string, targetId?: string) => {
+        if (busyRef.current) return; // nunca duas jogadas ao mesmo tempo
+        busyRef.current = true;
         setBusy(true);
+
+        // A carta começa a voar AGORA (antes da resposta): sai da mão e vai ao percurso ou ao descarte.
+        const handKey =
+            action === 'play_block'
+                ? 'block'
+                : selected !== null
+                  ? handKeys[selected]?.key
+                  : undefined;
+        const advances =
+            action === 'play_block' ||
+            (action === 'play_card' && card === requiredCard);
+        const flightCard =
+            action === 'play_block' ? (requiredCard ?? '') : (card ?? '');
+        const from = handKey ? rectOf(`[data-hand-key="${handKey}"]`) : null;
+        const slotKey = `${viewer.id}:${viewer.step}`;
+        const to = advances
+            ? rectOf(`[data-slot="${slotKey}"]`)
+            : rectOf('[data-pile="discard"]');
+        if (from && to && flightCard) {
+            const id = launch({
+                card: flightCard,
+                from,
+                to,
+                rotate: advances ? AREAS[0].rotate : 0,
+                hold: true,
+                slotKey: advances ? slotKey : undefined,
+            });
+            if (id) ownFlights.current.push(id);
+        }
+        if (selected !== null && action !== 'play_block') {
+            setOptimistic({ index: selected, version: game.version });
+        }
+
         router.post(
             route('games.action', room.id),
             {
@@ -160,7 +354,11 @@ export default function Show({
             },
             {
                 preserveScroll: true,
-                onError: (errors) =>
+                preserveState: true,
+                // Só o que muda: a mesa não é remontada nem a página recarregada.
+                only: PARTIAL,
+                onError: (errors) => {
+                    setOptimistic(null); // a carta volta para a mão
                     toast.warning(
                         String(
                             Object.values(errors)[0] ??
@@ -169,25 +367,140 @@ export default function Show({
                         {
                             id: `move:${Date.now()}`,
                         },
-                    ),
-                onFinish: () => setBusy(false),
+                    );
+                },
+                onFinish: () => {
+                    busyRef.current = false;
+                    setBusy(false);
+                    setOptimistic(null);
+                    // A carta em espera pousa (jogada aceita) ou some (recusada: voltou para a mão).
+                    const ids = ownFlights.current;
+                    ownFlights.current = [];
+                    ids.forEach((id) => finishFlight(id));
+                    if (staleDuringAction.current) {
+                        staleDuringAction.current = false;
+                        router.reload({ only: PARTIAL });
+                    }
+                },
             },
         );
     };
 
+    // ---------- Turno e tempo ----------
+    const [clock, setClock] = useState(() => ({
+        base: game.turn_seconds_left ?? null,
+        at: Date.now(),
+    }));
+    const [, setTick] = useState(0);
+    useEffect(() => {
+        setClock({ base: game.turn_seconds_left ?? null, at: Date.now() });
+    }, [game.version, game.turn_seconds_left]);
+    useEffect(() => {
+        if (clock.base === null || game.status !== 'active') return;
+        const timer = window.setInterval(
+            () => setTick((value) => value + 1),
+            1000,
+        ); // só o contador visual
+        return () => window.clearInterval(timer);
+    }, [clock.base, game.status]);
+    const secondsLeft =
+        clock.base === null
+            ? null
+            : Math.max(
+                  0,
+                  clock.base - Math.floor((Date.now() - clock.at) / 1000),
+              );
+
+    // ---------- Histórico compacto ----------
+    const seenHistory = useRef<Set<string>>(
+        new Set(game.history.map((item) => item.id)),
+    );
+    const unseen = game.history.filter(
+        (item) => !seenHistory.current.has(item.id),
+    ).length;
+    useEffect(() => {
+        if (historyOpen)
+            game.history.forEach((item) => seenHistory.current.add(item.id));
+    }, [historyOpen, game.history]);
+
+    const logActors = useMemo(
+        () =>
+            Object.fromEntries(
+                participants.map((participant): [number, LogActor] => [
+                    participant.id,
+                    {
+                        username: participant.player.username,
+                        is_viewer: participant.is_viewer,
+                        profile: participant.player,
+                    },
+                ]),
+            ),
+        [participants],
+    );
+
+    // ---------- Mesa ----------
+    const bySide = (side: Side) =>
+        participants.find(
+            (participant) => sideOf(participant.seat, viewer.seat) === side,
+        );
+    const left = bySide(1);
+    const top = bySide(2);
+    const right = bySide(3);
+    const boardPlayers = participants.map((participant) => ({
+        id: participant.id,
+        side: sideOf(participant.seat, viewer.seat),
+        username: participant.player.username,
+        path: participant.path.filter(
+            (_, index) => !pendingSlots.has(`${participant.id}:${index}`),
+        ),
+        active:
+            game.status === 'active' && game.current_seat === participant.seat,
+    }));
+    // `filter` acima remove cartas em voo, mas quebraria os índices: usa-se a lista completa com buracos.
+    const boardPlayersFixed = boardPlayers.map((player, i) => ({
+        ...player,
+        path: participants[i].path.map((card, index) =>
+            pendingSlots.has(`${player.id}:${index}`) ? undefined : card,
+        ) as string[],
+    }));
+
     const winner = participants.find(
         (participant) => participant.id === game.winner_participant_id,
     );
-    const progress = useMemo(
-        () => Math.round((viewer.step / 18) * 100),
-        [viewer.step],
+    const standings = useMemo(
+        () =>
+            [...participants].sort(
+                (a, b) =>
+                    (b.id === game.winner_participant_id ? 1 : 0) -
+                        (a.id === game.winner_participant_id ? 1 : 0) ||
+                    b.step - a.step,
+            ),
+        [participants, game.winner_participant_id],
     );
+
+    const panelFor = (participant: Participant | undefined, area: string) =>
+        participant ? (
+            <div className={`${area} min-w-0 lg:self-center`}>
+                <PlayerPanel
+                    active={
+                        game.status === 'active' &&
+                        game.current_seat === participant.seat
+                    }
+                    player={toPanel(participant)}
+                    secondsLeft={
+                        game.current_seat === participant.seat
+                            ? secondsLeft
+                            : null
+                    }
+                />
+            </div>
+        ) : null;
 
     return (
         <AuthenticatedLayout>
             <Head title="Partida em andamento" />
-            <main className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[#151515] text-white">
-                <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 bg-[#1d1d1b] px-3 py-2 sm:px-5">
+            <main className="game-stage relative min-h-[calc(100dvh-5.2rem)] overflow-x-hidden text-white">
+                <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-black/40 px-3 py-1.5 backdrop-blur-sm sm:px-5 lg:pointer-events-none lg:absolute lg:inset-x-0 lg:top-0 lg:z-30 lg:border-0 lg:bg-transparent lg:backdrop-blur-none [&>*]:lg:pointer-events-auto">
                     <div className="flex items-center gap-3">
                         <strong className="font-mono text-xs uppercase text-[#b4da33]">
                             Estação Commit
@@ -197,161 +510,163 @@ export default function Show({
                             Turno {game.turn_number}
                         </span>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] uppercase">
+                    <div className="relative flex items-center gap-2 text-[10px] uppercase">
                         <span
+                            aria-hidden="true"
                             className={`size-2 rounded-full ${online ? 'bg-[#b4da33]' : 'bg-[#d01600]'}`}
                         />
-                        <span className="font-mono text-white/60">
-                            {online ? 'Sincronizado' : 'Reconectando'}
+                        <span className="hidden font-mono text-white/60 sm:inline">
+                            {online ? 'Sincronizado' : 'Reconectando…'}
                         </span>
                         <button
-                            onClick={() => setLeaveOpen(true)}
+                            aria-expanded={historyOpen}
+                            className="relative min-h-9 border border-white/25 px-3 font-mono font-bold hover:border-[#b4da33] lg:hidden"
+                            onClick={() => setHistoryOpen((value) => !value)}
+                            type="button"
+                        >
+                            Registro
+                            {!historyOpen && unseen > 0 && (
+                                <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-[#f481c6] text-[9px] font-black text-[#1d1d1b]">
+                                    {unseen > 9 ? '9+' : unseen}
+                                </span>
+                            )}
+                        </button>
+                        <button
                             className="min-h-9 border border-white/25 px-3 font-mono font-bold hover:border-[#f481c6]"
+                            onClick={() => setLeaveOpen(true)}
+                            type="button"
                         >
                             Sair
                         </button>
+
+                        <AnimatePresence>
+                            {historyOpen && (
+                                <motion.aside
+                                    animate={{ opacity: 1, y: 0 }}
+                                    aria-label="Registro da partida"
+                                    className="absolute right-0 top-full z-40 mt-2 w-72 max-w-[85vw] rounded-lg border-2 border-white/20 bg-[#10100f]/95 p-3 normal-case shadow-xl lg:hidden"
+                                    exit={{ opacity: 0, y: -6 }}
+                                    initial={
+                                        reduced ? false : { opacity: 0, y: -6 }
+                                    }
+                                >
+                                    <h2 className="mb-2 font-mono text-[10px] font-black uppercase tracking-[.14em] text-[#f481c6]">
+                                        Registro da estação
+                                    </h2>
+                                    <GameLog
+                                        actors={logActors}
+                                        items={game.history}
+                                    />
+                                </motion.aside>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </header>
 
-                <section className="relative mx-auto flex min-h-[calc(100dvh-7rem)] w-full max-w-[1500px] flex-col px-2 py-3 sm:px-4">
-                    <div className="grid grid-cols-3 gap-2 px-1 sm:gap-4 lg:px-20">
-                        {opponents.map((participant) => (
-                            <PlayerSeat
-                                key={participant.id}
-                                participant={participant}
-                                active={game.current_seat === participant.seat}
-                            />
-                        ))}
-                    </div>
+                <aside
+                    aria-label="Últimas jogadas"
+                    className="absolute left-3 top-12 z-20 hidden w-60 rounded-lg border-2 border-white/15 bg-[#10100f]/80 p-2.5 lg:block xl:w-64"
+                >
+                    <h2 className="mb-1.5 font-mono text-[10px] font-black uppercase tracking-[.14em] text-[#f481c6]">
+                        Últimas jogadas
+                    </h2>
+                    <GameLog actors={logActors} items={game.history} />
+                </aside>
 
-                    <div className="relative my-3 grid min-h-[19rem] flex-1 place-items-center overflow-hidden rounded-[2rem] border-[3px] border-[#464498] bg-[#25243a] p-3 shadow-[inset_0_0_60px_#0008,0_0_0_4px_#10100f] sm:min-h-[25rem] sm:p-6">
-                        <div
-                            className="absolute inset-0 opacity-20"
-                            style={{
-                                backgroundImage:
-                                    'radial-gradient(circle at center,#b4da33 1px,transparent 1px)',
-                                backgroundSize: '22px 22px',
-                            }}
-                        />
-                        <motion.div
-                            initial={
-                                reduced ? false : { opacity: 0, scale: 0.94 }
-                            }
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="relative w-full max-w-4xl"
-                        >
-                            <img
-                                src="/images/estacao-commit/tabuleiro.png"
-                                alt="Tabuleiro oficial do Estação Commit"
-                                className="mx-auto max-h-[52vh] w-full rounded-2xl object-contain drop-shadow-[0_16px_22px_#0009]"
+                <section className="mx-auto w-full max-w-[1280px] px-2 py-2 sm:px-4">
+                    <div className="grid grid-cols-3 gap-2 [grid-template-areas:'left_top_right'_'board_board_board'] lg:grid-cols-[12rem_auto_12rem] lg:justify-center lg:gap-x-1 lg:[grid-template-areas:'._top_.'_'left_board_right']">
+                        {panelFor(left, '[grid-area:left]')}
+                        {panelFor(
+                            top,
+                            '[grid-area:top] relative z-10 mx-auto w-full lg:max-w-xs',
+                        )}
+                        {panelFor(right, '[grid-area:right]')}
+
+                        <div className="mx-auto -mt-2 w-full [grid-area:board] lg:-mt-14 lg:w-[max(18rem,min(calc(100vw_-_29rem),calc(100dvh_-_16.8rem),60rem))]">
+                            <GameBoard
+                                deckCount={game.deck_count}
+                                discardCount={game.discard_count}
+                                freshSlot={freshSlot}
+                                players={boardPlayersFixed}
                             />
-                            <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full border-2 border-white/30 bg-[#1d1d1b]/90 px-3 py-2 backdrop-blur">
-                                <span className="font-mono text-[9px] uppercase text-white/60">
-                                    Próxima etapa
-                                </span>
-                                <strong className="whitespace-nowrap text-xs text-[#b4da33] sm:text-sm">
-                                    {requiredCard
-                                        ? cardLabel(requiredCard)
-                                        : 'Percurso concluído'}
-                                </strong>
-                            </div>
-                        </motion.div>
-                        <div className="absolute bottom-2 left-3 flex gap-3 font-mono text-[9px] uppercase text-white/55">
-                            <span>Baralho {game.deck_count}</span>
-                            <span>Descarte {game.discard_count}</span>
                         </div>
-                        <aside className="absolute right-2 top-2 hidden w-56 rounded-xl border border-white/15 bg-[#10100f]/85 p-3 backdrop-blur xl:block">
-                            <h2 className="font-mono text-[9px] font-black uppercase tracking-[.14em] text-[#f481c6]">
-                                Registro da estação
-                            </h2>
-                            <ol className="mt-2 space-y-2">
-                                {game.history.slice(0, 5).map((item) => (
-                                    <li
-                                        key={item.id}
-                                        className="text-[11px] leading-4 text-white/65"
-                                    >
-                                        {item.message}
-                                    </li>
-                                ))}
-                            </ol>
-                        </aside>
                     </div>
 
-                    <div className="rounded-2xl border-2 border-white/15 bg-[#1d1d1b] p-3 shadow-[0_-8px_30px_#0006]">
-                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                            <PlayerSeat
-                                participant={viewer}
+                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 shadow-[0_-10px_30px_#0006] sm:p-3 lg:-mt-14 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)_11rem] lg:items-end lg:gap-3">
+                        <div className="flex flex-col gap-1.5">
+                            <PlayerPanel
                                 active={isTurn}
-                                viewer
+                                player={toPanel(viewer)}
+                                secondsLeft={isTurn ? secondsLeft : null}
+                                you
                             />
-                            <div className="min-w-36 flex-1 sm:max-w-xs">
-                                <div className="mb-1 flex justify-between font-mono text-[9px] uppercase text-white/55">
-                                    <span>Contribuição</span>
-                                    <span>{viewer.step}/18</span>
-                                </div>
-                                <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                                    <div
-                                        className="h-full bg-[#b4da33] transition-[width]"
-                                        style={{ width: `${progress}%` }}
-                                    />
-                                </div>
-                            </div>
+                            <p
+                                aria-live="polite"
+                                className="font-mono text-[10px] font-bold uppercase text-white/60"
+                            >
+                                {game.status !== 'active'
+                                    ? 'Partida encerrada'
+                                    : viewer.pending_discard > 0
+                                      ? 'Descarte o excesso da mão'
+                                      : isTurn
+                                        ? 'Sua vez — escolha uma carta'
+                                        : `Vez de @${currentPlayer?.player.username ?? '…'}`}
+                            </p>
                         </div>
-                        <div className="flex items-end gap-2 overflow-x-auto px-1 pb-3 pt-4 [scrollbar-width:thin]">
-                            {blockRequired && (
+
+                        <div className="flex min-h-[9.5rem] items-end justify-center gap-1.5 overflow-x-auto px-1 pb-2 pt-7 [scrollbar-width:thin] sm:gap-2">
+                            {holdsBlock(viewer) && (
                                 <GameCard
-                                    card={requiredCard!}
-                                    playable={isTurn}
+                                    card={`block_${blocksPlayed(viewer) + 1}`}
+                                    dataKey="block"
                                     onClick={
-                                        isTurn && !busy
+                                        isTurn && !busy && blockRequired
                                             ? () => send('play_block')
                                             : undefined
                                     }
+                                    playable={isTurn && blockRequired}
                                 />
                             )}
-                            {hand.map((card, index) => (
-                                <GameCard
-                                    key={`${card}-${index}`}
-                                    card={card}
-                                    selected={selected === index}
-                                    playable={
-                                        isTurn &&
-                                        (card === requiredCard ||
-                                            (card === 'git_pull' &&
-                                                viewer.step < 3) ||
-                                            [
-                                                'clear_credentials',
-                                                'merge_conflict',
-                                            ].includes(card))
-                                    }
-                                    onClick={
-                                        isTurn && !busy
-                                            ? () =>
-                                                  setSelected(
-                                                      selected === index
-                                                          ? null
-                                                          : index,
-                                                  )
-                                            : undefined
-                                    }
-                                />
-                            ))}
+                            <AnimatePresence initial={false} mode="popLayout">
+                                {handKeys
+                                    .filter(
+                                        ({ index }) => index !== hiddenIndex,
+                                    )
+                                    .map(({ card, index, key }) => (
+                                        <GameCard
+                                            card={card}
+                                            dataKey={key}
+                                            key={key}
+                                            onClick={
+                                                isTurn && !busy
+                                                    ? () =>
+                                                          setSelected(
+                                                              selected === index
+                                                                  ? null
+                                                                  : index,
+                                                          )
+                                                    : undefined
+                                            }
+                                            playable={isPlayable(card)}
+                                            selected={selected === index}
+                                        />
+                                    ))}
+                            </AnimatePresence>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
-                            <span className="mr-auto font-mono text-[10px] uppercase text-white/60">
-                                {viewer.pending_discard > 0
-                                    ? 'Descarte o excesso da mão'
-                                    : isTurn
-                                      ? 'Sua vez'
-                                      : 'Aguardando outro jogador'}
+
+                        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-2 lg:flex-col lg:items-stretch lg:border-0 lg:pt-0">
+                            <span className="mr-auto font-mono text-[10px] uppercase text-white/50 lg:mr-0">
+                                {selectedCard
+                                    ? cardLabel(selectedCard)
+                                    : `Baralho ${game.deck_count} · Descarte ${game.discard_count}`}
                             </span>
                             {needsTarget && (
                                 <select
-                                    value={target}
+                                    className="min-h-10 border-2 border-white/30 bg-[#1d1d1b] px-2 text-xs text-white"
                                     onChange={(event) =>
                                         setTarget(event.target.value)
                                     }
-                                    className="min-h-10 border-2 border-white/30 bg-[#1d1d1b] px-2 text-xs text-white"
+                                    value={target}
                                 >
                                     <option value="">Escolha o alvo</option>
                                     {opponents.map((p) => (
@@ -363,11 +678,12 @@ export default function Show({
                             )}
                             {selectedCard && viewer.pending_discard > 0 && (
                                 <button
+                                    className="min-h-10 border-2 border-white bg-[#d01600] px-3 font-mono text-[10px] font-black uppercase"
                                     disabled={busy}
                                     onClick={() =>
                                         send('discard_excess', selectedCard)
                                     }
-                                    className="min-h-10 border-2 border-white bg-[#d01600] px-3 font-mono text-[10px] font-black uppercase"
+                                    type="button"
                                 >
                                     Descartar excesso
                                 </button>
@@ -375,15 +691,17 @@ export default function Show({
                             {selectedCard && viewer.pending_discard === 0 && (
                                 <>
                                     <button
+                                        className="min-h-10 border-2 border-white/40 px-3 font-mono text-[10px] font-black uppercase"
                                         disabled={busy}
                                         onClick={() =>
                                             send('exchange', selectedCard)
                                         }
-                                        className="min-h-10 border-2 border-white/40 px-3 font-mono text-[10px] font-black uppercase"
+                                        type="button"
                                     >
                                         Trocar carta
                                     </button>
                                     <button
+                                        className="min-h-10 border-2 border-white bg-[#b4da33] px-4 font-mono text-[10px] font-black uppercase text-[#1d1d1b] disabled:opacity-35"
                                         disabled={
                                             busy ||
                                             !canPlaySelected ||
@@ -396,7 +714,7 @@ export default function Show({
                                                 target,
                                             )
                                         }
-                                        className="min-h-10 border-2 border-white bg-[#b4da33] px-4 font-mono text-[10px] font-black uppercase text-[#1d1d1b] disabled:opacity-35"
+                                        type="button"
                                     >
                                         Jogar carta
                                     </button>
@@ -407,12 +725,33 @@ export default function Show({
                 </section>
             </main>
 
+            <FlightLayer flights={flights} onDone={finishFlight} />
+
             {game.status === 'finished' && (
                 <div className="fixed inset-0 z-40 grid place-items-center bg-[#10100f]/80 p-4 backdrop-blur-sm">
+                    {!reduced &&
+                        Array.from({ length: 28 }, (_, i) => (
+                            <span
+                                aria-hidden="true"
+                                className="confetti-piece"
+                                key={i}
+                                style={{
+                                    left: `${(i * 37) % 100}%`,
+                                    background: [
+                                        '#b4da33',
+                                        '#f481c6',
+                                        '#464498',
+                                        '#d01600',
+                                    ][i % 4],
+                                    animationDuration: `${2.4 + (i % 5) * 0.35}s`,
+                                    animationDelay: `${(i % 7) * 0.12}s`,
+                                }}
+                            />
+                        ))}
                     <motion.div
-                        initial={reduced ? false : { scale: 0.85, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="w-full max-w-lg border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-7 text-center text-[#1d1d1b] shadow-[10px_10px_0_#b4da33]"
+                        className="relative w-full max-w-lg border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-7 text-center text-[#1d1d1b] shadow-[10px_10px_0_#b4da33]"
+                        initial={reduced ? false : { scale: 0.85, opacity: 0 }}
                     >
                         <p className="font-mono text-xs font-black uppercase text-[#464498]">
                             Partida finalizada
@@ -426,16 +765,34 @@ export default function Show({
                             A Pull Request foi concluída e o foguete está
                             pronto.
                         </p>
+                        <ol className="mx-auto mt-4 max-w-xs space-y-1 text-left text-sm">
+                            {standings.map((participant, index) => (
+                                <li
+                                    className="flex items-center justify-between border-b border-[#1d1d1b]/10 py-1"
+                                    key={participant.id}
+                                >
+                                    <span className="font-bold">
+                                        {index + 1}º{' '}
+                                        {participant.is_viewer
+                                            ? 'Você'
+                                            : `@${participant.player.username}`}
+                                    </span>
+                                    <span className="font-mono text-xs text-[#5b5953]">
+                                        {participant.step}/18 etapas
+                                    </span>
+                                </li>
+                            ))}
+                        </ol>
                         <div className="mt-6 flex justify-center gap-3">
                             <Link
-                                href={route('dashboard')}
                                 className="border-2 border-[#1d1d1b] bg-white px-4 py-3 font-mono text-xs font-black uppercase"
+                                href={route('dashboard')}
                             >
                                 Dashboard
                             </Link>
                             <Link
-                                href={`${route('dashboard')}#criar-sala`}
                                 className="border-2 border-[#1d1d1b] bg-[#b4da33] px-4 py-3 font-mono text-xs font-black uppercase"
+                                href={`${route('dashboard')}#criar-sala`}
                             >
                                 Nova sala
                             </Link>
@@ -444,11 +801,11 @@ export default function Show({
                 </div>
             )}
             <ConfirmDialog
-                show={leaveOpen}
-                title="Sair da partida?"
                 confirmLabel="Sair da mesa"
                 onClose={() => setLeaveOpen(false)}
                 onConfirm={() => router.visit(route('dashboard'))}
+                show={leaveOpen}
+                title="Sair da partida?"
             >
                 <p>
                     Seu lugar e seu progresso continuam na partida. Você poderá
@@ -456,60 +813,5 @@ export default function Show({
                 </p>
             </ConfirmDialog>
         </AuthenticatedLayout>
-    );
-}
-
-function PlayerSeat({
-    participant,
-    active,
-    viewer = false,
-}: {
-    participant: Participant;
-    active: boolean;
-    viewer?: boolean;
-}) {
-    return (
-        <div
-            className={`min-w-0 rounded-xl border-2 p-2 transition ${active ? 'border-[#b4da33] bg-[#b4da33]/15 shadow-[0_0_18px_#b4da3355]' : 'border-white/15 bg-[#1d1d1b]/90'}`}
-        >
-            <div className="flex min-w-0 items-center gap-2">
-                <PlayerAvatar profile={participant.player} size="xs" />
-                <div className="min-w-0 flex-1">
-                    <strong className="block truncate text-xs">
-                        {viewer ? 'Você' : `@${participant.player.username}`}
-                    </strong>
-                    <div className="flex gap-1 font-mono text-[8px] uppercase text-white/55">
-                        {participant.is_host && <span>Anfitrião</span>}
-                        {participant.player.is_bot && (
-                            <span className="text-[#b4da33]">Bot</span>
-                        )}
-                        {active && (
-                            <span className="text-[#f481c6]">Jogando</span>
-                        )}
-                    </div>
-                </div>
-                <span className="font-mono text-[9px] text-white/50">
-                    {participant.hand_count} cartas
-                </span>
-            </div>
-            <div
-                className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"
-                role="progressbar"
-                aria-label={`Progresso de ${participant.player.username}`}
-                aria-valuemin={0}
-                aria-valuemax={18}
-                aria-valuenow={participant.step}
-            >
-                <div
-                    className="h-full bg-[#b4da33] transition-[width] motion-reduce:transition-none"
-                    style={{ width: `${Math.round((participant.step / 18) * 100)}%` }}
-                />
-            </div>
-            {participant.blocked && (
-                <p className="mt-1 font-mono text-[8px] font-black uppercase text-[#f481c6]">
-                    Merge Conflict · perde a vez
-                </p>
-            )}
-        </div>
     );
 }

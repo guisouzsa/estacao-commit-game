@@ -280,7 +280,7 @@ class GameEngine
             }
             if ($targetId !== null && ($state['players'][$targetId]['blocked'] ?? false)) {
                 $state['players'][$targetId]['blocked'] = false;
-                $state['history'][] = ['id' => (string) Str::uuid(), 'message' => 'Um jogador perdeu a vez por Merge Conflict.', 'turn' => $match->turn_number];
+                $state['history'][] = ['id' => (string) Str::uuid(), 'participant_id' => (int) $targetId, 'message' => 'perdeu a vez por Merge Conflict.', 'turn' => $match->turn_number];
 
                 continue;
             }

@@ -26,7 +26,10 @@ FROM php:8.2-apache-bookworm
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
     APP_ENV=production \
     APP_DEBUG=false \
-    LOG_CHANNEL=stderr
+    LOG_CHANNEL=stderr \
+    REVERB_PUBLISH_HOST=127.0.0.1 \
+    REVERB_PUBLISH_PORT=8080 \
+    REVERB_PUBLISH_SCHEME=http
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -78,6 +81,7 @@ COPY --from=frontend /app/public/build ./public/build
 COPY docker/apache/reverb-proxy.conf /etc/apache2/conf-available/reverb-proxy.conf
 COPY docker/apache/mpm-tuning.conf /etc/apache2/conf-available/mpm-tuning.conf
 COPY docker/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+COPY docker/supervisor/essential-watchdog.py /usr/local/bin/essential-watchdog.py
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 
 RUN composer dump-autoload --no-dev --optimize --no-interaction \

@@ -5,6 +5,7 @@
     "scripts": {
         "build": "tsc && vite build",
         "dev": "vite",
+        "test:js": "node --test \"tests/js/**/*.test.ts\"",
         "lint": "eslint resources/js --ext .js,.jsx,.ts,.tsx --ignore-path .gitignore --fix"
     },
     "devDependencies": {

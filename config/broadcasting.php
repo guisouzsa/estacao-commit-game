@@ -35,11 +35,17 @@ return [
             'key' => env('REVERB_APP_KEY'),
             'secret' => env('REVERB_APP_SECRET'),
             'app_id' => env('REVERB_APP_ID'),
+            // Endereço usado pelo Laravel para PUBLICAR eventos no Reverb. Em
+            // produção é o Reverb do próprio container (127.0.0.1:8080, http),
+            // definido por REVERB_PUBLISH_* no Dockerfile. Sem elas, vale o
+            // comportamento anterior (REVERB_HOST/PORT/SCHEME), que o ambiente
+            // local continua usando. O endereço público do navegador é outro
+            // (VITE_REVERB_*) e não passa por aqui.
             'options' => [
-                'host' => env('REVERB_HOST', '127.0.0.1'),
-                'port' => env('REVERB_PORT', 8080),
-                'scheme' => env('REVERB_SCHEME', 'http'),
-                'useTLS' => env('REVERB_SCHEME', 'http') === 'https',
+                'host' => env('REVERB_PUBLISH_HOST', env('REVERB_HOST', '127.0.0.1')),
+                'port' => env('REVERB_PUBLISH_PORT', env('REVERB_PORT', 8080)),
+                'scheme' => env('REVERB_PUBLISH_SCHEME', env('REVERB_SCHEME', 'http')),
+                'useTLS' => env('REVERB_PUBLISH_SCHEME', env('REVERB_SCHEME', 'http')) === 'https',
             ],
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html

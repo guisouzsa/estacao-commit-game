@@ -1,8 +1,9 @@
 import Modal from '@/Components/Modal';
 import RoomCountdown from '@/Components/RoomCountdown';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { startRoomSync } from '@/lib/roomSync';
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 type Player = { id: string; username: string };
 type Participant = { id: number; seat: number; user: Player };
 type Room = {
@@ -39,27 +40,30 @@ export default function Show({
               ? 'Sala completa'
               : 'Aguardando participantes';
 
-    useEffect(() => {
-        const refresh = () =>
-            router.reload({
-                only: ['room', 'expiresAt'],
-            });
+    // O status muda sem que o canal precise ser reassinado a cada mudança.
+    const statusRef = useRef(room.status);
+    statusRef.current = room.status;
 
-        const channelName = `rooms.${room.id}`;
-        if (window.Echo) {
-            const channel = window.Echo.private(channelName);
-            channel.listen('.room.state.changed', refresh);
-        }
-
-        const poll = window.setInterval(() => {
-            if (room.status === 'waiting') refresh();
-        }, 15000);
-
-        return () => {
-            window.clearInterval(poll);
-            window.Echo?.leave(channelName);
-        };
-    }, [room.id, room.status]);
+    useEffect(
+        () =>
+            startRoomSync({
+                echo: window.Echo,
+                roomId: room.id,
+                reload: (done) =>
+                    router.reload({
+                        only: ['room', 'expiresAt'],
+                        onFinish: done,
+                    }),
+                shouldPoll: () => statusRef.current === 'waiting',
+                onSubscriptionError: () =>
+                    console.warn(
+                        'Tempo real indisponível para esta sala; usando atualização periódica.',
+                    ),
+                document,
+                window,
+            }),
+        [room.id],
+    );
 
     const cancel = () => {
         setBusy(true);

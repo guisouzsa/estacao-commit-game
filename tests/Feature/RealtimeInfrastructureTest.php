@@ -1,0 +1,177 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\GameRoom;
+use App\Models\User;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * Garante a configuração de infraestrutura do tempo real e da expiração
+ * automática: endereço interno de publicação, scheduler e Supervisor.
+ */
+class RealtimeInfrastructureTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private const PUBLISH_VARS = ['REVERB_PUBLISH_HOST', 'REVERB_PUBLISH_PORT', 'REVERB_PUBLISH_SCHEME'];
+
+    private const PUBLIC_VARS = ['REVERB_HOST', 'REVERB_PORT', 'REVERB_SCHEME'];
+
+    private array $originalEnv = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        foreach ([...self::PUBLISH_VARS, ...self::PUBLIC_VARS] as $name) {
+            $this->originalEnv[$name] = getenv($name);
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ($this->originalEnv as $name => $value) {
+            $value === false ? putenv($name) : putenv("$name=$value");
+        }
+
+        parent::tearDown();
+    }
+
+    public function test_publishing_targets_the_internal_reverb_even_when_public_reverb_vars_point_to_the_domain(): void
+    {
+        // Cenário do Render: REVERB_HOST/PORT/SCHEME públicos e REVERB_PUBLISH_* da imagem.
+        putenv('REVERB_HOST=jogo.onrender.com');
+        putenv('REVERB_PORT=443');
+        putenv('REVERB_SCHEME=https');
+        putenv('REVERB_PUBLISH_HOST=127.0.0.1');
+        putenv('REVERB_PUBLISH_PORT=8080');
+        putenv('REVERB_PUBLISH_SCHEME=http');
+
+        $options = $this->reverbConnectionOptions();
+
+        $this->assertSame('127.0.0.1', $options['host']);
+        $this->assertEquals(8080, $options['port']);
+        $this->assertSame('http', $options['scheme']);
+        $this->assertFalse($options['useTLS']);
+    }
+
+    public function test_publishing_falls_back_to_the_previous_variables_when_publish_vars_are_absent(): void
+    {
+        foreach (self::PUBLISH_VARS as $name) {
+            putenv($name);
+        }
+        putenv('REVERB_HOST=127.0.0.1');
+        putenv('REVERB_PORT=8081');
+        putenv('REVERB_SCHEME=http');
+
+        $options = $this->reverbConnectionOptions();
+
+        $this->assertSame('127.0.0.1', $options['host']);
+        $this->assertEquals(8081, $options['port']);
+        $this->assertSame('http', $options['scheme']);
+    }
+
+    public function test_docker_image_defaults_publishing_to_the_internal_reverb(): void
+    {
+        $dockerfile = file_get_contents(base_path('Dockerfile'));
+
+        $this->assertMatchesRegularExpression('/REVERB_PUBLISH_HOST=127\.0\.0\.1/', $dockerfile);
+        $this->assertMatchesRegularExpression('/REVERB_PUBLISH_PORT=8080/', $dockerfile);
+        $this->assertMatchesRegularExpression('/REVERB_PUBLISH_SCHEME=http\b/', $dockerfile);
+        $this->assertStringNotContainsString('REVERB_APP_SECRET', $dockerfile);
+    }
+
+    public function test_supervisor_internal_reverb_port_matches_the_proxy_and_publishing_defaults(): void
+    {
+        $supervisor = file_get_contents(base_path('docker/supervisor/supervisord.conf'));
+        $proxy = file_get_contents(base_path('docker/apache/reverb-proxy.conf'));
+
+        $this->assertStringContainsString('reverb:start --host=127.0.0.1 --port=8080', $supervisor);
+        $this->assertStringContainsString('ws://127.0.0.1:8080/app/', $proxy);
+    }
+
+    public function test_the_scheduler_runs_the_room_expiration_every_minute(): void
+    {
+        $event = collect(app(Schedule::class)->events())
+            ->first(fn ($event) => str_contains($event->command, 'rooms:expire-waiting'));
+
+        $this->assertNotNull($event, 'rooms:expire-waiting precisa estar agendado.');
+        $this->assertSame('* * * * *', $event->expression);
+    }
+
+    public function test_abandoned_room_is_expired_by_the_scheduled_command_without_any_request(): void
+    {
+        $host = User::factory()->create();
+        $room = GameRoom::create(['host_user_id' => $host->id, 'status' => 'waiting']);
+        $room->participants()->create(['user_id' => $host->id, 'seat' => 1, 'joined_at' => now()]);
+
+        $event = collect(app(Schedule::class)->events())
+            ->first(fn ($event) => str_contains($event->command, 'rooms:expire-waiting'));
+
+        // O Laravel dispara o comando em um subprocesso; aqui o mesmo comando
+        // roda em processo para ser verificado com o banco do teste.
+        $this->travel(4)->minutes();
+        $this->assertTrue($event->isDue($this->app));
+        $this->artisan('rooms:expire-waiting')->assertSuccessful();
+        $this->assertSame('waiting', $room->fresh()->status);
+
+        $this->travel(1)->minutes();
+        $this->assertTrue($event->isDue($this->app));
+        $this->artisan('rooms:expire-waiting')->assertSuccessful();
+        $this->assertSame('expired', $room->fresh()->status);
+    }
+
+    public function test_supervisor_runs_exactly_one_scheduler_alongside_apache_and_reverb(): void
+    {
+        $supervisor = file_get_contents(base_path('docker/supervisor/supervisord.conf'));
+
+        foreach (['reverb', 'scheduler', 'apache'] as $program) {
+            $this->assertSame(1, substr_count($supervisor, "[program:$program]"), "programa $program deve existir uma vez");
+        }
+        $this->assertSame(1, preg_match_all('/^command=.*artisan schedule:work\s*$/m', $supervisor));
+        $this->assertSame(1, preg_match('/\[program:scheduler\].*?numprocs=1/s', $supervisor));
+
+        // Cada programa é monitorado, reinicia e escreve nos logs do container.
+        $this->assertSame(3, substr_count($supervisor, 'autorestart=true') - 1 /* watchdog */);
+        $this->assertSame(3, substr_count($supervisor, 'stopasgroup=true'));
+        $this->assertSame(4, substr_count($supervisor, 'stderr_logfile=/dev/fd/2'));
+    }
+
+    public function test_watchdog_stops_the_container_when_an_essential_process_is_fatal(): void
+    {
+        $supervisor = file_get_contents(base_path('docker/supervisor/supervisord.conf'));
+
+        $this->assertStringContainsString('[eventlistener:essential-watchdog]', $supervisor);
+        $this->assertStringContainsString('events=PROCESS_STATE_FATAL', $supervisor);
+        $this->assertStringContainsString('essential-watchdog.py apache reverb', $supervisor);
+        $this->assertFileExists(base_path('docker/supervisor/essential-watchdog.py'));
+        $this->assertStringContainsString(
+            'COPY docker/supervisor/essential-watchdog.py',
+            file_get_contents(base_path('Dockerfile')),
+        );
+    }
+
+    public function test_reverb_connection_limit_stays_conservative_by_default(): void
+    {
+        $original = getenv('REVERB_APP_MAX_CONNECTIONS');
+        putenv('REVERB_APP_MAX_CONNECTIONS');
+
+        try {
+            $config = require base_path('config/reverb.php');
+        } finally {
+            if ($original !== false) {
+                putenv("REVERB_APP_MAX_CONNECTIONS=$original");
+            }
+        }
+
+        $this->assertSame(25, $config['apps']['apps'][0]['max_connections']);
+    }
+
+    private function reverbConnectionOptions(): array
+    {
+        return (require base_path('config/broadcasting.php'))['connections']['reverb']['options'];
+    }
+}

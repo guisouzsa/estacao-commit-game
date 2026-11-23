@@ -6,7 +6,6 @@ use App\Models\Badge;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -128,7 +127,6 @@ class ProfileTest extends TestCase
 
     public function test_avatar_upload_is_stored_in_the_database(): void
     {
-        Storage::fake('public');
         $user = User::factory()->create();
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/U3QAAAAASUVORK5CYII=');
 
@@ -150,7 +148,6 @@ class ProfileTest extends TestCase
 
     public function test_cover_upload_and_position_are_persisted(): void
     {
-        Storage::fake('public');
         $user = User::factory()->create();
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/U3QAAAAASUVORK5CYII=');
 

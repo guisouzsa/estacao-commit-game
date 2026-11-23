@@ -10,7 +10,7 @@ type Availability =
     | { state: 'idle' }
     | { state: 'checking' }
     | { state: 'available' }
-    | { state: 'unavailable'; message: string };
+    | { state: 'unavailable'; message: string; suggestions?: string[] };
 
 /**
  * "Jogar agora": o visitante escolhe nome e avatar e entra, sem e-mail nem senha.
@@ -55,6 +55,7 @@ export default function Create({
                 const result = (await response.json()) as {
                     available: boolean;
                     message: string | null;
+                    suggestions?: string[];
                 };
                 if (check !== latestCheck.current) return;
                 setAvailability(
@@ -62,6 +63,7 @@ export default function Create({
                         ? { state: 'available' }
                         : {
                               state: 'unavailable',
+                              suggestions: result.suggestions ?? [],
                               message:
                                   result.message ?? 'Esse nome não está disponível.',
                           },
@@ -146,6 +148,24 @@ export default function Create({
                               : `De ${nameRules.min} a ${nameRules.max} caracteres.`)}
                 </p>
                 <InputError className="mt-1" message={errors.name} />
+                {availability.state === 'unavailable' &&
+                    (availability.suggestions?.length ?? 0) > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="text-sm text-ink/70">
+                                Que tal:
+                            </span>
+                            {availability.suggestions!.map((suggestion) => (
+                                <button
+                                    key={suggestion}
+                                    type="button"
+                                    onClick={() => setData('name', suggestion)}
+                                    className="min-h-9 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-black hover:bg-[#b4da33]"
+                                >
+                                    Usar {suggestion}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                 <div className="mt-5">
                     <AvatarPicker

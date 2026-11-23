@@ -1,3 +1,4 @@
+import { toast } from '@/lib/toast';
 import AvatarPicker from '@/Components/AvatarPicker';
 import InputError from '@/Components/InputError';
 import PlayerProfileCard, {
@@ -127,7 +128,6 @@ export default function Edit({
     const page = usePage();
     const user = page.props.auth.user as PlayerProfile & { email: string };
     const [editing, setEditing] = useState(false);
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [editor, setEditor] = useState<EditorState | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(
         user.avatar ?? null,
@@ -166,12 +166,6 @@ export default function Edit({
         }
         setCoverUrl(user.cover ?? null);
     }, [data.cover, user.cover]);
-
-    useEffect(() => {
-        if (!toastMessage) return;
-        const timer = window.setTimeout(() => setToastMessage(null), 4000);
-        return () => window.clearTimeout(timer);
-    }, [toastMessage]);
 
     const generated = data.avatar_generated
         ? data.avatar_generated.split(':')
@@ -233,7 +227,7 @@ export default function Edit({
                 setCoverUrl(props.auth.user.cover ?? null);
                 setEditor(null);
                 setEditing(false);
-                setToastMessage('Perfil atualizado com sucesso!');
+                toast.success('Perfil atualizado com sucesso!', { id: 'profile:saved' });
             },
         });
     };
@@ -1031,36 +1025,6 @@ export default function Edit({
                 </div>
             </main>
 
-            {toastMessage && (
-                <div
-                    aria-live="polite"
-                    className="fixed right-4 top-4 z-50 flex max-w-sm items-start gap-3 border-[3px] border-[#1d1d1b] bg-[#b4da33] p-4 text-[#1d1d1b] shadow-[6px_6px_0_#464498] sm:right-6 sm:top-6"
-                    role="status"
-                >
-                    <span
-                        aria-hidden="true"
-                        className="grid size-7 shrink-0 place-items-center rounded-full bg-[#1d1d1b] font-black text-white"
-                    >
-                        ✓
-                    </span>
-                    <div>
-                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
-                            Tudo certo
-                        </p>
-                        <p className="mt-1 text-sm font-black">
-                            {toastMessage}
-                        </p>
-                    </div>
-                    <button
-                        aria-label="Fechar notificação"
-                        className="ml-2 text-lg font-black leading-none"
-                        onClick={() => setToastMessage(null)}
-                        type="button"
-                    >
-                        ×
-                    </button>
-                </div>
-            )}
 
             {editor && (editor.file || editor.src) && (
                 <ProfileImageEditor

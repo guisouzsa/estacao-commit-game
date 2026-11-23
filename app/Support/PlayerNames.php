@@ -59,6 +59,31 @@ class PlayerNames
         return null;
     }
 
+    /**
+     * Alternativas livres para um nome ocupado. Nunca troca o nome sozinha: a pessoa escolhe.
+     *
+     * @return list<string>
+     */
+    public function suggest(string $raw, int $limit = 3): array
+    {
+        $max = (int) config('players.name.max');
+        $base = mb_substr(preg_replace('/[^\p{L}\p{N}]+$/u', '', self::display($raw)), 0, max(1, $max - 3));
+        $suffixes = ['_dev', (string) random_int(10, 99), '_git', (string) random_int(100, 999), '_commit', '_'.random_int(1, 9)];
+        $found = [];
+
+        foreach ($suffixes as $suffix) {
+            $candidate = mb_substr($base, 0, $max - mb_strlen($suffix)).$suffix;
+            if ($this->problem($candidate) === null && ! in_array($candidate, $found, true)) {
+                $found[] = $candidate;
+            }
+            if (count($found) >= $limit) {
+                break;
+            }
+        }
+
+        return $found;
+    }
+
     /** Nome usado por uma conta permanente ou por um visitante ativo. */
     public function isTaken(string $key, ?string $ignoreUserId = null, ?string $ignoreGuestId = null): bool
     {

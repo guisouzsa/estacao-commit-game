@@ -446,4 +446,26 @@ class GuestPlayTest extends TestCase
         Notification::assertNothingSent();
         $this->assertDatabaseCount('notifications', 0);
     }
+
+    public function test_a_taken_name_gets_free_suggestions_but_is_never_changed_silently(): void
+    {
+        \App\Models\User::factory()->create(['username' => 'CodeNinja']);
+
+        $taken = $this->getJson(route('guest.name', ['name' => 'codeninja']))->assertOk()->json();
+
+        $this->assertFalse($taken['available']);
+        $this->assertNotEmpty($taken['suggestions']);
+        foreach ($taken['suggestions'] as $suggestion) {
+            $this->assertNotSame('codeninja', strtolower($suggestion));
+            $this->getJson(route('guest.name', ['name' => $suggestion]))->assertJsonPath('available', true);
+        }
+
+        $free = $this->getJson(route('guest.name', ['name' => 'NomeLivre']))->json();
+        $this->assertTrue($free['available']);
+        $this->assertSame([], $free['suggestions']);
+
+        // Enviar o nome ocupado continua falhando: nada é trocado sem a pessoa escolher.
+        $this->post(route('guest.store'), ['name' => 'codeninja', 'avatar_style' => 'pixel', 'avatar_seed' => 'abcdef12'])
+            ->assertSessionHasErrors('name');
+    }
 }

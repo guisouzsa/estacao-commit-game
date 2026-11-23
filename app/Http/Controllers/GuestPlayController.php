@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\RoomJoinService;
 use App\Support\GuestIdentity;
 use App\Support\PlayerNames;
 use Illuminate\Http\JsonResponse;
@@ -13,6 +14,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 /**
  * "Jogar agora": entrar sem criar conta. O visitante escolhe nome e avatar e
@@ -38,13 +40,16 @@ class GuestPlayController extends Controller
         $name = PlayerNames::display((string) $request->query('name', ''));
         $problem = $name === '' ? null : $names->problem($name);
 
+        $taken = $problem !== null && $names->isTaken(PlayerNames::key($name));
+
         return response()->json([
             'available' => $name !== '' && $problem === null,
             'message' => $problem,
+            'suggestions' => $taken ? $names->suggest($name) : [],
         ])->header('Cache-Control', 'no-store');
     }
 
-    public function store(Request $request, GuestIdentity $identity): SymfonyResponse
+    public function store(Request $request, GuestIdentity $identity, RoomJoinService $joins): SymfonyResponse
     {
         if ($this->alreadyPlaying($request)) {
             return to_route('dashboard');
@@ -76,7 +81,27 @@ class GuestPlayController extends Controller
         // cookie recém-criado com certeza, e qualquer falha aparece como página de erro
         // em vez de deixar a pessoa parada no formulário sem explicação.
         $pendingInvite = $request->session()->pull('pending_room_invite');
-        $response = Inertia::location($pendingInvite ? route('invites.open', $pendingInvite) : route('dashboard'));
+        $destination = $pendingInvite ? route('invites.open', $pendingInvite) : route('dashboard');
+
+        // Veio de um convite: entra na sala sozinho, sem pedir o código de novo. As mesmas
+        // regras de qualquer entrada valem (revogado, expirado, cheio...). Se algo falhar,
+        // a página do convite explica o motivo.
+        if ($pendingInvite) {
+            try {
+                ['room' => $room] = $joins->join($profile, (string) $pendingInvite);
+                $request->session()->flash('toast', [
+                    'id' => (string) Str::uuid(),
+                    'tone' => 'success',
+                    'title' => 'Você entrou na sala',
+                    'message' => "Bem-vindo, {$profile->display_name}! A mesa já sabe que você chegou.",
+                ]);
+                $destination = route('rooms.show', $room);
+            } catch (HttpExceptionInterface) {
+                // mantém o destino: a página do convite mostra o que aconteceu.
+            }
+        }
+
+        $response = Inertia::location($destination);
         $response->headers->setCookie($identity->cookie($request, $token));
 
         return $response;

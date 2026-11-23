@@ -184,6 +184,13 @@ class RealtimeInfrastructureTest extends TestCase
         }
     }
 
+    public function test_postgres_uses_native_parameters_so_boolean_columns_accept_booleans(): void
+    {
+        $database = require base_path('config/database.php');
+
+        $this->assertSame([], $database['connections']['pgsql']['options']);
+    }
+
     private function reverbConnectionOptions(): array
     {
         return (require base_path('config/broadcasting.php'))['connections']['reverb']['options'];

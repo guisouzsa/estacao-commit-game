@@ -50,6 +50,20 @@ class ProfileMediaPayloadTest extends TestCase
         $this->assertSame($user->profile_cover, $user->fresh()->profile_cover);
     }
 
+    public function test_the_banner_keeps_the_same_proportion_in_the_card_and_in_the_crop_editor(): void
+    {
+        // Altura fixa com object-fit: cover esmagava o banner numa faixa em telas largas (parecia
+        // "ampliado"). O cartão e o editor de recorte precisam enquadrar a MESMA proporção.
+        $card = file_get_contents(base_path('resources/js/Components/PlayerProfileCard.tsx'));
+        $editor = file_get_contents(base_path('resources/js/Components/ProfileImageEditor.tsx'));
+        $public = file_get_contents(base_path('resources/js/Pages/Profile/Public.tsx'));
+
+        $this->assertStringContainsString('aspect-[3/1]', $card);
+        $this->assertStringContainsString('aspect-[3/1]', $editor);
+        $this->assertStringNotContainsString('relative h-40 overflow-hidden', $card, 'sem altura fixa no banner');
+        $this->assertStringContainsString('max-w-5xl', $public, 'o cartão não se estica pela tela inteira');
+    }
+
     public function test_the_text_column_migration_is_present_for_postgres(): void
     {
         $migration = file_get_contents(base_path('database/migrations/2026_11_23_000200_store_profile_images_in_database.php'));

@@ -17,6 +17,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
 
+        // Código de suporte em toda requisição (logs e página de erro).
+        $middleware->prepend(\App\Http\Middleware\AssignRequestId::class);
+
+        // Rotas do jogo (Dashboard, salas, partidas) não mandam ninguém para o login: levam à criação
+        // de um perfil temporário, e a URL pedida é lembrada para voltar depois. Rotas de conta
+        // (perfil, rankings, notificações) continuam exigindo login.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->routeIs('dashboard', 'rooms.*', 'games.*')
+            ? route('guest.create')
+            : route('login'));
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,

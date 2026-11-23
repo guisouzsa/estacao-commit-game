@@ -120,7 +120,7 @@ class ErrorPagesTest extends TestCase
 
         // Sem cookie válido: visitante "deslogado" não vê a Dashboard.
         $this->withCookie(config('players.guest_cookie'), str_repeat('a', 64))->get('/salas/'.Str::uuid())
-            ->assertRedirect(route('login'));
+            ->assertRedirect(route('guest.create'));
         $this->assertNotNull($token);
         $this->assertNotEmpty($cookie);
     }

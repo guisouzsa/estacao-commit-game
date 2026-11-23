@@ -130,15 +130,16 @@ class GuestPlayTest extends TestCase
 
     public function test_without_the_cookie_the_dashboard_requires_login(): void
     {
-        $this->get(route('dashboard'))->assertRedirect(route('login'));
+        // Rotas do JOGO levam à criação do perfil temporário, nunca ao login.
+        $this->get(route('dashboard'))->assertRedirect(route('guest.create'));
     }
 
     public function test_a_forged_or_unknown_token_is_not_accepted(): void
     {
         $this->becomeGuest();
 
-        $this->asGuest(str_repeat('a', 64))->get(route('dashboard'))->assertRedirect(route('login'));
-        $this->asGuest('nao-e-um-token')->get(route('dashboard'))->assertRedirect(route('login'));
+        $this->asGuest(str_repeat('a', 64))->get(route('dashboard'))->assertRedirect(route('guest.create'));
+        $this->asGuest('nao-e-um-token')->get(route('dashboard'))->assertRedirect(route('guest.create'));
     }
 
     public function test_an_expired_profile_is_treated_as_a_signed_out_visitor(): void
@@ -147,7 +148,7 @@ class GuestPlayTest extends TestCase
 
         $this->travel(25)->hours();
 
-        $this->asGuest($token)->get(route('dashboard'))->assertRedirect(route('login'));
+        $this->asGuest($token)->get(route('dashboard'))->assertRedirect(route('guest.create'));
         $this->assertTrue($profile->fresh()->expires_at->isPast());
     }
 

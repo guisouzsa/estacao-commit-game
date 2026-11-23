@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 import {
+    EXIT_ANIMATION_MS,
+    dismissToast,
     friendlyHttpMessage,
     getToastSnapshot,
     resetToasts,
@@ -26,7 +28,13 @@ describe('fila de toasts', () => {
 
         mock.timers.tick(5999);
         assert.equal(getToastSnapshot().length, 1);
+        assert.equal(getToastSnapshot()[0].leaving, undefined);
+
+        // Passou o tempo: começa a animação de saída (ainda visível) e só depois sai da fila.
         mock.timers.tick(1);
+        assert.equal(getToastSnapshot().length, 1);
+        assert.equal(getToastSnapshot()[0].leaving, true);
+        mock.timers.tick(EXIT_ANIMATION_MS);
         assert.equal(getToastSnapshot().length, 0);
     });
 
@@ -34,7 +42,9 @@ describe('fila de toasts', () => {
         toast.error('Falhou.');
         mock.timers.tick(6000);
         assert.equal(getToastSnapshot().length, 1);
+        assert.equal(getToastSnapshot()[0].leaving, undefined, 'erros não somem com 6 s');
         mock.timers.tick(3000);
+        mock.timers.tick(EXIT_ANIMATION_MS); // o timer da animação nasce durante o tick anterior
         assert.equal(getToastSnapshot().length, 0);
     });
 
@@ -43,6 +53,8 @@ describe('fila de toasts', () => {
         mock.timers.tick(60000);
         assert.equal(getToastSnapshot().length, 1);
         toast.dismiss(uid);
+        assert.equal(getToastSnapshot()[0].leaving, true);
+        mock.timers.tick(EXIT_ANIMATION_MS);
         assert.equal(getToastSnapshot().length, 0);
     });
 
@@ -51,6 +63,7 @@ describe('fila de toasts', () => {
         assert.equal(toast.warning('Sala excluída.', { id: 'notice:1' }), null);
 
         mock.timers.tick(10000);
+        mock.timers.tick(EXIT_ANIMATION_MS);
         assert.equal(getToastSnapshot().length, 0);
         assert.equal(toast.warning('Sala excluída.', { id: 'notice:1' }), null, 'nem depois de sumir');
         assert.notEqual(toast.warning('Sala excluída.', { id: 'notice:2' }), null);
@@ -95,7 +108,39 @@ describe('fila de toasts', () => {
         assert.deepEqual(getToastSnapshot().map((item) => item.message), ['Aviso 3', 'Aviso 4', 'Aviso 5', 'Aviso 6']);
         // O timer de um aviso descartado não pode mexer nos demais.
         mock.timers.tick(6000);
+        mock.timers.tick(EXIT_ANIMATION_MS);
         assert.equal(getToastSnapshot().length, 0);
+    });
+
+    it('guarda o título do aviso (e usa o padrão do tipo quando não há)', () => {
+        toast.success('A sala foi criada com sucesso.', { title: 'Sua sala está pronta!' });
+        toast.info('Sem título próprio.');
+
+        const [first, second] = getToastSnapshot();
+        assert.equal(first.title, 'Sua sala está pronta!');
+        assert.equal(second.title, undefined);
+    });
+
+    it('fechar manualmente anima a saída; fechar de novo remove na hora', () => {
+        const uid = toast.warning('Sala perto de expirar.', { durationMs: 0 }) as number;
+
+        dismissToast(uid);
+        assert.equal(getToastSnapshot()[0].leaving, true);
+
+        dismissToast(uid); // segundo pedido durante a animação
+        assert.equal(getToastSnapshot().length, 0);
+    });
+
+    it('dismiss imediato não anima', () => {
+        const uid = toast.info('Some já.', { durationMs: 0 }) as number;
+
+        dismissToast(uid, true);
+
+        assert.equal(getToastSnapshot().length, 0);
+    });
+
+    it('fechar um aviso que já saiu não dá erro', () => {
+        assert.doesNotThrow(() => dismissToast(999999));
     });
 
     it('ignora mensagens vazias', () => {

@@ -75,7 +75,8 @@ class GuestPlayController extends Controller
         // Navegação COMPLETA (e não uma visita em XHR do Inertia): o navegador envia o
         // cookie recém-criado com certeza, e qualquer falha aparece como página de erro
         // em vez de deixar a pessoa parada no formulário sem explicação.
-        $response = Inertia::location(route('dashboard'));
+        $pendingInvite = $request->session()->pull('pending_room_invite');
+        $response = Inertia::location($pendingInvite ? route('invites.open', $pendingInvite) : route('dashboard'));
         $response->headers->setCookie($identity->cookie($request, $token));
 
         return $response;

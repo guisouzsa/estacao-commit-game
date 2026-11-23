@@ -282,7 +282,7 @@ class RoomLifecycleTest extends TestCase
         $room->participants()->create(['user_id' => $host->id, 'seat' => 1, 'joined_at' => now()]);
 
         // Sem actingAs: requisição de um visitante não autenticado.
-        $this->delete(route('rooms.cancel', $room))->assertRedirect(route('login'));
+        $this->delete(route('rooms.cancel', $room))->assertRedirect(route('guest.create'));
 
         $this->assertDatabaseHas('game_rooms', ['id' => $room->id]);
     }

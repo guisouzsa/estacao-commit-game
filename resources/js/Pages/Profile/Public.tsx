@@ -141,7 +141,7 @@ export default function Public({
                     Entrar na estação
                 </Link>
             </header>
-            <main className="w-full">
+            <main className="mx-auto w-full max-w-5xl">
                 <PlayerProfileCard
                     profile={profile}
                     headerActions={

@@ -9,6 +9,8 @@ export type ToastTone = 'success' | 'info' | 'warning' | 'error';
 
 export type ToastInput = {
     message: string;
+    /** Título curto. Sem ele, a interface usa um padrão do tipo (Pronto, Aviso, Atenção, Ops). */
+    title?: string;
     tone?: ToastTone;
     /** Evita repetição: o mesmo id nunca é exibido duas vezes (ex.: aviso persistido). */
     id?: string;
@@ -21,9 +23,15 @@ export type ToastInput = {
 export type ToastItem = {
     uid: number;
     message: string;
+    title?: string;
     tone: ToastTone;
     key?: string;
+    /** Em animação de saída: ainda visível, mas já fechando. */
+    leaving?: boolean;
 };
+
+/** Tempo da animação de saída antes de o aviso sair da fila. */
+export const EXIT_ANIMATION_MS = 180;
 
 const MAX_VISIBLE = 4;
 const DUPLICATE_WINDOW_MS = 3000;
@@ -44,13 +52,29 @@ function clearTimer(uid: number) {
     timers.delete(uid);
 }
 
-export function dismissToast(uid: number): void {
+function removeNow(uid: number): void {
     clearTimer(uid);
     const next = items.filter((item) => item.uid !== uid);
     if (next.length !== items.length) {
         items = next;
         emit();
     }
+}
+
+/** Fecha o aviso com uma breve animação de saída (ou na hora, com `immediate`). */
+export function dismissToast(uid: number, immediate = false): void {
+    const target = items.find((item) => item.uid === uid);
+    if (!target) return;
+
+    if (immediate || target.leaving) {
+        removeNow(uid);
+        return;
+    }
+
+    clearTimer(uid);
+    items = items.map((item) => (item.uid === uid ? { ...item, leaving: true } : item));
+    emit();
+    timers.set(uid, setTimeout(() => removeNow(uid), EXIT_ANIMATION_MS));
 }
 
 export function showToast(input: ToastInput): number | null {
@@ -80,11 +104,11 @@ export function showToast(input: ToastInput): number | null {
     // 3) Mesma chave: troca o conteúdo no lugar, sem empilhar.
     if (input.key !== undefined) {
         const existing = items.find((item) => item.key === input.key);
-        if (existing) dismissToast(existing.uid);
+        if (existing) removeNow(existing.uid);
     }
 
     const uid = nextUid++;
-    items = [...items, { uid, message, tone, key: input.key }].slice(-MAX_VISIBLE);
+    items = [...items, { uid, message, title: input.title, tone, key: input.key }].slice(-MAX_VISIBLE);
     // O que foi empurrado para fora do limite também perde o timer.
     for (const timerUid of [...timers.keys()]) {
         if (!items.some((item) => item.uid === timerUid)) clearTimer(timerUid);

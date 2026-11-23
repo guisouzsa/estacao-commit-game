@@ -23,6 +23,7 @@ export type ToastTone = 'success' | 'warning' | 'info' | 'error';
 export type ToastPayload = {
     id: string;
     tone: ToastTone;
+    title?: string;
     message: string;
 };
 

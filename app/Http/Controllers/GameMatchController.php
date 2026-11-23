@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\GameAction;
+use App\Models\GameMatch;
+use App\Models\GameRoom;
+use App\Services\GameEngine;
+use App\Services\RoomStateBroadcaster;
+use App\Support\PlayerPresenter;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class GameMatchController extends Controller
+{
+    public function start(Request $request, GameRoom $room, GameEngine $engine): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_unless($room->hasParticipant($actor), 404);
+        abort_unless($room->isHostedBy($actor), 403);
+
+        $match = DB::transaction(function () use ($room, $engine): GameMatch {
+            $locked = GameRoom::query()->whereKey($room->id)->lockForUpdate()->firstOrFail();
+            if ($locked->gameMatch()->exists()) {
+                return $locked->gameMatch;
+            }
+            abort_unless($locked->status === 'waiting', 409, 'Esta sala não pode iniciar outra partida.');
+            $match = $engine->create($locked);
+            $locked->forceFill(['status' => 'active', 'started_at' => now(), 'empty_since' => null])->save();
+
+            return $match;
+        }, 3);
+
+        app(RoomStateBroadcaster::class)->publish($room->id, 'match_started');
+
+        return to_route('games.show', $room);
+    }
+
+    public function show(Request $request, GameRoom $room): Response
+    {
+        $actor = $request->user();
+        abort_unless($room->hasParticipant($actor), 404);
+        $match = $room->gameMatch()->firstOrFail();
+        $room->load(['participants.user', 'participants.guest']);
+        $viewer = $room->participants()->forActor($actor)->firstOrFail();
+
+        return Inertia::render('Games/Show', $this->present($room, $match, $viewer->id));
+    }
+
+    public function action(Request $request, GameRoom $room, GameEngine $engine): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_unless($room->hasParticipant($actor), 404);
+        $validated = $request->validate([
+            'action_uuid' => ['required', 'uuid'],
+            'action' => ['required', Rule::in(['play_card', 'play_block', 'exchange', 'discard_excess'])],
+            'card' => ['nullable', 'string', 'max:40'],
+            'target_id' => ['nullable', 'integer'],
+            'version' => ['required', 'integer', 'min:1'],
+        ]);
+
+        DB::transaction(function () use ($room, $actor, $engine, $validated): void {
+            $match = GameMatch::query()->where('room_id', $room->id)->lockForUpdate()->firstOrFail();
+            if (GameAction::query()->where('game_match_id', $match->id)->where('action_uuid', $validated['action_uuid'])->exists()) {
+                return;
+            }
+            if ((int) $validated['version'] !== (int) $match->version) {
+                abort(409, 'A partida foi atualizada. Tente a jogada novamente.');
+            }
+            $participant = $room->participants()->forActor($actor)->firstOrFail();
+            $wasActive = $match->status === 'active';
+            $engine->act($match, $participant, $validated['action'], $validated, $validated['action_uuid']);
+            $match->refresh();
+            $engine->runBots($match, $room);
+            $match->refresh();
+            if ($wasActive && $match->status === 'finished') {
+                $this->recordStatistics($room, $match);
+            }
+        }, 3);
+
+        app(RoomStateBroadcaster::class)->publish($room->id, 'game_updated');
+
+        return back();
+    }
+
+    private function recordStatistics(GameRoom $room, GameMatch $match): void
+    {
+        $room->participants()->with('user')->whereNotNull('user_id')->get()->each(function ($participant) use ($match): void {
+            $user = $participant->user;
+            $user->matches_played = ($user->matches_played ?? 0) + 1;
+            if ($participant->id === $match->winner_participant_id) {
+                $user->matches_won = ($user->matches_won ?? 0) + 1;
+                $user->matches_lost ??= 0;
+            } else {
+                $user->matches_lost = ($user->matches_lost ?? 0) + 1;
+                $user->matches_won ??= 0;
+            }
+            $user->save();
+        });
+    }
+
+    private function present(GameRoom $room, GameMatch $match, int $viewerId): array
+    {
+        $state = $match->state;
+        $participants = $room->participants->map(function ($participant) use ($state, $viewerId): array {
+            $game = $state['players'][(string) $participant->id];
+
+            return [
+                ...PlayerPresenter::participant($participant),
+                'is_viewer' => $participant->id === $viewerId,
+                'hand_count' => count($game['hand']),
+                'path' => $game['path'],
+                'step' => $game['step'],
+                'blocked' => $game['blocked'],
+                'pending_discard' => $game['pending_discard'],
+            ];
+        })->values();
+        $viewer = $state['players'][(string) $viewerId];
+
+        return [
+            'room' => ['id' => $room->id],
+            'game' => [
+                'id' => $match->id, 'status' => $match->status, 'current_seat' => $match->current_seat,
+                'turn_number' => $match->turn_number, 'version' => $match->version,
+                'winner_participant_id' => $match->winner_participant_id,
+                'deck_count' => count($state['deck']), 'discard_count' => count($state['discard']),
+                'history' => array_reverse(array_slice($state['history'], -12)),
+            ],
+            'participants' => $participants,
+            'hand' => $viewer['hand'],
+            'requiredCard' => GameEngine::REQUIRED[$viewer['step']] ?? null,
+        ];
+    }
+}

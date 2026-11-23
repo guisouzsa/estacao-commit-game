@@ -113,7 +113,7 @@ export default function ProfileImageEditor({
                     className={`mx-auto mt-6 cursor-grab touch-none select-none overflow-hidden border-[5px] border-[#1d1d1b] bg-[#464498] active:cursor-grabbing ${
                         kind === 'avatar'
                             ? `size-56 rounded-full ${frame}`
-                            : 'aspect-[2.4/1] w-full'
+                            : 'aspect-[3/1] w-full'
                     }`}
                     onPointerDown={(event) => {
                         const rect =

@@ -6,12 +6,17 @@ use App\Models\GameRoom;
 use App\Models\RoomInvitation;
 use App\Notifications\RoomDeleted;
 use App\Services\RoomExpirationService;
+use App\Services\RoomJoinService;
 use App\Services\RoomStateBroadcaster;
 use App\Support\Actor;
 use App\Support\Bots;
 use App\Support\PlayerPresenter;
+use Illuminate\Cache\LockTimeoutException;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -24,15 +29,70 @@ use Inertia\Response;
  */
 class GameRoomController extends Controller
 {
+    public function open(Request $request, string $token, RoomJoinService $joins): Response|RedirectResponse
+    {
+        ['state' => $state, 'room' => $room] = $joins->inspect($token);
+        abort_if($state === RoomJoinService::INVALID, 404, 'Convite inválido ou sala já excluída.');
+        abort_if($state === RoomJoinService::REVOKED, 410, 'Este convite foi revogado.');
+        abort_if($state === RoomJoinService::EXPIRED, 410, 'Este convite expirou.');
+        abort_if($state === RoomJoinService::FULL, 409, 'A sala está cheia.');
+        abort_if($state === RoomJoinService::UNAVAILABLE, 409, 'A sala não está mais disponível.');
+
+        $actor = $request->user() ?? Auth::guard('visitor')->user();
+        if (! $actor) {
+            $request->session()->put('pending_room_invite', $token);
+
+            return to_route('guest.create');
+        }
+
+        return Inertia::render('Invites/Show', [
+            'code' => RoomJoinService::normalize($token),
+            'participants' => $room->participants()->count(),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $actor = $request->user();
         $validated = $request->validate([
             'bots' => ['nullable', 'integer', 'between:0,'.config('bots.max_per_room')],
+            // Identifica UMA intenção de criar sala (o front gera uma por tentativa).
+            'request_id' => ['nullable', 'uuid'],
         ], [
             'bots.between' => 'Escolha de 0 a '.config('bots.max_per_room').' bots.',
         ]);
         $botCount = (int) ($validated['bots'] ?? 0);
+        $requestId = $validated['request_id'] ?? null;
+
+        if (! $requestId) {
+            return $this->createRoom($actor, $botCount, null);
+        }
+
+        // Duplo clique, reenvio ou resposta perdida: a MESMA intenção devolve a MESMA sala,
+        // em vez de criar outra. O lock serializa pedidos simultâneos com o mesmo id.
+        $key = 'room-create:'.Actor::kind($actor).':'.Actor::id($actor).':'.$requestId;
+
+        try {
+            return Cache::lock($key.':lock', 10)->block(5, fn () => $this->createRoom($actor, $botCount, $key));
+        } catch (LockTimeoutException) {
+            abort(409, 'Sua sala já está sendo criada. Aguarde um instante.');
+        }
+    }
+
+    private function createRoom(Authenticatable $actor, int $botCount, ?string $idempotencyKey): RedirectResponse
+    {
+        if ($idempotencyKey && ($existingId = Cache::get($idempotencyKey))) {
+            $existing = GameRoom::query()->find($existingId);
+
+            if ($existing && $existing->hasParticipant($actor)) {
+                return to_route('rooms.show', $existing)->with('toast', [
+                    'id' => (string) Str::uuid(),
+                    'tone' => 'info',
+                    'title' => 'Essa sala já estava pronta',
+                    'message' => 'Não criamos outra: você continua na mesma sala.',
+                ]);
+            }
+        }
 
         $result = DB::transaction(function () use ($actor, $botCount): array {
             // A sala nasce só com o anfitrião humano: a contagem de 5 minutos começa agora.
@@ -71,7 +131,19 @@ class GameRoomController extends Controller
 
         [$room, $token] = $result;
 
-        return to_route('rooms.show', $room)->with('invite_url', route('rooms.join', $token));
+        if ($idempotencyKey) {
+            Cache::put($idempotencyKey, $room->id, now()->addMinutes(10));
+        }
+
+        // O código e o link vêm do que o servidor acabou de gerar (nunca montados no navegador).
+        return to_route('rooms.show', $room)
+            ->with('invite_url', route('rooms.join', $token))
+            ->with('toast', [
+                'id' => (string) Str::uuid(),
+                'tone' => 'success',
+                'title' => 'Sua sala está pronta!',
+                'message' => 'A sala foi criada com sucesso. Convide seus amigos para começar a partida.',
+            ]);
     }
 
     public function show(Request $request, GameRoom $room): Response|RedirectResponse
@@ -87,6 +159,9 @@ class GameRoomController extends Controller
             return to_route('dashboard');
         }
         $room->refresh();
+        if ($room->gameMatch()->exists()) {
+            return to_route('games.show', $room);
+        }
         $room->load(['participants.user', 'participants.guest']);
 
         return Inertia::render('Rooms/Show', [
@@ -119,14 +194,14 @@ class GameRoomController extends Controller
                 return [null, true];
             }
 
-            $lockedRoom->invitations()->whereNull('revoked_at')->update(['revoked_at'=>now()]);
+            $lockedRoom->invitations()->whereNull('revoked_at')->update(['revoked_at' => now()]);
 
             return [$this->issueInvitation($lockedRoom), false];
         }, 3);
 
         [$token, $expired] = $result;
         abort_if($expired, 410, 'Esta sala foi excluída.');
-        abort_if(!$token, 409, 'Esta sala não está mais disponível.');
+        abort_if(! $token, 409, 'Esta sala não está mais disponível.');
 
         return back()->with('invite_url', route('rooms.join', $token));
     }
@@ -136,7 +211,8 @@ class GameRoomController extends Controller
         $actor = $request->user();
         abort_unless($room->hasParticipant($actor), 404);
         abort_unless($room->isHostedBy($actor), 403);
-        $room->invitations()->whereNull('revoked_at')->update(['revoked_at'=>now()]);
+        $room->invitations()->whereNull('revoked_at')->update(['revoked_at' => now()]);
+
         return back()->with('status', 'Convite revogado.');
     }
 
@@ -187,50 +263,44 @@ class GameRoomController extends Controller
             ]);
     }
 
-    public function join(Request $request, string $token): RedirectResponse
+    public function join(Request $request, string $token, RoomJoinService $joins): RedirectResponse
     {
-        $actor = $request->user();
-        $hash = hash('sha256', $token);
-        $result = DB::transaction(function () use ($actor, $hash): array {
-            $found = RoomInvitation::query()->where('token_hash', $hash)->first();
-            abort_if(!$found, 404, 'Convite inválido ou sala já excluída.');
-            // Mesma ordem de bloqueio da expiração e da exclusão: sala, depois convite.
-            $room = GameRoom::query()->whereKey($found->room_id)->lockForUpdate()->first();
-            abort_if(!$room, 410, 'Esta sala foi excluída.');
-            $invitation = RoomInvitation::query()->whereKey($found->id)->lockForUpdate()->first();
-            abort_if(!$invitation, 410, 'Esta sala foi excluída.');
-            abort_if($invitation->revoked_at, 410, 'Este convite foi revogado.');
-            abort_if($invitation->expires_at->isPast(), 410, 'Este convite expirou.');
-            if ($room->hasParticipant($actor)) {
-                return [$room, false, false];
-            }
-            if (app(RoomExpirationService::class)->expireIfEligible($room)) {
-                return [$room, true, false];
-            }
-            abort_if($room->status !== 'waiting', $room->status === 'expired' ? 410 : 409, 'A sala não está mais disponível.');
-            // Bots já ocupam as últimas vagas: sobra para humanos o que não está usado.
-            $usedSeats = $room->participants()->pluck('seat')->all();
-            $seat = collect(range(1, GameRoom::MAX_PARTICIPANTS))->first(fn ($candidate) => !in_array($candidate, $usedSeats, true));
-            abort_if(!$seat, 409, 'A sala está cheia.');
-            $room->participants()->create([
-                Actor::participantColumn($actor) => Actor::id($actor),
-                'kind' => Actor::kind($actor),
-                'is_host' => false,
-                'seat' => $seat,
-                'joined_at' => now(),
-            ]);
-            // Entrou alguém além do anfitrião: a contagem de sala vazia é cancelada.
-            app(RoomExpirationService::class)->syncEmptiness($room);
-            return [$room, false, true];
-        }, 3);
-        [$room, $expired, $joined] = $result;
-
-        abort_if($expired, 410, 'Esta sala foi excluída.');
-        if ($joined) {
-            app(RoomStateBroadcaster::class)->publish($room->id, 'participant_joined');
-        }
+        ['room' => $room] = $joins->join($request->user(), $token);
 
         return to_route('rooms.show', $room)->with('status', 'Entrada na sala confirmada.');
+    }
+
+    /**
+     * Sair do LOBBY (quem não é o anfitrião). Libera a vaga; se a sala ficar só com o
+     * anfitrião, a contagem de 5 minutos recomeça. O anfitrião encerra a sala em vez de sair.
+     */
+    public function leave(Request $request, GameRoom $room): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_unless($room->hasParticipant($actor), 404);
+
+        DB::transaction(function () use ($room, $actor): void {
+            $locked = GameRoom::query()->whereKey($room->id)->lockForUpdate()->first();
+            abort_unless($locked, 404);
+            abort_if($locked->isHostedBy($actor), 409, 'O anfitrião encerra a sala em vez de sair dela. Use "Excluir sala".');
+            abort_unless(
+                $locked->status === 'waiting' && $locked->started_at === null,
+                409,
+                'A partida já começou: não é possível sair do lobby agora.'
+            );
+
+            $locked->participants()->forActor($actor)->delete();
+            app(RoomExpirationService::class)->syncEmptiness($locked);
+
+            app(RoomStateBroadcaster::class)->publish($locked->id, 'participant_left');
+        }, 3);
+
+        return to_route('dashboard')->with('toast', [
+            'id' => (string) Str::uuid(),
+            'tone' => 'info',
+            'title' => 'Você saiu da sala',
+            'message' => 'Sua vaga ficou livre. Você pode voltar com o convite, se ainda houver lugar.',
+        ]);
     }
 
     private function issueInvitation(GameRoom $room): string
@@ -246,8 +316,11 @@ class GameRoomController extends Controller
                 $code .= $alphabet[random_int(0, strlen($alphabet) - 1)];
             }
             $hash = hash('sha256', $code);
-            if (RoomInvitation::query()->where('token_hash', $hash)->exists()) continue;
-            $room->invitations()->create(['token_hash'=>$hash,'expires_at'=>now()->addHours(24)]);
+            if (RoomInvitation::query()->where('token_hash', $hash)->exists()) {
+                continue;
+            }
+            $room->invitations()->create(['token_hash' => $hash, 'expires_at' => now()->addHours(24)]);
+
             return $code;
         }
         throw new \RuntimeException('Não foi possível gerar um código de convite único.');

@@ -95,7 +95,10 @@ export default function Show({
         const current = new Map<string, string>();
         room.participants.forEach((participant) => {
             if (participant.player) {
-                current.set(participant.player.key, participant.player.username);
+                current.set(
+                    participant.player.key,
+                    participant.player.username,
+                );
             }
         });
         const before = previousPlayers.current;
@@ -249,6 +252,36 @@ export default function Show({
                                 Esta sala expirou e não aceita novos jogadores.
                             </p>
                         )}
+                        {isHost &&
+                            room.status === 'waiting' &&
+                            room.participants.length === 4 && (
+                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t-2 border-[#1d1d1b]/15 pt-3">
+                                    <p className="text-sm font-semibold text-[#464498]">
+                                        Os quatro lugares estão ocupados. A
+                                        estação está pronta.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        disabled={busy}
+                                        onClick={() => {
+                                            setBusy(true);
+                                            router.post(
+                                                route('games.start', room.id),
+                                                {},
+                                                {
+                                                    onFinish: () =>
+                                                        setBusy(false),
+                                                },
+                                            );
+                                        }}
+                                        className="min-h-11 border-2 border-[#1d1d1b] bg-[#b4da33] px-5 font-mono text-xs font-black uppercase shadow-[4px_4px_0_#1d1d1b] disabled:opacity-60"
+                                    >
+                                        {busy
+                                            ? 'Preparando mesa…'
+                                            : 'Iniciar partida'}
+                                    </button>
+                                </div>
+                            )}
                     </header>
 
                     <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,0.85fr)]">

@@ -30,9 +30,9 @@ createInertiaApp({
         // Aviso enviado pelo servidor junto de um redirecionamento. O id impede
         // que reapareça em recarregamentos parciais.
         const showFlash = (pageProps: unknown) => {
-            const flash = (pageProps as { flash?: { toast?: { id: string; tone: 'success' | 'info' | 'warning' | 'error'; message: string } | null } })?.flash?.toast;
+            const flash = (pageProps as { flash?: { toast?: { id: string; tone: 'success' | 'info' | 'warning' | 'error'; title?: string; message: string } | null } })?.flash?.toast;
             if (flash) {
-                toast.show({ id: `flash:${flash.id}`, tone: flash.tone, message: flash.message });
+                toast.show({ id: `flash:${flash.id}`, tone: flash.tone, title: flash.title, message: flash.message });
             }
         };
         showFlash(props.initialPage.props);

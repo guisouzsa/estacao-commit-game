@@ -1,7 +1,8 @@
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import PlayerSearch from '@/Components/PlayerSearch';
-import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode } from 'react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { PropsWithChildren, ReactNode, useState } from 'react';
 
 const navItem =
     'inline-flex min-h-10 items-center border-b-[3px] px-2 font-mono text-[11px] font-bold uppercase tracking-wide transition sm:px-3';
@@ -10,7 +11,11 @@ export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const user = usePage().props.auth.user;
+    const { user, kind, unread_notifications: unreadCount = 0 } = usePage().props.auth;
+    // Visitante: joga sem conta. Rankings, busca e perfil são só de contas permanentes.
+    const isGuest = kind === 'guest';
+    const [leaving, setLeaving] = useState(false);
+    const [leavingBusy, setLeavingBusy] = useState(false);
     const dashboard = route().current('dashboard');
     const profile = route().current('profile.*');
     const ranking = route().current('rankings');
@@ -59,6 +64,7 @@ export default function Authenticated({
                         >
                             Convite
                         </Link>
+                        {!isGuest && (
                         <Link
                             aria-current={ranking ? 'page' : undefined}
                             className={`${navItem} gap-1.5 ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75 hover:border-[#f481c6] hover:text-white'}`}
@@ -79,33 +85,98 @@ export default function Authenticated({
                             </svg>
                             Rankings
                         </Link>
+                        )}
                     </nav>
 
-                    <div className="order-3 min-w-0 max-w-[420px] basis-full md:flex-1 md:basis-auto">
-                        <PlayerSearch />
-                    </div>
+                    {!isGuest && (
+                        <div className="order-3 min-w-0 max-w-[420px] basis-full md:flex-1 md:basis-auto">
+                            <PlayerSearch />
+                        </div>
+                    )}
 
                     <div className="order-2 ml-auto flex shrink-0 items-center gap-2 md:order-4">
-                        <Link
-                            aria-label="Meu perfil"
-                            className={`grid size-14 place-items-center border-2 transition focus:outline-none focus:ring-2 focus:ring-[#b4da33] ${
-                                profile
-                                    ? 'border-[#b4da33] bg-white/10'
-                                    : 'border-white/25 hover:border-[#b4da33]'
-                            }`}
-                            href={route('profile.edit')}
-                            title="Meu perfil"
-                        >
-                            <PlayerAvatar profile={user} size="sm" />
-                        </Link>
-                        <Link
-                            as="button"
-                            className="min-h-11 border-2 border-white/25 px-3 font-mono text-xs font-bold uppercase text-white/85 transition hover:border-[#f481c6] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#b4da33]"
-                            href={route('logout')}
-                            method="post"
-                        >
-                            Sair
-                        </Link>
+                        {isGuest ? (
+                            <>
+                                <div
+                                    className="flex min-h-14 items-center gap-2 border-2 border-white/25 px-2"
+                                    title="Você está jogando como visitante"
+                                >
+                                    <PlayerAvatar profile={user} size="xs" />
+                                    <div className="hidden min-w-0 leading-tight sm:block">
+                                        <strong className="block max-w-[9rem] truncate text-xs">
+                                            {user.username}
+                                        </strong>
+                                        <span className="font-mono text-[9px] font-bold uppercase text-[#b4da33]">
+                                            Visitante
+                                        </span>
+                                    </div>
+                                </div>
+                                <Link
+                                    className="hidden min-h-11 items-center border-2 border-[#b4da33] px-3 font-mono text-xs font-bold uppercase text-[#b4da33] transition hover:bg-[#b4da33] hover:text-[#1d1d1b] focus:outline-none focus:ring-2 focus:ring-[#b4da33] sm:inline-flex"
+                                    href={route('register')}
+                                >
+                                    Criar conta
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => setLeaving(true)}
+                                    className="min-h-11 border-2 border-white/25 px-3 font-mono text-xs font-bold uppercase text-white/85 transition hover:border-[#f481c6] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#b4da33]"
+                                >
+                                    Sair
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    aria-label={
+                                        unreadCount
+                                            ? `Notificações, ${unreadCount} não lidas`
+                                            : 'Notificações'
+                                    }
+                                    className="relative grid size-11 place-items-center border-2 border-white/25 transition hover:border-[#b4da33] focus:outline-none focus:ring-2 focus:ring-[#b4da33]"
+                                    href={route('notifications.index')}
+                                    title="Notificações"
+                                >
+                                    <svg
+                                        aria-hidden="true"
+                                        className="size-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="1.8"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7Zm4 10a2 2 0 0 0 4 0" />
+                                    </svg>
+                                    {unreadCount > 0 && (
+                                        <span className="absolute -right-1.5 -top-1.5 min-w-5 border-2 border-[#1d1d1b] bg-[#f481c6] px-1 text-center font-mono text-[10px] font-black leading-4 text-[#1d1d1b]">
+                                            {unreadCount > 99 ? '99+' : unreadCount}
+                                        </span>
+                                    )}
+                                </Link>
+                                <Link
+                                    aria-label="Meu perfil"
+                                    className={`grid size-14 place-items-center border-2 transition focus:outline-none focus:ring-2 focus:ring-[#b4da33] ${
+                                        profile
+                                            ? 'border-[#b4da33] bg-white/10'
+                                            : 'border-white/25 hover:border-[#b4da33]'
+                                    }`}
+                                    href={route('profile.edit')}
+                                    title="Meu perfil"
+                                >
+                                    <PlayerAvatar profile={user} size="sm" />
+                                </Link>
+                                <Link
+                                    as="button"
+                                    className="min-h-11 border-2 border-white/25 px-3 font-mono text-xs font-bold uppercase text-white/85 transition hover:border-[#f481c6] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#b4da33]"
+                                    href={route('logout')}
+                                    method="post"
+                                >
+                                    Sair
+                                </Link>
+                            </>
+                        )}
                     </div>
 
                     <nav
@@ -131,6 +202,7 @@ export default function Authenticated({
                         >
                             Entrar com convite
                         </Link>
+                        {!isGuest && (
                         <Link
                             aria-current={ranking ? 'page' : undefined}
                             className={`inline-flex shrink-0 items-center gap-1.5 border-b-[3px] px-3 py-2 font-mono text-[11px] font-bold uppercase ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75'}`}
@@ -151,9 +223,33 @@ export default function Authenticated({
                             </svg>
                             Rankings
                         </Link>
+                        )}
                     </nav>
                 </div>
             </header>
+
+            <ConfirmDialog
+                show={leaving}
+                title="Sair do jogo?"
+                confirmLabel="Sair do jogo"
+                busyLabel="Saindo..."
+                eyebrow="Visitante"
+                busy={leavingBusy}
+                onConfirm={() => {
+                    setLeavingBusy(true);
+                    router.post(route('guest.leave'), {}, {
+                        onFinish: () => {
+                            setLeavingBusy(false);
+                            setLeaving(false);
+                        },
+                    });
+                }}
+                onClose={() => setLeaving(false)}
+            >
+                Seu perfil temporário será apagado, junto com as salas que você
+                criou. Para guardar nome, avatar e histórico, crie uma conta
+                antes de sair.
+            </ConfirmDialog>
 
             {header && (
                 <section className="bg-[#f3f1ec]">

@@ -1,9 +1,9 @@
-import Modal from '@/Components/Modal';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import RoomCountdown from '@/Components/RoomCountdown';
-import ToastStack, { useToasts } from '@/Components/Toast';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { startRoomSync } from '@/lib/roomSync';
+import { toast } from '@/lib/toast';
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -28,23 +28,28 @@ type Room = {
     id: string;
     status: string;
     started_at?: string | null;
+    bot_slots?: number;
     participants: Participant[];
 };
+
+// Avisos da sala usam a fila global (sobrevive à navegação e evita repetição).
+const push = toast.show;
 
 export default function Show({
     room,
     isHost,
+    viewerKey,
     inviteUrl,
     expiresAt,
 }: {
     room: Room;
     isHost: boolean;
+    viewerKey?: string;
     inviteUrl?: string;
     expiresAt?: string | null;
 }) {
     const [busy, setBusy] = useState(false);
     const [confirming, setConfirming] = useState(false);
-    const { toasts, push, dismiss } = useToasts();
     const code = inviteUrl?.split('/').filter(Boolean).pop();
     const hasOtherHumans = room.participants.some(
         (participant) => !participant.is_host && !participant.player?.is_bot,
@@ -83,15 +88,31 @@ export default function Show({
         [room.id],
     );
 
-    useEffect(
-        () =>
-            router.on('invalid', (event) => {
-                if (event.detail.response.status !== 404) return;
-                event.preventDefault();
-                router.visit(route('dashboard'));
-            }),
-        [],
-    );
+    // Quem entrou ou saiu. Vem da comparação com o estado que o SERVIDOR acabou de
+    // enviar (nunca do conteúdo do evento), então eventos duplicados não repetem avisos.
+    const previousPlayers = useRef<Map<string, string> | null>(null);
+    useEffect(() => {
+        const current = new Map<string, string>();
+        room.participants.forEach((participant) => {
+            if (participant.player) {
+                current.set(participant.player.key, participant.player.username);
+            }
+        });
+        const before = previousPlayers.current;
+        previousPlayers.current = current;
+        if (!before) return; // primeira exibição: nada mudou ainda
+
+        current.forEach((name, key) => {
+            if (!before.has(key) && key !== viewerKey) {
+                toast.info(`@${name} entrou na sala.`);
+            }
+        });
+        before.forEach((name, key) => {
+            if (!current.has(key) && key !== viewerKey) {
+                toast.info(`@${name} saiu da sala.`);
+            }
+        });
+    }, [room.participants, viewerKey]);
 
     const copyInvite = async () => {
         if (!inviteUrl) return;
@@ -202,6 +223,16 @@ export default function Show({
                                 {room.participants.length}/4
                             </strong>
                         </div>
+                        {(room.bot_slots ?? 0) > 0 && (
+                            <p className="mt-3 inline-flex items-center gap-2 border-l-4 border-[#464498] bg-[#464498]/10 px-3 py-2 text-xs">
+                                <span className="border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase">
+                                    Bot
+                                </span>
+                                {room.bot_slots === 1
+                                    ? 'Você está jogando com um bot.'
+                                    : `Você está jogando com ${room.bot_slots} bots.`}
+                            </p>
+                        )}
                         {hasWaitingDeadline && (
                             <div className="mt-3 inline-flex flex-wrap items-center gap-x-2 gap-y-1 border-l-4 border-[#f0b429] bg-[#f0b429]/15 px-3 py-2 text-xs">
                                 <span>
@@ -372,42 +403,19 @@ export default function Show({
                 </div>
             </main>
 
-            <Modal
+            <ConfirmDialog
                 show={confirming}
-                onClose={() => !busy && setConfirming(false)}
-                maxWidth="md"
+                title="Excluir esta sala?"
+                confirmLabel="Excluir sala"
+                busyLabel="Excluindo..."
+                busy={busy}
+                onConfirm={cancel}
+                onClose={() => setConfirming(false)}
             >
-                <div className="p-5 sm:p-6">
-                    <p className="font-mono text-xs font-black uppercase tracking-[.16em] text-[#d01600]">
-                        Ação destrutiva
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black">
-                        Excluir esta sala?
-                    </h2>
-                    <p className="mt-3 text-sm leading-6 text-[#5b5953]">
-                        {hasOtherHumans
-                            ? 'Todos os participantes serão removidos e avisados. Essa ação não poderá ser desfeita.'
-                            : 'A sala e o convite serão removidos. Essa ação não poderá ser desfeita.'}
-                    </p>
-                    <div className="mt-6 flex justify-end gap-3">
-                        <button
-                            disabled={busy}
-                            onClick={() => setConfirming(false)}
-                            className="min-h-11 border-2 border-[#1d1d1b] bg-white px-4 font-mono text-xs font-bold uppercase"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            disabled={busy}
-                            onClick={cancel}
-                            className="min-h-11 border-2 border-[#1d1d1b] bg-[#d01600] px-4 font-mono text-xs font-black uppercase text-white disabled:opacity-60"
-                        >
-                            {busy ? 'Excluindo...' : 'Excluir sala'}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
-            <ToastStack toasts={toasts} onDismiss={dismiss} durationMs={5000} />
+                {hasOtherHumans
+                    ? 'Todos os participantes serão removidos e avisados. Essa ação não poderá ser desfeita.'
+                    : 'A sala e o convite serão removidos. Essa ação não poderá ser desfeita.'}
+            </ConfirmDialog>
         </AuthenticatedLayout>
     );
 }

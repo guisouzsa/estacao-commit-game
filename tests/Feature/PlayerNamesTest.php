@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\GameRoom;
 use App\Models\GuestProfile;
 use App\Models\User;
 use App\Support\GuestIdentity;
@@ -78,7 +79,7 @@ class PlayerNamesTest extends TestCase
     public function test_an_expired_guest_still_in_an_active_match_keeps_its_name(): void
     {
         ['profile' => $guest] = app(GuestIdentity::class)->create('Jogando', 'pixel', 'abc123xyz');
-        $room = \App\Models\GameRoom::create(['host_guest_id' => $guest->id, 'status' => 'playing', 'started_at' => now()]);
+        $room = GameRoom::create(['host_guest_id' => $guest->id, 'status' => 'playing', 'started_at' => now()]);
         $room->participants()->create(['guest_id' => $guest->id, 'kind' => 'guest', 'seat' => 1, 'joined_at' => now()]);
         $guest->forceFill(['expires_at' => now()->subHour()])->save();
 

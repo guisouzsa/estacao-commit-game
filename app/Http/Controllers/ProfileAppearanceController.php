@@ -6,24 +6,15 @@ use App\Http\Requests\ProfileAppearanceUpdateRequest;
 use App\Support\ProfileImageOptimizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use RuntimeException;
-use Throwable;
 
 class ProfileAppearanceController extends Controller
 {
     public function update(
         ProfileAppearanceUpdateRequest $request,
         ProfileImageOptimizer $imageOptimizer
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $user = $request->user();
         $validated = $request->validated();
-        $previousAvatar = $user->avatar;
-        $previousCover = $user->profile_cover;
-        $newFiles = [];
-
-        try {
         if (isset($validated['username'])) {
             $user->username = strtolower($validated['username']);
             $user->display_name = $user->username;
@@ -33,15 +24,13 @@ class ProfileAppearanceController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            $user->avatar = $imageOptimizer->store($request->file('avatar'), "avatars/{$user->id}", 800);
-            $newFiles[] = $user->avatar;
+            $user->avatar = $imageOptimizer->encode($request->file('avatar'), 800);
         } elseif ($validated['remove_avatar'] ?? false) {
             $user->avatar = null;
         }
 
         if ($request->hasFile('cover')) {
-            $user->profile_cover = $imageOptimizer->store($request->file('cover'), "covers/{$user->id}", 1920);
-            $newFiles[] = $user->profile_cover;
+            $user->profile_cover = $imageOptimizer->encode($request->file('cover'), 1920);
         } elseif ($validated['remove_cover'] ?? false) {
             $user->profile_cover = null;
         }
@@ -64,31 +53,7 @@ class ProfileAppearanceController extends Controller
                 }
             }
         });
-        } catch (Throwable $exception) {
-            foreach ($newFiles as $path) {
-                Storage::disk('public')->delete($path);
-            }
-
-            throw $exception;
-        }
-
-        if ($previousAvatar !== $user->avatar && $this->isManagedAvatar($previousAvatar, $user->id)) {
-            Storage::disk('public')->delete($previousAvatar);
-        }
-        if ($previousCover !== $user->profile_cover && $this->isManagedCover($previousCover, $user->id)) {
-            Storage::disk('public')->delete($previousCover);
-        }
 
         return back()->with('status', 'A aparência do perfil foi atualizada.');
-    }
-
-    private function isManagedAvatar(?string $path, string $userId): bool
-    {
-        return $path !== null && str_starts_with($path, "avatars/{$userId}/");
-    }
-
-    private function isManagedCover(?string $path, string $userId): bool
-    {
-        return $path !== null && str_starts_with($path, "covers/{$userId}/");
     }
 }

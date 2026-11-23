@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\NotificationController;
 use App\Models\GuestProfile;
 use App\Models\User;
 use App\Support\Actor;
@@ -9,7 +10,6 @@ use App\Support\AvatarUrl;
 use App\Support\PlayerPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -47,6 +47,11 @@ class HandleInertiaRequests extends Middleware
                 'kind' => $actor ? Actor::kind($actor) : null,
                 // Canal privado para avisos em tempo real desta pessoa.
                 'channel' => $actor ? Actor::channel($actor) : null,
+                // Só contas têm central de notificações. Closure: uma consulta por resposta
+                // de página, e nenhuma em recarregamentos parciais que não pedem "auth".
+                'unread_notifications' => fn () => $actor instanceof User
+                    ? $actor->unreadNotifications()->whereIn('type', NotificationController::TYPES)->count()
+                    : 0,
             ],
             'flash' => [
                 'toast' => fn () => $request->session()->get('toast'),

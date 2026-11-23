@@ -1,8 +1,11 @@
 <?php
 
+use App\Support\ErrorResponses;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,5 +25,6 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Páginas de erro com a identidade do jogo, sem expor detalhes técnicos.
+        $exceptions->respond(fn (Response $response, Throwable $exception, Request $request) => ErrorResponses::respond($response, $exception, $request));
     })->create();

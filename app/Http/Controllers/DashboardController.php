@@ -32,7 +32,7 @@ class DashboardController extends Controller
             ->withCount('participants')
             ->latest()
             ->limit(10)
-            ->get(['id','host_user_id','host_guest_id','status','created_at','started_at','empty_since','bot_slots'])
+            ->get(['id', 'host_user_id', 'host_guest_id', 'status', 'created_at', 'started_at', 'empty_since', 'bot_slots'])
             ->map(fn (GameRoom $room) => [
                 'id' => $room->id,
                 'status' => $room->status,
@@ -55,7 +55,7 @@ class DashboardController extends Controller
                 ->orderByRaw("CASE WHEN LOWER(username) = 'gui' THEN 0 ELSE 1 END")
                 ->inRandomOrder()
                 ->limit(5)
-                ->get(['id','username','avatar','profile_frame','profile_title'])
+                ->get(['id', 'username', 'avatar', 'profile_frame', 'profile_title'])
                 ->sortBy(fn (User $user) => strtolower($user->username) === 'gui' ? 0 : 1)
                 ->values()
                 ->map(fn (User $user) => [

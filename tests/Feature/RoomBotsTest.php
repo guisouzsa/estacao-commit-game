@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\GameRoom;
+use App\Models\GuestProfile;
 use App\Models\User;
 use App\Services\RoomExpirationService;
 use App\Support\Bots;
@@ -162,7 +163,7 @@ class RoomBotsTest extends TestCase
         // Nenhum guard nem provider de autenticação aponta para bots.
         $this->assertArrayNotHasKey('bot', config('auth.guards'));
         $models = collect(config('auth.providers'))->pluck('model')->all();
-        $this->assertSame([\App\Models\User::class, \App\Models\GuestProfile::class], array_values($models));
+        $this->assertSame([User::class, GuestProfile::class], array_values($models));
     }
 
     public function test_the_dashboard_tells_how_many_bots_a_room_has(): void

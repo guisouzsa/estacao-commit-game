@@ -6,10 +6,12 @@ use App\Models\GameRoom;
 use App\Models\GuestProfile;
 use App\Models\User;
 use App\Support\GuestIdentity;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -320,7 +322,7 @@ class GuestPlayTest extends TestCase
         [$abandoned] = $this->becomeGuest('Abandonado');
         $abandoned->forceFill(['expires_at' => now()->subHour()])->save();
         DatabaseNotification::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(), 'type' => 'x', 'notifiable_type' => GuestProfile::class,
+            'id' => (string) Str::uuid(), 'type' => 'x', 'notifiable_type' => GuestProfile::class,
             'notifiable_id' => $abandoned->id, 'data' => [],
         ]);
 
@@ -359,7 +361,7 @@ class GuestPlayTest extends TestCase
 
     public function test_the_prune_command_is_scheduled(): void
     {
-        $event = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+        $event = collect(app(Schedule::class)->events())
             ->first(fn ($event) => str_contains($event->command, 'guests:prune'));
 
         $this->assertNotNull($event);

@@ -9,11 +9,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table): void {
-            $table->unsignedInteger('matches_played')->nullable();
-            $table->unsignedInteger('matches_won')->nullable();
-            $table->unsignedInteger('matches_lost')->nullable();
-        });
+        // Algumas instalações receberam estas colunas pelo SQL manual antes de a
+        // migration entrar no histórico. Verificar uma a uma torna a execução
+        // idempotente e preserva os dados já existentes.
+        foreach (['matches_played', 'matches_won', 'matches_lost'] as $column) {
+            if (! Schema::hasColumn('users', $column)) {
+                Schema::table('users', function (Blueprint $table) use ($column): void {
+                    $table->unsignedInteger($column)->nullable();
+                });
+            }
+        }
 
         DB::table('users')
             ->whereRaw('LOWER(username) = ?', ['gui'])
@@ -25,8 +30,15 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table): void {
-            $table->dropColumn(['matches_played', 'matches_won', 'matches_lost']);
-        });
+        $columns = array_values(array_filter(
+            ['matches_played', 'matches_won', 'matches_lost'],
+            fn (string $column): bool => Schema::hasColumn('users', $column),
+        ));
+
+        if ($columns !== []) {
+            Schema::table('users', function (Blueprint $table) use ($columns): void {
+                $table->dropColumn($columns);
+            });
+        }
     }
 };

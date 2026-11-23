@@ -105,7 +105,7 @@ export default function PlayerProfileCard({
                 <span className="text-[#b4da33]">Perfil do jogador</span>
             </div>
 
-            <div className="relative aspect-[3/1] min-h-[8rem] overflow-hidden bg-[#464498]">
+            <div className="relative aspect-[5/1] min-h-[7rem] overflow-hidden bg-[#464498]">
                 {profile.cover ? (
                     <img
                         src={profile.cover}

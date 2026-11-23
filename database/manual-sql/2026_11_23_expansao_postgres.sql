@@ -4,6 +4,7 @@
 -- ANTES de publicar o código desta expansão. É o equivalente exato das migrations:
 --   2026_11_23_000000_add_guest_profiles_and_participant_kinds
 --   2026_11_23_000100_create_follows_table
+--   2026_11_23_000200_store_profile_images_in_database  (foto e capa passam a ficar no banco: colunas TEXT)
 -- (gerado pelo próprio Laravel em modo "pretend", sem conectar a nenhum banco).
 --
 -- Pré-requisito: as migrations de 22/11 (empty_since e notifications) já aplicadas.
@@ -52,8 +53,13 @@ alter table "follows" add constraint "follows_follower_id_foreign" foreign key (
 alter table "follows" add constraint "follows_followed_id_foreign" foreign key ("followed_id") references "users" ("id") on delete cascade;
 ALTER TABLE follows ADD CONSTRAINT follows_not_self CHECK (follower_id <> followed_id);
 
+-- 2026_11_23_000200_store_profile_images_in_database
+-- Sem isto, salvar foto ou capa FALHA no PostgreSQL: a imagem em base64 não cabe em varchar(255).
+ALTER TABLE users ALTER COLUMN avatar TYPE text, ALTER COLUMN profile_cover TYPE text;
+
 -- Registra as migrations como aplicadas (sem isso, um "migrate" futuro tentaria criá-las de novo).
 INSERT INTO migrations (migration, batch)
 SELECT m, (SELECT COALESCE(MAX(batch), 0) + 1 FROM migrations)
 FROM (VALUES ('2026_11_23_000000_add_guest_profiles_and_participant_kinds'),
-             ('2026_11_23_000100_create_follows_table')) AS v(m);
+             ('2026_11_23_000100_create_follows_table'),
+             ('2026_11_23_000200_store_profile_images_in_database')) AS v(m);

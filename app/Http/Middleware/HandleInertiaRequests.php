@@ -88,7 +88,7 @@ class HandleInertiaRequests extends Middleware
         // Mesmo formato de avatar em toda a aplicação (URL relativa, com fallback por semente).
         $authUser['avatar'] = AvatarUrl::for($actor->avatar);
         $authUser['avatar_style'] = 'pixel';
-        $authUser['avatar_seed'] = (string) $actor->id;
+        $authUser['avatar_seed'] = PlayerPresenter::seed((string) $actor->id);
         $authUser['kind'] = 'user';
         $authUser['cover'] = $actor->profile_cover
             ? AvatarUrl::for($actor->profile_cover)

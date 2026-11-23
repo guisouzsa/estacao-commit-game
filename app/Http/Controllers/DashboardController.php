@@ -10,6 +10,7 @@ use App\Services\RoomExpirationService;
 use App\Support\PlayerPresenter;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -58,7 +59,8 @@ class DashboardController extends Controller
                 ->sortBy(fn (User $user) => strtolower($user->username) === 'gui' ? 0 : 1)
                 ->values()
                 ->map(fn (User $user) => [
-                    ...PlayerPresenter::user($user),
+                    // Sem `key` (que carrega o ID): a Dashboard só precisa exibir o jogador.
+                    ...Arr::except(PlayerPresenter::user($user), ['key']),
                     'profile_title' => $user->profile_title,
                 ]),
         ]);

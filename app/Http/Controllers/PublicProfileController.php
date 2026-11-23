@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
+use App\Support\AvatarUrl;
+use App\Support\PlayerPresenter;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Badge;
@@ -21,15 +22,13 @@ class PublicProfileController extends Controller
             'profile' => [
                 'username' => $user->username,
                 'bio' => $user->bio,
-                'avatar' => $user->avatar
-                    ? (str_starts_with($user->avatar, 'http')
-                        ? $user->avatar
-                        : Storage::disk('public')->url($user->avatar))
-                    : null,
+                'avatar' => AvatarUrl::for($user->avatar),
+                'avatar_style' => 'pixel',
+                'avatar_seed' => PlayerPresenter::seed((string) $user->id),
                 'avatar_position_x' => $user->avatar_position_x ?? 50,
                 'avatar_position_y' => $user->avatar_position_y ?? 50,
                 'avatar_zoom' => $user->avatar_zoom ?? 100,
-                'cover' => $user->profile_cover ? Storage::disk('public')->url($user->profile_cover) : null,
+                'cover' => AvatarUrl::for($user->profile_cover),
                 'cover_position_x' => $user->cover_position_x ?? 50,
                 'cover_position_y' => $user->cover_position_y ?? 50,
                 'profile_frame' => $user->profile_frame ?? 'standard',

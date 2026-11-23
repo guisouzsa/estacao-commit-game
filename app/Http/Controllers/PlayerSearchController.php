@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\AvatarUrl;
+use App\Support\PlayerPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class PlayerSearchController extends Controller
 {
@@ -24,15 +25,13 @@ class PlayerSearchController extends Controller
             })
             ->orderByRaw('LOWER(username)')
             ->limit(8)
-            ->get(['username', 'display_name', 'avatar', 'profile_frame', 'profile_title'])
+            ->get(['id', 'username', 'display_name', 'avatar', 'profile_frame', 'profile_title'])
             ->map(fn (User $user) => [
                 'username' => $user->username,
                 'display_name' => $user->display_name ?: $user->username,
-                'avatar' => $user->avatar
-                    ? (str_starts_with($user->avatar, 'http')
-                        ? $user->avatar
-                        : Storage::disk('public')->url($user->avatar))
-                    : null,
+                'avatar' => AvatarUrl::for($user->avatar),
+                'avatar_style' => 'pixel',
+                'avatar_seed' => PlayerPresenter::seed((string) $user->id),
                 'profile_frame' => $user->profile_frame,
                 'profile_title' => $user->profile_title,
             ]);

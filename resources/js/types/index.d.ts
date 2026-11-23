@@ -18,7 +18,7 @@ export interface User {
     created_at?: string;
 }
 
-export type ToastTone = 'success' | 'warning' | 'info';
+export type ToastTone = 'success' | 'warning' | 'info' | 'error';
 
 export type ToastPayload = {
     id: string;

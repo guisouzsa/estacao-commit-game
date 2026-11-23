@@ -28,7 +28,7 @@ Route::get('/jogar', [GuestPlayController::class, 'create'])->name('guest.create
 Route::get('/jogar/nome', [GuestPlayController::class, 'availability'])->middleware('throttle:30,1')->name('guest.name');
 Route::post('/jogar', [GuestPlayController::class, 'store'])->middleware('throttle:6,1')->name('guest.store');
 Route::post('/jogar/sair', [GuestPlayController::class, 'destroy'])->middleware('auth:visitor')->name('guest.leave');
-Route::get('/convites/{token}', [GameRoomController::class, 'open'])->where('token', '[A-Z2-9]{5}')->middleware('throttle:30,1')->name('invites.open');
+Route::get('/convites/{token}', [GameRoomController::class, 'open'])->where('token', '[A-Za-z2-9]{5}')->middleware('throttle:30,1')->name('invites.open');
 
 // Quem joga: conta permanente (guard web) OU visitante (guard visitor).
 Route::middleware('auth:web,visitor')->group(function () {
@@ -42,7 +42,7 @@ Route::middleware('auth:web,visitor')->group(function () {
     Route::post('/salas/{room}/partida', [GameMatchController::class, 'start'])->whereUuid('room')->middleware('throttle:10,1')->name('games.start');
     Route::get('/salas/{room}/partida', [GameMatchController::class, 'show'])->whereUuid('room')->name('games.show');
     Route::post('/salas/{room}/partida/acoes', [GameMatchController::class, 'action'])->whereUuid('room')->middleware('throttle:60,1')->name('games.action');
-    Route::post('/convites/{token}', [GameRoomController::class, 'join'])->where('token', '[A-Z2-9]{5}')->middleware('throttle:10,1')->name('rooms.join');
+    Route::post('/convites/{token}', [GameRoomController::class, 'join'])->where('token', '[A-Za-z2-9]{5}')->middleware('throttle:10,1')->name('rooms.join');
 });
 
 Route::middleware('auth')->group(function () {

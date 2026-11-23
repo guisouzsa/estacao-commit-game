@@ -50,6 +50,9 @@ export default function Show({
 }) {
     const [busy, setBusy] = useState(false);
     const [confirming, setConfirming] = useState(false);
+    const [confirmingLeave, setConfirmingLeave] = useState(false);
+    const [confirmingRevoke, setConfirmingRevoke] = useState(false);
+    const [confirmingStart, setConfirmingStart] = useState(false);
     const code = inviteUrl?.split('/').filter(Boolean).pop();
     const hasOtherHumans = room.participants.some(
         (participant) => !participant.is_host && !participant.player?.is_bot,
@@ -147,13 +150,15 @@ export default function Show({
         setBusy(true);
         router.delete(route('rooms.invite.revoke', room.id), {
             preserveScroll: true,
-            onSuccess: () =>
+            onSuccess: () => {
                 push({
                     id: `revoke:${Date.now()}`,
                     tone: 'info',
                     message:
                         'Convite revogado. O código antigo não funciona mais.',
-                }),
+                });
+                setConfirmingRevoke(false);
+            },
             onFinish: () => setBusy(false),
         });
     };
@@ -161,6 +166,20 @@ export default function Show({
         setBusy(true);
         router.delete(route('rooms.cancel', room.id), {
             onSuccess: () => setConfirming(false),
+            onFinish: () => setBusy(false),
+        });
+    };
+    const leave = () => {
+        setBusy(true);
+        router.delete(route('rooms.leave', room.id), {
+            onSuccess: () => setConfirmingLeave(false),
+            onFinish: () => setBusy(false),
+        });
+    };
+    const start = () => {
+        setBusy(true);
+        router.post(route('games.start', room.id), {}, {
+            onSuccess: () => setConfirmingStart(false),
             onFinish: () => setBusy(false),
         });
     };
@@ -187,7 +206,7 @@ export default function Show({
                                     Sala {room.id.slice(0, 8)}
                                 </span>
                             </div>
-                            {canDelete && (
+                            {canDelete ? (
                                 <button
                                     type="button"
                                     aria-label="Excluir sala"
@@ -207,7 +226,15 @@ export default function Show({
                                     </svg>
                                     Excluir sala
                                 </button>
-                            )}
+                            ) : room.status === 'waiting' && !isHost ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmingLeave(true)}
+                                    className="inline-flex min-h-10 items-center border-2 border-transparent px-2 font-mono text-[11px] font-black uppercase text-[#d01600] hover:border-[#d01600] hover:bg-white"
+                                >
+                                    Sair da sala
+                                </button>
+                            ) : null}
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                             <div className="min-w-0">
@@ -263,17 +290,7 @@ export default function Show({
                                     <button
                                         type="button"
                                         disabled={busy}
-                                        onClick={() => {
-                                            setBusy(true);
-                                            router.post(
-                                                route('games.start', room.id),
-                                                {},
-                                                {
-                                                    onFinish: () =>
-                                                        setBusy(false),
-                                                },
-                                            );
-                                        }}
+                                        onClick={() => setConfirmingStart(true)}
                                         className="min-h-11 border-2 border-[#1d1d1b] bg-[#b4da33] px-5 font-mono text-xs font-black uppercase shadow-[4px_4px_0_#1d1d1b] disabled:opacity-60"
                                     >
                                         {busy
@@ -396,7 +413,7 @@ export default function Show({
                                             <button
                                                 type="button"
                                                 disabled={busy}
-                                                onClick={revokeInvite}
+                                                onClick={() => setConfirmingRevoke(true)}
                                                 className="min-h-10 px-1 font-mono text-[10px] font-bold uppercase text-white/75 underline decoration-[#f481c6] decoration-2 underline-offset-4 hover:text-white disabled:opacity-50"
                                             >
                                                 Revogar convite
@@ -448,6 +465,44 @@ export default function Show({
                 {hasOtherHumans
                     ? 'Todos os participantes serão removidos e avisados. Essa ação não poderá ser desfeita.'
                     : 'A sala e o convite serão removidos. Essa ação não poderá ser desfeita.'}
+            </ConfirmDialog>
+            <ConfirmDialog
+                show={confirmingLeave}
+                title="Sair desta sala?"
+                confirmLabel="Sair da sala"
+                busyLabel="Saindo..."
+                busy={busy}
+                onConfirm={leave}
+                onClose={() => setConfirmingLeave(false)}
+            >
+                Sua vaga ficará livre para outra pessoa. Você poderá voltar com
+                um convite válido enquanto a sala ainda estiver aguardando.
+            </ConfirmDialog>
+            <ConfirmDialog
+                show={confirmingRevoke}
+                title="Revogar este convite?"
+                confirmLabel="Revogar convite"
+                busyLabel="Revogando..."
+                busy={busy}
+                onConfirm={revokeInvite}
+                onClose={() => setConfirmingRevoke(false)}
+            >
+                O código atual deixará de funcionar imediatamente. Quem já está
+                na sala continuará nela, e você poderá gerar outro convite.
+            </ConfirmDialog>
+            <ConfirmDialog
+                show={confirmingStart}
+                title="Iniciar a partida?"
+                confirmLabel="Iniciar partida"
+                busyLabel="Preparando mesa..."
+                eyebrow="Mesa completa"
+                tone="default"
+                busy={busy}
+                onConfirm={start}
+                onClose={() => setConfirmingStart(false)}
+            >
+                Os quatro lugares estão ocupados. Ao começar, o lobby será
+                fechado e todos serão levados para o tabuleiro.
             </ConfirmDialog>
         </AuthenticatedLayout>
     );

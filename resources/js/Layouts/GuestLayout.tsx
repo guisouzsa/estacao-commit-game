@@ -1,10 +1,10 @@
+import BrandLogo from '@/Components/BrandLogo';
 import { Link } from '@inertiajs/react';
 import { PropsWithChildren } from 'react';
 
 function AuthBrand({ dark = false }: { dark?: boolean }) {
-    return <Link href="/" className={`flex items-center gap-3 text-xl font-black ${dark ? 'text-ink' : 'text-white'}`}>
-        <img src="/images/estacao-commit/mascots/gato-login.png" alt="" className="h-12 w-14 object-contain" />
-        <span>ESTAÇÃO <span className={dark ? 'text-[#464498]' : 'text-lime'}>COMMIT</span></span>
+    return <Link href="/" aria-label="Estação Commit — início">
+        <BrandLogo dark={dark} />
     </Link>;
 }
 

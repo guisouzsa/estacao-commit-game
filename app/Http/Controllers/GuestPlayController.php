@@ -85,7 +85,14 @@ class GuestPlayController extends Controller
     /** Sair do jogo: apaga o perfil temporário (libera o nome) e o cookie. */
     public function destroy(Request $request, GuestIdentity $identity): RedirectResponse
     {
-        Auth::guard('visitor')->user()?->delete();
+        $guest = Auth::guard('visitor')->user();
+        abort_unless($guest, 401);
+        abort_unless(
+            $guest->newQuery()->whereKey($guest->getKey())->deletable()->exists(),
+            409,
+            'Seu perfil temporário está ligado a uma sala ou partida ativa. Saia ou encerre a sala antes de apagar o perfil.',
+        );
+        $guest->delete();
 
         return redirect('/')->withCookie($identity->forgetCookie());
     }

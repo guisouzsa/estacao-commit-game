@@ -1,3 +1,4 @@
+import BrandLogo from '@/Components/BrandLogo';
 import { PageProps } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { PointerEvent, useState } from 'react';
@@ -13,10 +14,7 @@ const journey = [
 ];
 
 function Brand() {
-    return <span className="flex items-center gap-3 font-display text-xl font-black tracking-tight text-white">
-        <img src="/images/estacao-commit/mascots/gato-login.png" alt="" className="h-12 w-14 object-contain" />
-        <span>ESTAÇÃO <span className="text-lime">COMMIT</span></span>
-    </span>;
+    return <BrandLogo />;
 }
 
 export default function Welcome({ auth }: PageProps) {

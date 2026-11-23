@@ -1,18 +1,32 @@
+import BrandLogo from '@/Components/BrandLogo';
 import { Head, Link } from '@inertiajs/react';
 
 type Kind =
+    | 'invite'
     | 'room'
     | 'profile'
     | 'page'
+    | 'bad_request'
+    | 'unauthenticated'
     | 'forbidden'
+    | 'method'
+    | 'request_timeout'
     | 'gone'
     | 'conflict'
     | 'session'
+    | 'invalid_data'
     | 'throttle'
     | 'server'
-    | 'maintenance';
+    | 'bad_gateway'
+    | 'maintenance'
+    | 'gateway_timeout'
+    | 'http_version';
 
 const COPY: Record<Kind, { title: string; body: string; retry?: boolean }> = {
+    invite: {
+        title: 'Esse convite não está disponível.',
+        body: 'Ele pode ter expirado, sido revogado ou pertencer a uma sala que já terminou.',
+    },
     room: {
         title: 'Ops! Essa sala não foi encontrada.',
         // Não afirma o motivo: a sala pode nunca ter existido ou ser de outra pessoa.
@@ -26,9 +40,26 @@ const COPY: Record<Kind, { title: string; body: string; retry?: boolean }> = {
         title: 'Ops! Essa página não foi encontrada.',
         body: 'O endereço pode estar incorreto ou a página não existe mais.',
     },
+    bad_request: {
+        title: 'Não conseguimos entender esse pedido.',
+        body: 'Confira o endereço ou volte uma página e tente novamente.',
+    },
+    unauthenticated: {
+        title: 'Você precisa se identificar para continuar.',
+        body: 'Crie um perfil temporário para jogar agora, sem e-mail e sem senha.',
+    },
     forbidden: {
         title: 'Você não tem acesso a esta página.',
         body: 'Se acha que isso é um engano, volte ao início e tente de novo.',
+    },
+    method: {
+        title: 'Essa ação não está disponível desse jeito.',
+        body: 'Volte à página anterior e use os botões do próprio jogo para continuar.',
+    },
+    request_timeout: {
+        title: 'O pedido demorou mais do que o esperado.',
+        body: 'A conexão pode estar instável. Confira o estado atual antes de tentar novamente.',
+        retry: true,
     },
     gone: {
         title: 'Isso não está mais disponível.',
@@ -43,6 +74,10 @@ const COPY: Record<Kind, { title: string; body: string; retry?: boolean }> = {
         body: 'Por segurança, a página ficou parada por muito tempo. Atualize e tente de novo.',
         retry: true,
     },
+    invalid_data: {
+        title: 'Algumas informações precisam ser corrigidas.',
+        body: 'Volte ao formulário, confira os campos destacados e tente novamente.',
+    },
     throttle: {
         title: 'Calma, jogador!',
         body: 'Muitas tentativas seguidas. Aguarde um instante e tente de novo.',
@@ -53,10 +88,24 @@ const COPY: Record<Kind, { title: string; body: string; retry?: boolean }> = {
         body: 'Já registramos o problema. Tente novamente em instantes.',
         retry: true,
     },
+    bad_gateway: {
+        title: 'Não conseguimos alcançar o servidor do jogo.',
+        body: 'A comunicação foi interrompida no caminho. Tente novamente em instantes.',
+        retry: true,
+    },
     maintenance: {
         title: 'Estamos em manutenção.',
         body: 'O serviço está temporariamente indisponível. Volte em alguns minutos.',
         retry: true,
+    },
+    gateway_timeout: {
+        title: 'O servidor demorou para responder.',
+        body: 'Sua solicitação pode ainda estar sendo processada. Atualize para conferir o estado real antes de repetir a ação.',
+        retry: true,
+    },
+    http_version: {
+        title: 'Seu navegador não conseguiu conversar com o servidor.',
+        body: 'Atualize o navegador ou tente novamente usando uma versão mais recente.',
     },
 };
 
@@ -73,10 +122,14 @@ export default function Error({
     status,
     kind,
     canDashboard,
+    message,
+    requestId,
 }: {
     status: number;
     kind: Kind;
     canDashboard: boolean;
+    message?: string | null;
+    requestId?: string | null;
 }) {
     const copy = COPY[kind] ?? COPY.server;
 
@@ -89,14 +142,7 @@ export default function Error({
                     className="inline-flex items-center gap-3 font-black"
                     href="/"
                 >
-                    <img
-                        alt=""
-                        className="h-11 w-12 object-contain"
-                        src="/images/estacao-commit/mascots/gato-login.png"
-                    />
-                    <span>
-                        ESTAÇÃO <span className="text-[#464498]">COMMIT</span>
-                    </span>
+                    <BrandLogo dark />
                 </Link>
 
                 <p className="mt-8 font-mono text-xs font-bold uppercase tracking-[.2em] text-[#464498]">
@@ -105,7 +151,15 @@ export default function Error({
                 <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
                     {copy.title}
                 </h1>
-                <p className="mt-3 leading-7 text-[#5b5953]">{copy.body}</p>
+                <p className="mt-3 leading-7 text-[#5b5953]">
+                    {message || copy.body}
+                </p>
+                {requestId && (
+                    <p className="mt-4 border-2 border-[#1d1d1b] bg-white px-3 py-2 font-mono text-xs text-[#5b5953]">
+                        Código de suporte:{' '}
+                        <strong className="text-[#1d1d1b]">{requestId}</strong>
+                    </p>
+                )}
                 <p className="mt-5 border-l-4 border-[#b4da33] bg-white px-3 py-2 font-mono text-xs text-[#5b5953]">
                     git checkout -b <span className="font-black">voltar-ao-inicio</span>
                 </p>

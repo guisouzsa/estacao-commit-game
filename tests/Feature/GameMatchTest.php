@@ -119,7 +119,10 @@ class GameMatchTest extends TestCase
         $this->actingAs($users[0])->post(route('games.action', $room), $this->action($match, 'play_card', ['card' => 'pull_request']));
 
         $match->refresh();
+        $room->refresh();
         $this->assertSame('finished', $match->status);
+        $this->assertSame('finished', $room->status);
+        $this->assertNotNull($room->finished_at);
         $this->assertSame($host->id, $match->winner_participant_id);
         $this->assertSame(1, $users[0]->fresh()->matches_won);
         $this->assertSame(1, $users[1]->fresh()->matches_lost);

@@ -1,4 +1,5 @@
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import BrandLogo from '@/Components/BrandLogo';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import PlayerSearch from '@/Components/PlayerSearch';
 import { Link, router, usePage } from '@inertiajs/react';
@@ -29,16 +30,7 @@ export default function Authenticated({
                         className="order-1 flex shrink-0 items-center gap-2"
                         href={route('dashboard')}
                     >
-                        <img
-                            alt=""
-                            className="size-10 object-contain sm:size-11"
-                            src="/images/estacao-commit/mascots/foguete-gato.png"
-                        />
-                        <span className="text-[10px] font-black leading-tight sm:text-sm lg:text-base">
-                            ESTAÇÃO
-                            <br />
-                            <span className="text-[#b4da33]">COMMIT</span>
-                        </span>
+                        <BrandLogo compact />
                     </Link>
 
                     <nav

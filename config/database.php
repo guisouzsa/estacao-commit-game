@@ -80,7 +80,12 @@ return [
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            // Clientes libpq antigos no Windows não enviam SNI. A Neon aceita o
+            // endpoint junto da senha como fallback; em ambientes modernos, deixe
+            // DB_ENDPOINT vazio e a senha permanece inalterada.
+            'password' => env('DB_ENDPOINT')
+                ? 'endpoint='.env('DB_ENDPOINT').';'.env('DB_PASSWORD', '')
+                : env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,

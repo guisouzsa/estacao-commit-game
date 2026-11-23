@@ -89,6 +89,13 @@ class GameMatchController extends Controller
 
     private function recordStatistics(GameRoom $room, GameMatch $match): void
     {
+        // O ciclo de vida da sala precisa terminar junto com a partida. A limpeza
+        // de visitantes usa este estado para preservar apenas partidas em andamento.
+        $room->forceFill([
+            'status' => 'finished',
+            'finished_at' => $match->finished_at ?? now(),
+        ])->save();
+
         $room->participants()->with('user')->whereNotNull('user_id')->get()->each(function ($participant) use ($match): void {
             $user = $participant->user;
             $user->matches_played = ($user->matches_played ?? 0) + 1;

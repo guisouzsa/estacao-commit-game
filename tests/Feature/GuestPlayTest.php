@@ -225,6 +225,24 @@ class GuestPlayTest extends TestCase
             ->assertSessionHasNoErrors();
     }
 
+    public function test_a_guest_cannot_delete_their_identity_during_an_active_match(): void
+    {
+        [$profile, $token] = $this->becomeGuest('EmPartida');
+        $this->asGuest($token)->post(route('rooms.store'), ['bots' => 3]);
+        $room = GameRoom::firstOrFail();
+        $this->asGuest($token)->post(route('games.start', $room))->assertRedirect();
+
+        $this->asGuest($token)->withHeaders(['X-Inertia' => 'true', 'X-Requested-With' => 'XMLHttpRequest'])->post(route('guest.leave'))
+            ->assertRedirect()
+            ->assertSessionHas('toast.message', 'Seu perfil temporário está ligado a uma sala ou partida ativa. Saia ou encerre a sala antes de apagar o perfil.');
+
+        $this->assertNotNull(GuestProfile::find($profile->id));
+        $this->assertDatabaseHas('room_participants', [
+            'room_id' => $room->id,
+            'guest_id' => $profile->id,
+        ]);
+    }
+
     // ---- salas com visitantes ----------------------------------------------------
 
     public function test_a_visitor_can_create_a_room_and_is_its_host(): void

@@ -96,11 +96,51 @@ class ErrorPagesTest extends TestCase
     public function test_every_error_kind_the_server_can_send_has_a_message_in_the_page(): void
     {
         $page = file_get_contents(base_path('resources/js/Pages/Error.tsx'));
-        $kinds = ['room', 'profile', 'page', 'forbidden', 'gone', 'conflict', 'session', 'throttle', 'server', 'maintenance'];
+        $kinds = [
+            'invite', 'room', 'profile', 'page', 'bad_request', 'unauthenticated',
+            'forbidden', 'method', 'request_timeout', 'gone', 'conflict', 'session',
+            'invalid_data', 'throttle', 'server', 'bad_gateway', 'maintenance',
+            'gateway_timeout', 'http_version',
+        ];
 
         foreach ($kinds as $kind) {
             $this->assertMatchesRegularExpression('/\b'.$kind.': \{/', $page, "falta texto para '$kind'");
         }
+    }
+
+    public function test_every_supported_http_status_is_mapped_to_its_own_kind(): void
+    {
+        config(['app.debug' => false]);
+        $expected = [
+            400 => 'bad_request', 401 => 'unauthenticated', 403 => 'forbidden',
+            404 => 'page', 405 => 'method', 408 => 'request_timeout',
+            409 => 'conflict', 410 => 'gone', 419 => 'session',
+            422 => 'invalid_data', 429 => 'throttle', 500 => 'server',
+            502 => 'bad_gateway', 503 => 'maintenance', 504 => 'gateway_timeout',
+            505 => 'http_version',
+        ];
+
+        foreach ($expected as $status => $kind) {
+            Route::get("/_teste/status-{$status}", fn () => abort($status));
+            $this->get("/_teste/status-{$status}")
+                ->assertStatus($status)
+                ->assertInertia(fn ($page) => $page
+                    ->component('Error')
+                    ->where('status', $status)
+                    ->where('kind', $kind));
+        }
+    }
+
+    public function test_internal_errors_receive_a_support_code_in_the_page_and_header(): void
+    {
+        config(['app.debug' => false]);
+        Route::get('/_teste/codigo-suporte', fn () => throw new \RuntimeException('falha interna'));
+
+        $response = $this->get('/_teste/codigo-suporte')->assertStatus(500);
+        $requestId = $response->headers->get('X-Request-Id');
+
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{8}$/', (string) $requestId);
+        $response->assertInertia(fn ($page) => $page->where('requestId', $requestId));
     }
 
     public function test_unknown_pages_and_profiles_have_their_own_messages(): void

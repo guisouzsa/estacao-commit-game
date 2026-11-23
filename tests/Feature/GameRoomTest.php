@@ -44,6 +44,24 @@ class GameRoomTest extends TestCase
         $this->assertSame(4, $room->participants()->count());
     }
 
+    public function test_invitation_codes_are_accepted_case_insensitively(): void
+    {
+        $host = User::factory()->create();
+        $this->actingAs($host)->post(route('rooms.store'));
+        $room = GameRoom::firstOrFail();
+        $token = basename(parse_url(session('invite_url'), PHP_URL_PATH));
+        $player = User::factory()->create();
+
+        $this->actingAs($player)->get(route('invites.open', strtolower($token)))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Invites/Show')
+                ->where('code', $token));
+
+        $this->actingAs($player)->post(route('rooms.join', strtolower($token)))
+            ->assertRedirect(route('rooms.show', $room));
+    }
+
     public function test_revoked_invitation_cannot_be_used(): void
     {
         $host = User::factory()->create();

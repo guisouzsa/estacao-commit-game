@@ -1,45 +1,130 @@
+import Modal from '@/Components/Modal';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import { PlayerSummary } from '@/Components/PlayerSearch';
 import RoomCountdown from '@/Components/RoomCountdown';
+import ToastStack, { useToasts } from '@/Components/Toast';
 import WelcomeTutorial from '@/Components/WelcomeTutorial';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
-import { FormEvent, useEffect, useState } from 'react';
+import { startChannelSync } from '@/lib/roomSync';
+import { PageProps } from '@/types';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 
 type Room = {
     id: string;
     status: string;
     participants_count: number;
     expires_at: string | null;
+    can_delete: boolean;
+};
+
+type Notice = {
+    id: string;
+    reason: string;
+    message: string;
 };
 
 export default function Dashboard({
     rooms = [],
+    notices = [],
     inviteUrl,
     recommendedPlayers = [],
 }: {
     rooms: Room[];
+    notices?: Notice[];
     inviteUrl?: string;
     recommendedPlayers: PlayerSummary[];
 }) {
+    const { auth, flash } = usePage<PageProps>().props;
+    const userId = auth.user.id;
     const [invite, setInvite] = useState('');
     const [creating, setCreating] = useState(false);
     const [joining, setJoining] = useState(false);
+    const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const deletingRef = useRef(false);
+    const { toasts, push, dismiss } = useToasts();
 
+    // Tempo real pelo canal privado do usuário, com o polling de 15 s como
+    // contingência enquanto houver sala aguardando. Os avisos persistidos vêm
+    // junto das salas em cada recarregamento.
+    const roomsRef = useRef(rooms);
+    roomsRef.current = rooms;
+    useEffect(
+        () =>
+            startChannelSync({
+                echo: window.Echo,
+                channelName: `App.Models.User.${userId}`,
+                event: '.user.notices.changed',
+                reload: (done) =>
+                    router.reload({
+                        only: ['rooms', 'notices'],
+                        onFinish: done,
+                    }),
+                shouldPoll: () =>
+                    roomsRef.current.some(
+                        (room) => room.status === 'waiting' && room.expires_at,
+                    ),
+                document,
+                window,
+            }),
+        [userId],
+    );
+
+    // Avisos persistidos (ex.: sala excluída automaticamente). O servidor os
+    // marca como lidos ao entregar; o id evita exibir o mesmo aviso duas vezes.
     useEffect(() => {
-        if (
-            !rooms.some((room) => room.status === 'waiting' && room.expires_at)
-        ) {
-            return;
-        }
-
-        const interval = window.setInterval(
-            () => router.reload({ only: ['rooms'] }),
-            15000,
+        notices.forEach((notice) =>
+            push({
+                id: `notice:${notice.id}`,
+                tone: notice.reason === 'empty_timeout' ? 'warning' : 'info',
+                message: notice.message,
+            }),
         );
+    }, [notices, push]);
 
-        return () => window.clearInterval(interval);
-    }, [rooms]);
+    const flashToast = flash?.toast;
+    useEffect(() => {
+        if (flashToast) push({ ...flashToast, id: `flash:${flashToast.id}` });
+    }, [flashToast?.id, push]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Se a sala sumiu (excluída pelo prazo ou por outra requisição) enquanto o
+    // usuário confirmava, mostra um aviso em vez da tela de erro.
+    useEffect(
+        () =>
+            router.on('invalid', (event) => {
+                const status = event.detail.response.status;
+                if (!deletingRef.current || ![403, 404, 409].includes(status)) {
+                    return;
+                }
+                event.preventDefault();
+                setRoomToDelete(null);
+                push({
+                    id: `gone:${Date.now()}`,
+                    tone: 'info',
+                    message:
+                        status === 403
+                            ? 'Só o criador da sala pode excluí-la.'
+                            : 'Esta sala não existe mais ou não pode ser excluída.',
+                });
+                router.reload({ only: ['rooms', 'notices'] });
+            }),
+        [push],
+    );
+
+    const confirmDelete = () => {
+        if (!roomToDelete) return;
+        setDeleting(true);
+        deletingRef.current = true;
+        router.delete(route('rooms.cancel', roomToDelete.id), {
+            preserveScroll: true,
+            onSuccess: () => setRoomToDelete(null),
+            onFinish: () => {
+                setDeleting(false);
+                deletingRef.current = false;
+            },
+        });
+    };
 
     const join = (event: FormEvent) => {
         event.preventDefault();
@@ -154,10 +239,10 @@ export default function Dashboard({
                         {rooms.length ? (
                             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 {rooms.map((room) => (
+                                    <div key={room.id} className="relative">
                                     <Link
-                                        key={room.id}
                                         href={route('rooms.show', room.id)}
-                                        className="border-2 border-[#1d1d1b] bg-white p-4 shadow-[3px_3px_0_#1d1d1b]"
+                                        className="block border-2 border-[#1d1d1b] bg-white p-4 shadow-[3px_3px_0_#1d1d1b]"
                                     >
                                         <div className="flex justify-between gap-2">
                                             <strong className="font-mono text-xs uppercase">
@@ -187,6 +272,28 @@ export default function Dashboard({
                                             Sala {room.id.slice(0, 8)}
                                         </p>
                                     </Link>
+                                    {room.can_delete && (
+                                        <button
+                                            type="button"
+                                            title="Excluir sala"
+                                            aria-label={`Excluir sala ${room.id.slice(0, 8)}`}
+                                            onClick={() => setRoomToDelete(room)}
+                                            className="absolute bottom-3 right-3 grid size-8 place-items-center border-2 border-[#1d1d1b] bg-white text-[#5b5953] hover:bg-[#d01600] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498]"
+                                        >
+                                            <svg
+                                                aria-hidden="true"
+                                                viewBox="0 0 24 24"
+                                                className="size-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2.5"
+                                                strokeLinecap="square"
+                                            >
+                                                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                    </div>
                                 ))}
                             </div>
                         ) : (
@@ -226,6 +333,40 @@ export default function Dashboard({
                     </section>
                 </div>
             </main>
+            <Modal
+                show={roomToDelete !== null}
+                onClose={() => !deleting && setRoomToDelete(null)}
+            >
+                <div className="p-6">
+                    <p className="font-mono text-xs font-black uppercase tracking-[.16em] text-[#d01600]">
+                        Ação destrutiva
+                    </p>
+                    <h2 className="mt-2 text-2xl font-black">
+                        Excluir esta sala?
+                    </h2>
+                    <p className="mt-3 text-sm leading-6 text-[#5b5953]">
+                        Tem certeza de que deseja excluir esta sala? Essa ação
+                        não poderá ser desfeita.
+                    </p>
+                    <div className="mt-6 flex justify-end gap-3">
+                        <button
+                            disabled={deleting}
+                            onClick={() => setRoomToDelete(null)}
+                            className="min-h-11 border-2 border-[#1d1d1b] bg-white px-4 font-mono text-xs font-bold uppercase"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            disabled={deleting}
+                            onClick={confirmDelete}
+                            className="min-h-11 border-2 border-[#1d1d1b] bg-[#d01600] px-4 font-mono text-xs font-black uppercase text-white disabled:opacity-60"
+                        >
+                            {deleting ? 'Excluindo...' : 'Excluir sala'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+            <ToastStack toasts={toasts} onDismiss={dismiss} />
         </AuthenticatedLayout>
     );
 }

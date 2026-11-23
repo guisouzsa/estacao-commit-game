@@ -9,6 +9,7 @@ type Participant = { id: number; seat: number; user: Player };
 type Room = {
     id: string;
     status: string;
+    started_at?: string | null;
     host: Player;
     participants: Participant[];
 };
@@ -21,7 +22,7 @@ export default function Show({
     room: Room;
     isHost: boolean;
     inviteUrl?: string;
-    expiresAt: string;
+    expiresAt?: string | null;
 }) {
     const [busy, setBusy] = useState(false);
     const [confirming, setConfirming] = useState(false);
@@ -29,8 +30,9 @@ export default function Show({
     const hasOtherParticipants = room.participants.some(
         (participant) => participant.user.id !== room.host.id,
     );
-    const canDelete =
-        isHost && room.status === 'waiting' && !hasOtherParticipants;
+    // O servidor revalida a permissão; isto só decide se o botão aparece.
+    // Salas com partida iniciada ou encerrada guardam histórico.
+    const canDelete = isHost && !room.started_at;
     const hasWaitingDeadline =
         room.status === 'waiting' && !hasOtherParticipants;
     const roomTitle =
@@ -59,10 +61,25 @@ export default function Show({
                     console.warn(
                         'Tempo real indisponível para esta sala; usando atualização periódica.',
                     ),
+                // A sala foi excluída: só navega. O motivo e o aviso vêm do
+                // servidor, na Dashboard.
+                onRoomDeleted: () => router.visit(route('dashboard')),
                 document,
                 window,
             }),
         [room.id],
+    );
+
+    // Se um recarregamento descobrir que a sala já não existe (404), volta à
+    // Dashboard em vez de mostrar a tela de erro.
+    useEffect(
+        () =>
+            router.on('invalid', (event) => {
+                if (event.detail.response.status !== 404) return;
+                event.preventDefault();
+                router.visit(route('dashboard'));
+            }),
+        [],
     );
 
     const cancel = () => {
@@ -98,6 +115,10 @@ export default function Show({
                                 </p>
                                 {hasWaitingDeadline && (
                                     <p className="mt-3 border-l-4 border-[#f0b429] bg-[#f0b429]/15 px-3 py-2">
+                                        <span className="mb-1 block text-sm">
+                                            Esta sala será excluída se continuar
+                                            vazia por 5 minutos.
+                                        </span>
                                         <RoomCountdown expiresAt={expiresAt} />
                                     </p>
                                 )}
@@ -162,25 +183,11 @@ export default function Show({
                                         Convide jogadores
                                     </h2>
                                     <p className="mt-1 text-sm text-white/70">
-                                        Se ninguém entrar, a sala expira após
-                                        cinco minutos. Convites podem ser
+                                        Se ninguém entrar, a sala será excluída
+                                        após cinco minutos. Convites podem ser
                                         revogados.
                                     </p>
                                 </div>
-                                {canDelete ? (
-                                    <button
-                                        aria-label="Excluir sala"
-                                        onClick={() => setConfirming(true)}
-                                        className="border border-white/50 px-3 py-2 font-mono text-xs font-bold"
-                                    >
-                                        Excluir sala
-                                    </button>
-                                ) : (
-                                    <p className="max-w-sm text-xs font-bold text-white/60">
-                                        Outro jogador já entrou. Esta sala não
-                                        pode mais ser excluída.
-                                    </p>
-                                )}
                             </div>
                             {inviteUrl ? (
                                 <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -223,6 +230,22 @@ export default function Show({
                                 className="mt-5 block text-xs font-bold text-white/70 underline"
                             >
                                 Revogar convite atual
+                            </button>
+                        </section>
+                    )}
+                    {canDelete && (
+                        <section className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-[#1d1d1b]/30 pt-4">
+                            <p className="max-w-xl text-xs text-[#5b5953]">
+                                {hasOtherParticipants
+                                    ? 'Excluir a sala remove todos os participantes, e cada um deles será avisado.'
+                                    : 'Não vai jogar agora? Você pode excluir esta sala.'}
+                            </p>
+                            <button
+                                aria-label="Excluir sala"
+                                onClick={() => setConfirming(true)}
+                                className="min-h-10 border-2 border-[#d01600] bg-white px-3 font-mono text-xs font-black uppercase text-[#d01600] hover:bg-[#d01600] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498]"
+                            >
+                                Excluir sala
                             </button>
                         </section>
                     )}

@@ -45,7 +45,7 @@ export default function RoomCountdown({
             aria-live="off"
             className="font-mono text-xs font-bold uppercase tabular-nums text-[#464498]"
         >
-            Expira em {minutes}:{String(seconds).padStart(2, '0')}
+            Exclusão em {minutes}:{String(seconds).padStart(2, '0')}
         </span>
     );
 }

@@ -43,7 +43,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $this->authUser($actor),
+                'user' => $this->authUser($actor, $request),
                 'kind' => $actor ? Actor::kind($actor) : null,
                 // Canal privado para avisos em tempo real desta pessoa.
                 'channel' => $actor ? Actor::channel($actor) : null,
@@ -60,7 +60,7 @@ class HandleInertiaRequests extends Middleware
     }
 
     /** @return array<string, mixed>|null */
-    private function authUser(mixed $actor): ?array
+    private function authUser(mixed $actor, Request $request): ?array
     {
         if ($actor instanceof GuestProfile) {
             // Visitante: só o necessário para exibir nome e avatar. Sem e-mail nem dados de conta.
@@ -78,7 +78,6 @@ class HandleInertiaRequests extends Middleware
             'avatar_position_x',
             'avatar_position_y',
             'avatar_zoom',
-            'profile_cover',
             'cover_position_x',
             'cover_position_y',
             'profile_frame',
@@ -95,7 +94,9 @@ class HandleInertiaRequests extends Middleware
         $authUser['avatar_style'] = 'pixel';
         $authUser['avatar_seed'] = PlayerPresenter::seed((string) $actor->id);
         $authUser['kind'] = 'user';
-        $authUser['cover'] = $actor->profile_cover
+        // A capa pode pesar centenas de KB (a imagem fica no banco) e só a tela de
+        // edição do perfil a usa: não vai no JSON de todas as outras páginas.
+        $authUser['cover'] = $actor->profile_cover && $request->routeIs('profile.*')
             ? AvatarUrl::for($actor->profile_cover)
             : null;
         $authUser['developer_badge'] = $actor->developer_badge

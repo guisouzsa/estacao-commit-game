@@ -52,7 +52,7 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect('/');
     }
 
-    public function test_unverified_user_is_directed_to_verification_notice(): void
+    public function test_user_without_verified_email_goes_straight_to_the_dashboard_after_login(): void
     {
         $user = User::factory()->unverified()->create();
 
@@ -62,7 +62,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('verification.notice'));
+        $response->assertRedirect(route('dashboard', absolute: false));
     }
 
     public function test_login_rate_limiting_after_repeated_failures(): void

@@ -110,12 +110,10 @@ function initialFormData(
 }
 
 export default function Edit({
-    mustVerifyEmail,
     appearanceOptions,
     profileExtras = emptyExtras,
     status,
 }: {
-    mustVerifyEmail: boolean;
     status?: string;
     appearanceOptions: Options;
     profileExtras: ProfileExtrasData;
@@ -963,8 +961,6 @@ export default function Edit({
                             <div className="grid items-stretch gap-4 lg:grid-cols-3">
                                 <UpdateProfileInformationForm
                                     className="h-full"
-                                    mustVerifyEmail={mustVerifyEmail}
-                                    status={status}
                                 />
                                 <UpdatePasswordForm />
                                 <DeleteUserForm />

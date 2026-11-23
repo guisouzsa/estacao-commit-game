@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Rules\EmailDomainAcceptsMail;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -40,6 +41,10 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
+                // Só consulta o DNS quando o endereço realmente muda.
+                fn ($attribute, $value, $fail) => strtolower((string) $value) === strtolower((string) $this->user()->email)
+                    ? null
+                    : (new EmailDomainAcceptsMail)->validate($attribute, $value, $fail),
                 function ($attribute, $value, $fail): void {
                     $exists = User::query()
                         ->whereRaw('LOWER(email) = ?', [strtolower($value)])

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +19,6 @@ class ProfileController extends Controller
     {
         $user = $request->user()->load(['badges' => fn ($query) => $query->whereRaw('active IS TRUE'), 'profileLinks', 'achievementBadge']);
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'googleLinked' => filled($request->user()->google_id),
             'appearanceOptions' => [

@@ -4,7 +4,6 @@ namespace Tests\Feature\Auth;
 
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -127,7 +126,7 @@ class RegistrationTest extends TestCase
         $this->assertSame('player_one', $user->display_name);
     }
 
-    public function test_registration_creates_unverified_account_and_sends_verification_email(): void
+    public function test_registration_does_not_send_a_verification_email_and_grants_access(): void
     {
         Notification::fake();
 
@@ -139,10 +138,11 @@ class RegistrationTest extends TestCase
         ]);
 
         $user = User::where('email', 'unverified@example.com')->firstOrFail();
-        $this->assertFalse($user->hasVerifiedEmail());
         $this->assertNull($user->email_verified_at);
         $this->assertTrue($user->password_set);
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertNothingSent();
+        $this->assertAuthenticatedAs($user);
+        $this->get('/dashboard')->assertOk();
     }
 
     public function test_registration_rejects_invalid_email_format(): void

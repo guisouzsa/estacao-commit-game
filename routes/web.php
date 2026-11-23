@@ -18,7 +18,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)->middleware('auth')->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::post('/onboarding/concluir', [OnboardingController::class, 'complete'])->name('onboarding.complete');

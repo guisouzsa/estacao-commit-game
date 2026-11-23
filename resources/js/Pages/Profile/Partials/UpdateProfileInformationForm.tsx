@@ -3,16 +3,12 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 export default function UpdateProfileInformation({
-    mustVerifyEmail,
-    status,
     className = '',
 }: {
-    mustVerifyEmail: boolean;
-    status?: string;
     className?: string;
 }) {
     const user = usePage().props.auth.user;
@@ -60,30 +56,6 @@ export default function UpdateProfileInformation({
                     />
                     <InputError className="mt-2" message={errors.email} />
                 </div>
-
-                {mustVerifyEmail && user.email_verified_at === null && (
-                    <div>
-                        <p className="mt-2 text-sm text-[#5b5953]">
-                            Seu e-mail ainda não foi verificado.
-                            <Link
-                                as="button"
-                                className="ml-1 underline decoration-2 underline-offset-2 hover:text-[#464498] focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[#464498]"
-                                href={route('verification.send')}
-                                method="post"
-                            >
-                                Reenviar e-mail de verificação.
-                            </Link>
-                        </p>
-                        {status === 'verification-link-sent' && (
-                            <div
-                                className="mt-2 text-sm font-medium text-[#464498]"
-                                role="status"
-                            >
-                                Um novo link de verificação foi enviado.
-                            </div>
-                        )}
-                    </div>
-                )}
 
                 <div className="mt-auto flex flex-wrap items-center gap-3 pt-2">
                     <PrimaryButton

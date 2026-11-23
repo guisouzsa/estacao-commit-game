@@ -114,4 +114,17 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | E-mail Domain Check
+    |--------------------------------------------------------------------------
+    |
+    | Quando ativo, o cadastro (e a troca de e-mail no perfil) só aceita
+    | endereços cujo domínio existe e recebe e-mail (consulta DNS). Desative
+    | com EMAIL_DNS_CHECK=false se o DNS do servidor estiver indisponível.
+    |
+    */
+
+    'email_dns_check' => env('EMAIL_DNS_CHECK', true),
+
 ];

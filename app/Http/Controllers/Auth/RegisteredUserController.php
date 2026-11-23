@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\EmailDomainAcceptsMail;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -58,6 +59,7 @@ class RegisteredUserController extends Controller
                 'lowercase',
                 'email',
                 'max:255',
+                new EmailDomainAcceptsMail,
                 function ($attribute, $value, $fail): void {
                     if (User::query()
                         ->whereRaw('LOWER(email) = ?', [strtolower($value)])

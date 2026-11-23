@@ -152,6 +152,23 @@ class RoomBotsTest extends TestCase
         $this->assertSame(0, app(RoomExpirationService::class)->expireDueRooms());
     }
 
+    public function test_mixed_room_keeps_bots_and_lets_humans_take_only_the_open_seats(): void
+    {
+        $room = $this->createRoom(User::factory()->create(), 2);
+        $code = basename(parse_url(session('invite_url'), PHP_URL_PATH));
+
+        $friend = User::factory()->create();
+        $this->actingAs($friend)->post(route('rooms.join', $code))->assertRedirect();
+
+        $this->assertSame(4, $room->participants()->count());
+        $this->assertSame(2, $room->participants()->where('kind', 'bot')->count());
+        $this->assertSame(2, $room->participants()->where('kind', 'user')->count());
+
+        // Mesa cheia: um terceiro humano é recusado e nenhum bot é acrescentado.
+        $this->actingAs(User::factory()->create())->post(route('rooms.join', $code))->assertStatus(409);
+        $this->assertSame(4, $room->participants()->count());
+    }
+
     public function test_bots_cannot_authenticate_or_call_routes(): void
     {
         // Bots não têm credencial: nenhum guard os reconhece. Só existe o participante.
@@ -174,5 +191,37 @@ class RoomBotsTest extends TestCase
         $this->actingAs($host)->get(route('dashboard'))->assertInertia(fn ($page) => $page
             ->where('rooms.0.bot_slots', 2)
             ->where('rooms.0.participants_count', 3));
+    }
+
+    public function test_the_dashboard_provides_three_distinct_bot_previews_for_the_guided_creation(): void
+    {
+        $host = User::factory()->create();
+
+        $this->actingAs($host)->get(route('dashboard'))->assertInertia(fn ($page) => $page
+            ->has('botPreviews', 3)
+            ->where('botPreviews.0.kind', 'bot')
+            ->where('botPreviews.0.is_bot', true)
+            ->has('botPreviews.0.username')
+            ->has('botPreviews.0.avatar_seed'));
+    }
+
+    public function test_repeating_the_same_creation_intent_does_not_create_a_second_room(): void
+    {
+        $host = User::factory()->create();
+        $requestId = fake()->uuid();
+
+        $first = $this->actingAs($host)->post(route('rooms.store'), [
+            'bots' => 2,
+            'request_id' => $requestId,
+        ]);
+        $second = $this->actingAs($host)->post(route('rooms.store'), [
+            'bots' => 2,
+            'request_id' => $requestId,
+        ]);
+
+        $first->assertRedirect();
+        $second->assertRedirect($first->headers->get('Location'));
+        $this->assertDatabaseCount('game_rooms', 1);
+        $this->assertDatabaseCount('room_participants', 3);
     }
 }

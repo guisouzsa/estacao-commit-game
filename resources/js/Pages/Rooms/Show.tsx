@@ -138,6 +138,35 @@ export default function Show({
             });
         }
     };
+    const copyCode = async () => {
+        if (!code) return;
+        try {
+            await navigator.clipboard.writeText(code);
+            toast.success('Código da sala copiado.');
+        } catch {
+            toast.warning('Não foi possível copiar o código.');
+        }
+    };
+    const shareInvite = async () => {
+        if (!inviteUrl) return;
+        if (!navigator.share) {
+            await copyInvite();
+            return;
+        }
+
+        try {
+            await navigator.share({
+                title: 'Jogue Estação Commit comigo',
+                text: `Entre na minha sala com o código ${code}.`,
+                url: inviteUrl,
+            });
+        } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                return;
+            }
+            toast.warning('Não foi possível abrir o compartilhamento.');
+        }
+    };
     const createInvite = () => {
         setBusy(true);
         router.post(
@@ -178,10 +207,14 @@ export default function Show({
     };
     const start = () => {
         setBusy(true);
-        router.post(route('games.start', room.id), {}, {
-            onSuccess: () => setConfirmingStart(false),
-            onFinish: () => setBusy(false),
-        });
+        router.post(
+            route('games.start', room.id),
+            {},
+            {
+                onSuccess: () => setConfirmingStart(false),
+                onFinish: () => setBusy(false),
+            },
+        );
     };
 
     return (
@@ -390,10 +423,10 @@ export default function Show({
                                             </strong>
                                             <button
                                                 type="button"
-                                                onClick={copyInvite}
+                                                onClick={copyCode}
                                                 className="min-h-11 border-2 border-white bg-[#b4da33] px-3 font-mono text-[11px] font-black uppercase text-[#1d1d1b] hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f481c6]"
                                             >
-                                                Copiar
+                                                Copiar código
                                             </button>
                                         </div>
                                         <input
@@ -405,6 +438,22 @@ export default function Show({
                                             }
                                             className="mt-2 w-full border border-white/30 bg-white/10 px-2 py-2 font-mono text-[10px] text-white"
                                         />
+                                        <div className="mt-2 grid grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={copyInvite}
+                                                className="min-h-10 border-2 border-white/60 px-2 font-mono text-[10px] font-black uppercase hover:border-white hover:bg-white hover:text-[#1d1d1b]"
+                                            >
+                                                Copiar link
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={shareInvite}
+                                                className="min-h-10 border-2 border-white/60 px-2 font-mono text-[10px] font-black uppercase hover:border-white hover:bg-white hover:text-[#1d1d1b]"
+                                            >
+                                                Compartilhar
+                                            </button>
+                                        </div>
                                         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                                             <p className="text-xs text-white/65">
                                                 Válido por até 24 horas ou até
@@ -413,7 +462,9 @@ export default function Show({
                                             <button
                                                 type="button"
                                                 disabled={busy}
-                                                onClick={() => setConfirmingRevoke(true)}
+                                                onClick={() =>
+                                                    setConfirmingRevoke(true)
+                                                }
                                                 className="min-h-10 px-1 font-mono text-[10px] font-bold uppercase text-white/75 underline decoration-[#f481c6] decoration-2 underline-offset-4 hover:text-white disabled:opacity-50"
                                             >
                                                 Revogar convite

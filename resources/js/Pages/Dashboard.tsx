@@ -2,6 +2,7 @@ import ConfirmDialog from '@/Components/ConfirmDialog';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import { PlayerSummary } from '@/Components/PlayerSearch';
 import RoomCountdown from '@/Components/RoomCountdown';
+import RoomCreationModal, { BotPreview } from '@/Components/RoomCreationModal';
 import WelcomeTutorial from '@/Components/WelcomeTutorial';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { startChannelSync } from '@/lib/roomSync';
@@ -30,18 +31,19 @@ export default function Dashboard({
     notices = [],
     inviteUrl,
     recommendedPlayers = [],
+    botPreviews = [],
 }: {
     rooms: Room[];
     notices?: Notice[];
     inviteUrl?: string;
     recommendedPlayers: PlayerSummary[];
+    botPreviews: BotPreview[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const channel = auth.channel;
     const [invite, setInvite] = useState('');
-    const [creating, setCreating] = useState(false);
+    const [createOpen, setCreateOpen] = useState(false);
     const [joining, setJoining] = useState(false);
-    const [bots, setBots] = useState(0);
     const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
     const [deleting, setDeleting] = useState(false);
 
@@ -149,56 +151,12 @@ export default function Dashboard({
                                 Você será o anfitrião e receberá um convite
                                 seguro válido por 24 horas.
                             </p>
-                            <fieldset className="mt-5">
-                                <legend className="font-mono text-[11px] font-bold uppercase tracking-[.12em] text-[#b4da33]">
-                                    Bots na sala
-                                </legend>
-                                <div
-                                    className="mt-2 grid grid-cols-4 gap-2"
-                                    role="radiogroup"
-                                    aria-label="Quantidade de bots"
-                                >
-                                    {[0, 1, 2, 3].map((count) => (
-                                        <button
-                                            key={count}
-                                            type="button"
-                                            role="radio"
-                                            aria-checked={bots === count}
-                                            onClick={() => setBots(count)}
-                                            className={`min-h-11 border-2 font-mono text-sm font-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-                                                bots === count
-                                                    ? 'border-white bg-[#b4da33] text-[#1d1d1b]'
-                                                    : 'border-white/40 text-white hover:border-white'
-                                            }`}
-                                        >
-                                            {count}
-                                        </button>
-                                    ))}
-                                </div>
-                                <p
-                                    className="mt-2 text-xs leading-5 text-white/80"
-                                    aria-live="polite"
-                                >
-                                    {4 - bots}{' '}
-                                    {4 - bots === 1 ? 'humano' : 'humanos'} (você
-                                    + {3 - bots}) · {bots}{' '}
-                                    {bots === 1 ? 'bot' : 'bots'} · 4 de 4
-                                    lugares
-                                </p>
-                            </fieldset>
                             <button
-                                disabled={creating}
-                                onClick={() => {
-                                    setCreating(true);
-                                    router.post(
-                                        route('rooms.store'),
-                                        { bots },
-                                        { onFinish: () => setCreating(false) },
-                                    );
-                                }}
+                                type="button"
+                                onClick={() => setCreateOpen(true)}
                                 className="mt-5 min-h-12 border-2 border-white bg-[#b4da33] px-5 font-mono text-sm font-black uppercase text-[#1d1d1b] shadow-[4px_4px_0_#1d1d1b] disabled:opacity-60"
                             >
-                                {creating ? 'Criando...' : 'Criar sala privada'}
+                                Criar sala
                             </button>
                         </article>
                         <article
@@ -248,67 +206,72 @@ export default function Dashboard({
                             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 {rooms.map((room) => (
                                     <div key={room.id} className="relative">
-                                    <Link
-                                        href={route('rooms.show', room.id)}
-                                        className="block border-2 border-[#1d1d1b] bg-white p-4 shadow-[3px_3px_0_#1d1d1b]"
-                                    >
-                                        <div className="flex justify-between gap-2">
-                                            <strong className="font-mono text-xs uppercase">
-                                                {room.status === 'waiting'
-                                                    ? 'Aguardando jogadores'
-                                                    : room.status === 'expired'
-                                                      ? 'Sala expirada'
-                                                      : room.status}
-                                            </strong>
-                                            <span>
-                                                {room.participants_count}/4
-                                            </span>
-                                        </div>
-                                        {(room.expires_at ||
-                                            room.status === 'expired') && (
-                                            <div className="mt-3 border-t border-[#1d1d1b]/10 pt-2">
-                                                <RoomCountdown
-                                                    expiresAt={room.expires_at}
-                                                    expired={
-                                                        room.status ===
-                                                        'expired'
-                                                    }
-                                                />
-                                            </div>
-                                        )}
-                                        <p className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                                            Sala {room.id.slice(0, 8)}
-                                            {room.bot_slots > 0 && (
-                                                <span className="border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase">
-                                                    {room.bot_slots}{' '}
-                                                    {room.bot_slots === 1
-                                                        ? 'bot'
-                                                        : 'bots'}
-                                                </span>
-                                            )}
-                                        </p>
-                                    </Link>
-                                    {room.can_delete && (
-                                        <button
-                                            type="button"
-                                            title="Excluir sala"
-                                            aria-label={`Excluir sala ${room.id.slice(0, 8)}`}
-                                            onClick={() => setRoomToDelete(room)}
-                                            className="absolute bottom-3 right-3 grid size-8 place-items-center border-2 border-[#1d1d1b] bg-white text-[#5b5953] hover:bg-[#d01600] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498]"
+                                        <Link
+                                            href={route('rooms.show', room.id)}
+                                            className="block border-2 border-[#1d1d1b] bg-white p-4 shadow-[3px_3px_0_#1d1d1b]"
                                         >
-                                            <svg
-                                                aria-hidden="true"
-                                                viewBox="0 0 24 24"
-                                                className="size-4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2.5"
-                                                strokeLinecap="square"
+                                            <div className="flex justify-between gap-2">
+                                                <strong className="font-mono text-xs uppercase">
+                                                    {room.status === 'waiting'
+                                                        ? 'Aguardando jogadores'
+                                                        : room.status ===
+                                                            'expired'
+                                                          ? 'Sala expirada'
+                                                          : room.status}
+                                                </strong>
+                                                <span>
+                                                    {room.participants_count}/4
+                                                </span>
+                                            </div>
+                                            {(room.expires_at ||
+                                                room.status === 'expired') && (
+                                                <div className="mt-3 border-t border-[#1d1d1b]/10 pt-2">
+                                                    <RoomCountdown
+                                                        expiresAt={
+                                                            room.expires_at
+                                                        }
+                                                        expired={
+                                                            room.status ===
+                                                            'expired'
+                                                        }
+                                                    />
+                                                </div>
+                                            )}
+                                            <p className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                                                Sala {room.id.slice(0, 8)}
+                                                {room.bot_slots > 0 && (
+                                                    <span className="border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase">
+                                                        {room.bot_slots}{' '}
+                                                        {room.bot_slots === 1
+                                                            ? 'bot'
+                                                            : 'bots'}
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </Link>
+                                        {room.can_delete && (
+                                            <button
+                                                type="button"
+                                                title="Excluir sala"
+                                                aria-label={`Excluir sala ${room.id.slice(0, 8)}`}
+                                                onClick={() =>
+                                                    setRoomToDelete(room)
+                                                }
+                                                className="absolute bottom-3 right-3 grid size-8 place-items-center border-2 border-[#1d1d1b] bg-white text-[#5b5953] hover:bg-[#d01600] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498]"
                                             >
-                                                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
-                                            </svg>
-                                        </button>
-                                    )}
+                                                <svg
+                                                    aria-hidden="true"
+                                                    viewBox="0 0 24 24"
+                                                    className="size-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="square"
+                                                >
+                                                    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                                                </svg>
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -361,6 +324,12 @@ export default function Dashboard({
                 Tem certeza de que deseja excluir esta sala? Essa ação não
                 poderá ser desfeita.
             </ConfirmDialog>
+            <RoomCreationModal
+                show={createOpen}
+                host={auth.user}
+                botPreviews={botPreviews}
+                onClose={() => setCreateOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

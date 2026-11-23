@@ -7,6 +7,7 @@ use App\Models\RoomParticipant;
 use App\Models\User;
 use App\Notifications\RoomDeleted;
 use App\Services\RoomExpirationService;
+use App\Support\Bots;
 use App\Support\PlayerPresenter;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -47,6 +48,12 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'rooms' => $rooms,
+            // Identidades reais do catálogo usadas apenas na prévia. A criação
+            // continua sorteando e validando bots exclusivamente no servidor.
+            'botPreviews' => collect(array_keys(Bots::all()))
+                ->take((int) config('bots.max_per_room'))
+                ->map(fn (string $key) => PlayerPresenter::bot($key))
+                ->values(),
             // Avisos persistidos (ex.: sala excluída). Ao serem entregues viram
             // "lidos", então não reaparecem. A closure só roda quando incluída.
             'notices' => fn () => $this->takeNotices($actor),

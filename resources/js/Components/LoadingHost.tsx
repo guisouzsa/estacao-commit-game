@@ -5,6 +5,8 @@ type Notice = { title: string; message: string };
 
 /** A tela de espera só aparece se a página demorar mais que isto. Antes disso, nada pisca. */
 const SLOW_MS = 2000;
+/** Depois disto a tela de espera oferece "Tentar de novo" e "Fechar". */
+const STUCK_MS = 8000;
 
 const DEFAULT_NOTICE: Notice = {
     title: 'Aguarde um instante…',
@@ -59,7 +61,16 @@ function noticeFor(
  */
 export default function LoadingHost() {
     const [notice, setNotice] = useState<Notice | null>(null);
+    const [stuck, setStuck] = useState(false);
     const timer = useRef<number | undefined>(undefined);
+
+    // Nunca prende a pessoa: se a tela de espera passar de 8 s, aparece uma saída.
+    useEffect(() => {
+        setStuck(false);
+        if (!notice) return;
+        const escape = window.setTimeout(() => setStuck(true), STUCK_MS);
+        return () => window.clearTimeout(escape);
+    }, [notice]);
 
     useEffect(() => {
         const clear = () => window.clearTimeout(timer.current);
@@ -87,16 +98,15 @@ export default function LoadingHost() {
             const { notice: next, delayMs } = noticeFor(method, url);
             timer.current = window.setTimeout(() => setNotice(next), delayMs);
         });
-        const offFinish = router.on('finish', (event) => {
-            // Cancelada/interrompida ou concluída: some. (Navegação completa reacende abaixo.)
-            if (
-                event.detail.visit.completed ||
-                event.detail.visit.cancelled ||
-                event.detail.visit.interrupted
-            ) {
-                clear();
-                setNotice(null);
-            }
+        // Qualquer fim de visita encerra a espera: sucesso, erro de validação, cancelamento,
+        // interrupção ou falha de rede. (Navegação completa reacende abaixo, se demorar.)
+        const offFinish = router.on('finish', () => {
+            clear();
+            setNotice(null);
+        });
+        const offException = router.on('exception', () => {
+            clear();
+            setNotice(null);
         });
         // Navegação completa: se a próxima página demorar mais de 2 s, avisa; se for rápida, a
         // página antiga é descartada antes e o aviso nem chega a existir.
@@ -121,6 +131,7 @@ export default function LoadingHost() {
             clear();
             offStart();
             offFinish();
+            offException();
             window.removeEventListener('beforeunload', onUnload);
             window.removeEventListener('pageshow', onShow);
         };
@@ -153,6 +164,29 @@ export default function LoadingHost() {
                 >
                     <div className="loading-bar h-full w-1/3 bg-[#b4da33]" />
                 </div>
+                {stuck && (
+                    <div className="mt-4">
+                        <p className="text-sm font-bold">
+                            Está demorando mais que o normal.
+                        </p>
+                        <div className="mt-3 flex justify-center gap-2">
+                            <button
+                                className="min-h-11 border-2 border-[#1d1d1b] bg-[#b4da33] px-4 font-mono text-[11px] font-black uppercase"
+                                onClick={() => window.location.reload()}
+                                type="button"
+                            >
+                                Tentar de novo
+                            </button>
+                            <button
+                                className="min-h-11 border-2 border-[#1d1d1b] bg-white px-4 font-mono text-[11px] font-black uppercase"
+                                onClick={() => setNotice(null)}
+                                type="button"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

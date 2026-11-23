@@ -184,11 +184,19 @@ class RealtimeInfrastructureTest extends TestCase
         }
     }
 
-    public function test_postgres_uses_native_parameters_so_boolean_columns_accept_booleans(): void
+    public function test_postgres_keeps_emulated_prepares_for_the_pooler_and_sends_booleans_as_text(): void
     {
         $database = require base_path('config/database.php');
+        $options = $database['connections']['pgsql']['options'];
 
-        $this->assertSame([], $database['connections']['pgsql']['options']);
+        // Prepares nativos + pooler do Neon abortam transações (25P02).
+        if (extension_loaded('pdo_pgsql')) {
+            $this->assertTrue($options[\PDO::ATTR_EMULATE_PREPARES]);
+        }
+
+        $connection = new \App\Database\PooledPostgresConnection(fn () => null, 'neondb');
+        $this->assertSame(['true', 'false', 1, 'x'], $connection->prepareBindings([true, false, 1, 'x']));
+        $this->assertInstanceOf(\App\Database\PooledPostgresConnection::class, \Illuminate\Database\Connection::getResolver('pgsql')(fn () => null, 'neondb', '', []));
     }
 
     private function reverbConnectionOptions(): array

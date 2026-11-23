@@ -91,10 +91,12 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
-            // Use os parâmetros nativos do PostgreSQL. Emular prepares faz o
-            // Laravel interpolar booleanos como 1/0, que o PostgreSQL rejeita em
-            // colunas boolean (por exemplo, room_participants.is_host).
-            'options' => [],
+            // Prepares emulados: o pooler do Neon (PgBouncer) aborta transações quando o PDO
+            // nativo envia DEALLOCATE (25P02). Booleanos são tratados em
+            // App\Database\PooledPostgresConnection (1/0 seria recusado em colunas boolean).
+            'options' => extension_loaded('pdo_pgsql') ? [
+                PDO::ATTR_EMULATE_PREPARES => true,
+            ] : [],
         ],
 
         'sqlsrv' => [

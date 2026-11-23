@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Database\PooledPostgresConnection;
 use App\Models\User;
 use App\Support\GuestIdentity;
+use Illuminate\Database\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -17,7 +19,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Booleanos seguros com prepares emulados no pooler do Neon (ver a classe).
+        Connection::resolverFor('pgsql', fn ($connection, $database, $prefix, $config) => new PooledPostgresConnection($connection, $database, $prefix, $config));
     }
 
     /**

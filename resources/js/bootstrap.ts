@@ -3,6 +3,7 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
+import { createCloudflareEcho } from '@/lib/cloudflareRealtime';
 import { toast } from '@/lib/toast';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
@@ -34,7 +35,39 @@ const reverbPort =
 const reverbScheme =
     import.meta.env.VITE_REVERB_SCHEME || (secure ? 'https' : 'http');
 
-if (reverbKey && reverbHost) {
+// REALTIME_DRIVER=cloudflare: o servidor marca a página e o tempo real vem do Worker
+// (Durable Objects). O restante do app usa window.Echo igual; nada mais muda.
+const useCloudflare =
+    document
+        .querySelector<HTMLMetaElement>('meta[name="realtime-driver"]')
+        ?.content === 'cloudflare';
+
+if (useCloudflare) {
+    let everConnected = false;
+    let lost = false;
+    window.Echo = createCloudflareEcho({
+        fetchToken: (channel) =>
+            window.axios
+                .post('/realtime/token', { channel })
+                .then((response) => response.data),
+        createSocket: (url) => new WebSocket(url) as never,
+        onConnectionChange: (connected) => {
+            if (connected) {
+                if (lost) {
+                    toast.success('Conexão restabelecida.', { key: 'connection' });
+                    lost = false;
+                }
+                everConnected = true;
+            } else if (everConnected && !lost) {
+                lost = true;
+                toast.info(
+                    'Sua conexão foi interrompida. Estamos tentando reconectar.',
+                    { key: 'connection', durationMs: 0 },
+                );
+            }
+        },
+    }) as unknown as Echo<'reverb'>;
+} else if (reverbKey && reverbHost) {
     window.Echo = new Echo({
         broadcaster: 'reverb',
         key: reverbKey,

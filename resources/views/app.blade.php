@@ -6,6 +6,9 @@
 
         {{-- Chave PÚBLICA do Reverb em tempo de execução: o front não depende de variáveis VITE_* no build. --}}
         <meta name="reverb-key" content="{{ config('broadcasting.connections.reverb.key') }}">
+        @if (\App\Services\CloudflareRealtime::enabled())
+        <meta name="realtime-driver" content="cloudflare">
+        @endif
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 

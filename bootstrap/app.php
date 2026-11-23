@@ -32,7 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // Callback do Worker da Cloudflare: autenticado por assinatura HMAC, sem sessão/CSRF.
+        $middleware->validateCsrfTokens(except: ['realtime/callback']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Páginas de erro com a identidade do jogo, sem expor detalhes técnicos.

@@ -47,6 +47,11 @@ class RoomStateBroadcaster
     {
         DB::afterCommit(function () use ($event, $context): void {
             try {
+                if (CloudflareRealtime::enabled() && $event instanceof \Illuminate\Contracts\Broadcasting\ShouldBroadcast) {
+                    $this->sendToWorker($event);
+
+                    return;
+                }
                 $this->events->dispatch($event);
             } catch (Throwable $exception) {
                 Log::warning('Room state broadcast failed; polling remains available.', [
@@ -55,5 +60,15 @@ class RoomStateBroadcaster
                 ]);
             }
         });
+    }
+
+    /** Mesmo canal, mesmo nome de evento e mesmo corpo que o Reverb entregaria. */
+    private function sendToWorker(object $event): void
+    {
+        $data = get_object_vars($event);
+        $worker = app(CloudflareRealtime::class);
+        foreach ($event->broadcastOn() as $channel) {
+            $worker->notify(preg_replace('/^private-/', '', $channel->name), $event->broadcastAs(), $data);
+        }
     }
 }

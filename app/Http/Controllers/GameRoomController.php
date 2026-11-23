@@ -73,7 +73,7 @@ class GameRoomController extends Controller
         $key = 'room-create:'.Actor::kind($actor).':'.Actor::id($actor).':'.$requestId;
 
         try {
-            return Cache::lock($key.':lock', 10)->block(5, fn () => $this->createRoom($actor, $botCount, $key));
+            return Cache::store(config('cache.limiter'))->lock($key.':lock', 10)->block(5, fn () => $this->createRoom($actor, $botCount, $key));
         } catch (LockTimeoutException) {
             abort(409, 'Sua sala já está sendo criada. Aguarde um instante.');
         }
@@ -81,7 +81,7 @@ class GameRoomController extends Controller
 
     private function createRoom(Authenticatable $actor, int $botCount, ?string $idempotencyKey): RedirectResponse
     {
-        if ($idempotencyKey && ($existingId = Cache::get($idempotencyKey))) {
+        if ($idempotencyKey && ($existingId = Cache::store(config('cache.limiter'))->get($idempotencyKey))) {
             $existing = GameRoom::query()->find($existingId);
 
             if ($existing && $existing->hasParticipant($actor)) {
@@ -132,7 +132,7 @@ class GameRoomController extends Controller
         [$room, $token] = $result;
 
         if ($idempotencyKey) {
-            Cache::put($idempotencyKey, $room->id, now()->addMinutes(10));
+            Cache::store(config('cache.limiter'))->put($idempotencyKey, $room->id, now()->addMinutes(10));
         }
 
         // O código e o link vêm do que o servidor acabou de gerar (nunca montados no navegador).

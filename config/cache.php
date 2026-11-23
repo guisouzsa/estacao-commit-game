@@ -18,6 +18,13 @@ return [
     'default' => env('CACHE_STORE', 'database'),
 
     /*
+    | Store do limitador de requisições (throttle) e dos travas/idempotência de criação de sala.
+    | Contadores de curta duração não precisam ir ao banco: em arquivo evitam escritas no Neon
+    | a cada clique e não dependem de transações no pooler. (Uma instância no Render Free.)
+    */
+    'limiter' => env('CACHE_LIMITER_STORE', 'file'),
+
+    /*
     |--------------------------------------------------------------------------
     | Cache Stores
     |--------------------------------------------------------------------------

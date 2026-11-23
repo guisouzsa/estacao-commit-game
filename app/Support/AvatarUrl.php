@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\User;
 use Illuminate\Support\Str;
 
 /**
@@ -13,6 +14,21 @@ use Illuminate\Support\Str;
  */
 class AvatarUrl
 {
+    /**
+     * Foto/capa de um USUÁRIO. Imagem guardada como data URI vira uma URL curta e versionada
+     * (ver ProfileImageController): o JSON das páginas não carrega mais a imagem inteira.
+     */
+    public static function forUser(User $user, string $kind = 'avatar'): ?string
+    {
+        $raw = $kind === 'cover' ? $user->profile_cover : $user->avatar;
+
+        if (is_string($raw) && Str::startsWith($raw, 'data:image/')) {
+            return route('profile.image', ['kind' => $kind, 'user' => $user->id, 'v' => $user->updated_at?->timestamp ?? 0], false);
+        }
+
+        return self::for($raw);
+    }
+
     public static function for(?string $path): ?string
     {
         if ($path === null || $path === '') {

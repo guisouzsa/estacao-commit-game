@@ -12,6 +12,7 @@ use App\Http\Controllers\PlayerSearchController;
 use App\Http\Controllers\ProfileAppearanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicProfileController;
+use App\Http\Controllers\ProfileImageController;
 use App\Http\Controllers\RankingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -72,6 +73,9 @@ Route::middleware('auth')->group(function () {
 Route::patch('/admin/users/{user}/developer-badge', [DeveloperBadgeController::class, 'update'])
     ->middleware(['auth', 'can:manage-developer-badges'])
     ->name('admin.users.developer-badge.update');
+
+// Foto e capa como imagem cacheável (o JSON das páginas leva só a URL versionada).
+Route::get('/imagens/{kind}/{user}', ProfileImageController::class)->where('kind', 'avatar|cover')->whereUuid('user')->middleware('throttle:240,1')->name('profile.image');
 
 Route::get('/perfil/{username}', [PublicProfileController::class, 'show'])
     ->where('username', '[A-Za-z0-9_-]{3,30}')

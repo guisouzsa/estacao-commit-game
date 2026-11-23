@@ -42,7 +42,7 @@ class PlayerPresenter
         }
 
         return [
-            'avatar' => AvatarUrl::for($user->avatar),
+            'avatar' => AvatarUrl::forUser($user),
             'avatar_style' => 'pixel',
             'avatar_seed' => self::seed((string) $user->id),
         ];

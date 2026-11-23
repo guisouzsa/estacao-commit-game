@@ -95,7 +95,7 @@ class HandleInertiaRequests extends Middleware
         // A capa pode pesar centenas de KB (a imagem fica no banco) e só a tela de
         // edição do perfil a usa: não vai no JSON de todas as outras páginas.
         $authUser['cover'] = $actor->profile_cover && $request->routeIs('profile.*')
-            ? AvatarUrl::for($actor->profile_cover)
+            ? AvatarUrl::forUser($actor, 'cover')
             : null;
         $authUser['developer_badge'] = $actor->developer_badge
             ? config('profiles.developer_badges.'.$actor->developer_badge)

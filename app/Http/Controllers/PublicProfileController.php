@@ -41,7 +41,7 @@ class PublicProfileController extends Controller
                 'avatar_position_x' => $user->avatar_position_x ?? 50,
                 'avatar_position_y' => $user->avatar_position_y ?? 50,
                 'avatar_zoom' => $user->avatar_zoom ?? 100,
-                'cover' => AvatarUrl::for($user->profile_cover),
+                'cover' => AvatarUrl::forUser($user, 'cover'),
                 'cover_position_x' => $user->cover_position_x ?? 50,
                 'cover_position_y' => $user->cover_position_y ?? 50,
                 'profile_frame' => $user->profile_frame ?? 'standard',

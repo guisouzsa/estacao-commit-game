@@ -336,6 +336,26 @@ class GameMatchTest extends TestCase
             ->where('game.turn_seconds_left', config('game.turn_timeout_seconds') - 30));
     }
 
+    public function test_exchanging_a_card_counts_as_the_turn_and_passes_it_on(): void
+    {
+        [$room, $users] = $this->humanRoom();
+        $this->actingAs($users[0])->post(route('games.start', $room));
+        $match = GameMatch::firstOrFail();
+        $me = $room->participants()->where('user_id', $users[0]->id)->firstOrFail();
+        $state = $match->state;
+        $state['players'][(string) $me->id]['hand'] = ['git_push', 'git_add', 'git_commit', 'git_push'];
+        $match->forceFill(['state' => $state, 'current_seat' => $me->seat])->save();
+
+        $this->actingAs($users[0])->post(route('games.action', $room), $this->action($match->fresh(), 'exchange', ['card' => 'git_push']))->assertSessionHasNoErrors();
+
+        $match->refresh();
+        $hand = $match->state['players'][(string) $me->id]['hand'];
+        $this->assertCount(4, $hand, 'troca descarta 1 e compra 1');
+        $this->assertSame(1, $match->state['discard'] === [] ? 0 : count(array_keys($match->state['discard'], 'git_push')));
+        $this->assertNotSame($me->seat, $match->current_seat, 'a vez passou ao próximo jogador');
+        $this->assertSame(0, $match->state['players'][(string) $me->id]['step'], 'trocar não avança o percurso');
+    }
+
     private function botRoom(): array
     {
         $host = User::factory()->create();

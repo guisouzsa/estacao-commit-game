@@ -4,9 +4,7 @@ namespace App\Services;
 
 use App\Models\GameMatch;
 use App\Models\GameRoom;
-use App\Support\Bots;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * Evita que a mesa trave quando um humano some na própria vez.
@@ -41,28 +39,7 @@ class GameInactivityService
                 return false;
             }
 
-            $username = $idle->kind === 'guest' ? $idle->guest?->username : $idle->user?->username;
-            $botKey = Bots::pick(1, $participants->pluck('bot_key')->filter()->all())[0] ?? null;
-            if ($botKey === null) {
-                return false;
-            }
-
-            $idle->forceFill([
-                'kind' => 'bot', 'bot_key' => $botKey, 'user_id' => null, 'guest_id' => null, 'is_host' => false,
-            ])->save();
-
-            $state = $match->state;
-            $state['history'][] = [
-                'id' => (string) Str::uuid(),
-                'message' => 'Um bot assumiu a posição de '.($username ? '@'.$username : 'um jogador').' por inatividade.',
-                'turn' => $match->turn_number,
-                'notify' => true,
-            ];
-            $match->state = $state;
-            $match->version++;
-            $match->save();
-
-            $this->engine->runBots($match->refresh(), $room);
+            app(RoomLeaveService::class)->replaceWithBot($room, $idle, 'ficou parado e um bot assumiu a posição por inatividade.');
 
             return true;
         }, 3);

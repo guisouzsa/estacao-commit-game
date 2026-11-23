@@ -7,6 +7,7 @@ use App\Models\RoomInvitation;
 use App\Notifications\RoomDeleted;
 use App\Services\RoomExpirationService;
 use App\Services\RoomJoinService;
+use App\Services\RoomLeaveService;
 use App\Services\RoomStateBroadcaster;
 use App\Support\Actor;
 use App\Support\Bots;
@@ -274,33 +275,35 @@ class GameRoomController extends Controller
      * Sair do LOBBY (quem não é o anfitrião). Libera a vaga; se a sala ficar só com o
      * anfitrião, a contagem de 5 minutos recomeça. O anfitrião encerra a sala em vez de sair.
      */
-    public function leave(Request $request, GameRoom $room): RedirectResponse
+    public function leave(Request $request, GameRoom $room, RoomLeaveService $leaving): RedirectResponse
     {
         $actor = $request->user();
         abort_unless($room->hasParticipant($actor), 404);
 
-        DB::transaction(function () use ($room, $actor): void {
-            $locked = GameRoom::query()->whereKey($room->id)->lockForUpdate()->first();
-            abort_unless($locked, 404);
-            abort_if($locked->isHostedBy($actor), 409, 'O anfitrião encerra a sala em vez de sair dela. Use "Excluir sala".');
-            abort_unless(
-                $locked->status === 'waiting' && $locked->started_at === null,
-                409,
-                'A partida já começou: não é possível sair do lobby agora.'
-            );
+        $result = $leaving->leave($room, $actor);
 
-            $locked->participants()->forActor($actor)->delete();
-            app(RoomExpirationService::class)->syncEmptiness($locked);
-
-            app(RoomStateBroadcaster::class)->publish($locked->id, 'participant_left');
-        }, 3);
-
-        return to_route('dashboard')->with('toast', [
-            'id' => (string) Str::uuid(),
-            'tone' => 'info',
-            'title' => 'Você saiu da sala',
-            'message' => 'Sua vaga ficou livre. Você pode voltar com o convite, se ainda houver lugar.',
-        ]);
+        return to_route('dashboard')->with('toast', match ($result) {
+            RoomLeaveService::ROOM_CLOSED => [
+                'id' => (string) Str::uuid(),
+                'tone' => 'info',
+                'title' => 'A sala foi encerrada',
+                'message' => 'Só restariam bots na mesa, então a sala foi fechada.',
+            ],
+            RoomLeaveService::NOTHING => [
+                'id' => (string) Str::uuid(),
+                'tone' => 'info',
+                'title' => 'Partida encerrada',
+                'message' => 'Essa partida já terminou.',
+            ],
+            default => [
+                'id' => (string) Str::uuid(),
+                'tone' => 'info',
+                'title' => 'Você saiu da sala',
+                'message' => $room->started_at !== null
+                    ? 'Um bot assumiu o seu lugar na partida.'
+                    : 'Sua vaga ficou livre. Você pode voltar com o convite, se ainda houver lugar.',
+            ],
+        });
     }
 
     private function issueInvitation(GameRoom $room): string

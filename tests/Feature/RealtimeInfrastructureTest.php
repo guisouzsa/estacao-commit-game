@@ -105,7 +105,7 @@ class RealtimeInfrastructureTest extends TestCase
     public function test_abandoned_room_is_expired_by_the_scheduled_command_without_any_request(): void
     {
         $host = User::factory()->create();
-        $room = GameRoom::create(['host_user_id' => $host->id, 'status' => 'waiting']);
+        $room = GameRoom::create(['host_user_id' => $host->id, 'status' => 'waiting', 'empty_since' => now()]);
         $room->participants()->create(['user_id' => $host->id, 'seat' => 1, 'joined_at' => now()]);
 
         $event = collect(app(Schedule::class)->events())
@@ -121,7 +121,7 @@ class RealtimeInfrastructureTest extends TestCase
         $this->travel(1)->minutes();
         $this->assertTrue($event->isDue($this->app));
         $this->artisan('rooms:expire-waiting')->assertSuccessful();
-        $this->assertSame('expired', $room->fresh()->status);
+        $this->assertNull($room->fresh());
     }
 
     public function test_supervisor_runs_exactly_one_scheduler_alongside_apache_and_reverb(): void

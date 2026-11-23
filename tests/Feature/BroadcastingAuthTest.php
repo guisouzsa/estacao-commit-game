@@ -124,6 +124,21 @@ class BroadcastingAuthTest extends TestCase
             ->assertStatus(419);
     }
 
+    public function test_user_can_authenticate_only_on_their_own_notices_channel(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson('/broadcasting/auth', ['socket_id' => '123.456', 'channel_name' => 'private-App.Models.User.'.$user->id])
+            ->assertOk()
+            ->assertJsonStructure(['auth']);
+
+        $this->actingAs($user)
+            ->postJson('/broadcasting/auth', ['socket_id' => '123.456', 'channel_name' => 'private-App.Models.User.'.$other->id])
+            ->assertForbidden();
+    }
+
     /** @return array{0: User, 1: GameRoom} */
     private function roomWithHost(): array
     {

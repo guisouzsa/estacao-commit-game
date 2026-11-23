@@ -14,23 +14,34 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): Response
     {
+        $user = $request->user();
+        $expiration = app(RoomExpirationService::class);
+
+        // Complementa o scheduler: salas suas com prazo vencido são excluídas agora.
+        $expiration->expireDueRoomsHostedBy($user->id);
+
         $rooms = GameRoom::query()
-            ->whereHas('participants', fn ($query) => $query->where('user_id', $request->user()->id))
+            ->whereHas('participants', fn ($query) => $query->where('user_id', $user->id))
             ->withCount('participants')
             ->latest()
             ->limit(10)
-            ->get(['id','host_user_id','status','created_at'])
+            ->get(['id','host_user_id','status','created_at','started_at','empty_since'])
             ->map(fn (GameRoom $room) => [
                 'id' => $room->id,
                 'status' => $room->status,
                 'participants_count' => $room->participants_count,
-                'expires_at' => $room->status === 'waiting' && $room->participants_count === 1
-                    ? $room->created_at->copy()->addMinutes(RoomExpirationService::WAITING_MINUTES)->toIso8601String()
+                'expires_at' => $room->status === 'waiting'
+                    ? $expiration->deadline($room)?->toIso8601String()
                     : null,
+                // A ação real é revalidada no servidor; isto só decide se o botão aparece.
+                'can_delete' => $room->host_user_id === $user->id && $room->started_at === null,
             ]);
 
         return Inertia::render('Dashboard', [
             'rooms' => $rooms,
+            // Avisos persistidos (ex.: sala excluída). Ao serem entregues viram
+            // "lidos", então não reaparecem. A closure só roda quando incluída.
+            'notices' => fn () => $this->takeNotices($user),
             'inviteUrl' => session('invite_url'),
             'recommendedPlayers' => User::query()
                 ->orderByRaw("CASE WHEN LOWER(username) = 'gui' THEN 0 ELSE 1 END")
@@ -46,5 +57,21 @@ class DashboardController extends Controller
                     'profile_title'=>$user->profile_title,
                 ]),
         ]);
+    }
+
+    /** @return list<array{id: string, reason: string, message: string}> */
+    private function takeNotices(User $user): array
+    {
+        $notifications = $user->unreadNotifications()->latest()->limit(5)->get();
+
+        $notices = $notifications->map(fn ($notification) => [
+            'id' => $notification->id,
+            'reason' => (string) ($notification->data['reason'] ?? ''),
+            'message' => (string) ($notification->data['message'] ?? ''),
+        ])->all();
+
+        $notifications->each->markAsRead();
+
+        return $notices;
     }
 }

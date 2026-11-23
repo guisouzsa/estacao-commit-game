@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\GameRoom;
 use App\Models\RoomInvitation;
+use App\Models\User;
+use App\Notifications\RoomDeleted;
 use App\Services\RoomExpirationService;
 use App\Services\RoomStateBroadcaster;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,7 +20,12 @@ class GameRoomController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $result = DB::transaction(function () use ($request): array {
-            $room = GameRoom::create(['host_user_id' => $request->user()->id, 'status' => 'waiting']);
+            // A sala nasce só com o anfitrião: a contagem de 5 minutos começa agora.
+            $now = now();
+            $room = new GameRoom(['host_user_id' => $request->user()->id, 'status' => 'waiting', 'empty_since' => $now]);
+            $room->created_at = $now;
+            $room->updated_at = $now;
+            $room->save();
             $room->participants()->create(['user_id'=>$request->user()->id,'seat'=>1,'joined_at'=>now()]);
             return [$room, $this->issueInvitation($room)];
         });
@@ -26,10 +34,15 @@ class GameRoomController extends Controller
         return to_route('rooms.show', $room)->with('invite_url', route('rooms.join', $token));
     }
 
-    public function show(Request $request, GameRoom $room): Response
+    public function show(Request $request, GameRoom $room): Response|RedirectResponse
     {
         abort_unless($room->participants()->where('user_id', $request->user()->id)->exists(), 403);
-        app(RoomExpirationService::class)->expireIfEligible($room);
+
+        // Complementa o scheduler: se o prazo venceu, a sala é excluída agora e
+        // o aviso persistido aparece na Dashboard.
+        if (app(RoomExpirationService::class)->expireIfEligible($room)) {
+            return to_route('dashboard');
+        }
         $room->refresh();
         $room->load(['host:id,username,avatar,profile_frame', 'participants.user:id,username,avatar,profile_frame']);
 
@@ -37,7 +50,7 @@ class GameRoomController extends Controller
             'room' => $room,
             'isHost' => $room->host_user_id === $request->user()->id,
             'inviteUrl' => session('invite_url'),
-            'expiresAt' => $room->created_at->copy()->addMinutes(RoomExpirationService::WAITING_MINUTES)->toIso8601String(),
+            'expiresAt' => app(RoomExpirationService::class)->deadline($room)?->toIso8601String(),
         ]);
     }
 
@@ -59,7 +72,7 @@ class GameRoomController extends Controller
         }, 3);
 
         [$token, $expired] = $result;
-        abort_if($expired, 410, 'Esta sala expirou.');
+        abort_if($expired, 410, 'Esta sala foi excluída.');
         abort_if(!$token, 409, 'Esta sala não está mais disponível.');
 
         return back()->with('invite_url', route('rooms.join', $token));
@@ -75,48 +88,78 @@ class GameRoomController extends Controller
     public function cancel(Request $request, GameRoom $room): RedirectResponse
     {
         DB::transaction(function () use ($room, $request): void {
-            $lockedRoom = GameRoom::query()->whereKey($room->id)->lockForUpdate()->firstOrFail();
+            $lockedRoom = GameRoom::query()->whereKey($room->id)->lockForUpdate()->first();
+            // Já excluída (pelo scheduler ou por outra requisição): nada a fazer.
+            abort_unless($lockedRoom, 404);
             abort_unless($lockedRoom->host_user_id === $request->user()->id, 403);
-            abort_unless($lockedRoom->status === 'waiting', 409);
+            // Uma partida em andamento ou encerrada guarda histórico: não some em silêncio.
             abort_if(
-                $lockedRoom->participants()
-                    ->where('user_id', '!=', $lockedRoom->host_user_id)
-                    ->exists(),
+                $lockedRoom->started_at !== null,
                 409,
-                'Não é possível excluir uma sala após a entrada de outro jogador.'
+                'Esta sala já teve uma partida e não pode ser excluída.'
             );
 
+            $guestIds = $lockedRoom->participants()
+                ->where('user_id', '!=', $lockedRoom->host_user_id)
+                ->pluck('user_id')
+                ->all();
+
+            // Quem estava na sala é avisado, mesmo que esteja offline.
+            Notification::send(
+                User::query()->whereIn('id', $guestIds)->get(),
+                new RoomDeleted($lockedRoom->id, RoomDeleted::HOST_DELETED)
+            );
+
+            // As FKs removem participantes e convites; nada mais referencia a sala.
             $lockedRoom->delete();
+
+            $broadcaster = app(RoomStateBroadcaster::class);
+            $broadcaster->publish($lockedRoom->id, 'deleted');
+            foreach ([$lockedRoom->host_user_id, ...$guestIds] as $userId) {
+                $broadcaster->publishToUser($userId);
+            }
         }, 3);
 
-        return to_route('dashboard')->with('status', 'Sala excluída.');
+        return to_route('dashboard')
+            ->with('status', 'Sala excluída.')
+            ->with('toast', [
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'tone' => 'success',
+                'message' => 'Sala excluída.',
+            ]);
     }
 
     public function join(Request $request, string $token): RedirectResponse
     {
         $hash = hash('sha256', $token);
         $result = DB::transaction(function () use ($request, $hash): array {
-            $invitation = RoomInvitation::query()->where('token_hash', $hash)->lockForUpdate()->first();
-            abort_if(!$invitation, 404, 'Convite inválido.');
+            $found = RoomInvitation::query()->where('token_hash', $hash)->first();
+            abort_if(!$found, 404, 'Convite inválido ou sala já excluída.');
+            // Mesma ordem de bloqueio da expiração e da exclusão: sala, depois convite.
+            $room = GameRoom::query()->whereKey($found->room_id)->lockForUpdate()->first();
+            abort_if(!$room, 410, 'Esta sala foi excluída.');
+            $invitation = RoomInvitation::query()->whereKey($found->id)->lockForUpdate()->first();
+            abort_if(!$invitation, 410, 'Esta sala foi excluída.');
             abort_if($invitation->revoked_at, 410, 'Este convite foi revogado.');
             abort_if($invitation->expires_at->isPast(), 410, 'Este convite expirou.');
-            $room = GameRoom::query()->whereKey($invitation->room_id)->lockForUpdate()->firstOrFail();
             if ($room->participants()->where('user_id', $request->user()->id)->exists()) {
                 return [$room, false, false];
             }
             if (app(RoomExpirationService::class)->expireIfEligible($room)) {
-                return [$room->fresh(), true, false];
+                return [$room, true, false];
             }
             abort_if($room->status !== 'waiting', $room->status === 'expired' ? 410 : 409, 'A sala não está mais disponível.');
             $usedSeats = $room->participants()->pluck('seat')->all();
             $seat = collect(range(1, 4))->first(fn ($candidate) => !in_array($candidate, $usedSeats, true));
             abort_if(!$seat, 409, 'A sala está cheia.');
             $room->participants()->create(['user_id'=>$request->user()->id,'seat'=>$seat,'joined_at'=>now()]);
+            // Entrou alguém além do anfitrião: a contagem de sala vazia é cancelada.
+            app(RoomExpirationService::class)->syncEmptiness($room);
             return [$room, false, true];
         }, 3);
         [$room, $expired, $joined] = $result;
 
-        abort_if($expired, 410, 'Esta sala expirou.');
+        abort_if($expired, 410, 'Esta sala foi excluída.');
         if ($joined) {
             app(RoomStateBroadcaster::class)->publish($room->id, 'participant_joined');
         }

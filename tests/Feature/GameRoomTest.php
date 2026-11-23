@@ -83,7 +83,7 @@ class GameRoomTest extends TestCase
         $this->assertDatabaseHas('game_rooms', ['id' => $room->id]);
     }
 
-    public function test_creator_cannot_delete_a_room_after_another_player_joins(): void
+    public function test_creator_can_delete_a_room_after_another_player_joins_and_the_guest_is_notified(): void
     {
         $host = User::factory()->create();
         $this->actingAs($host)->post(route('rooms.store'));
@@ -95,13 +95,15 @@ class GameRoomTest extends TestCase
 
         $this->actingAs($host)
             ->delete(route('rooms.cancel', $room))
-            ->assertStatus(409);
+            ->assertRedirect(route('dashboard'));
 
-        $this->assertDatabaseHas('game_rooms', ['id' => $room->id, 'status' => 'waiting']);
-        $this->assertDatabaseHas('room_participants', ['room_id' => $room->id, 'user_id' => $guest->id]);
+        $this->assertDatabaseMissing('game_rooms', ['id' => $room->id]);
+        $this->assertDatabaseMissing('room_participants', ['room_id' => $room->id]);
+        $this->assertCount(1, $guest->unreadNotifications);
+        $this->assertSame('host_deleted', $guest->unreadNotifications->first()->data['reason']);
     }
 
-    public function test_waiting_room_expires_after_five_minutes_and_revokes_its_invitation(): void
+    public function test_empty_waiting_room_is_deleted_after_five_minutes_with_its_invitation(): void
     {
         Event::fake([RoomStateChanged::class]);
         $host = User::factory()->create();
@@ -112,9 +114,10 @@ class GameRoomTest extends TestCase
         $this->travel(5)->minutes();
         $this->artisan('rooms:expire-waiting')->assertSuccessful();
 
-        $this->assertDatabaseHas('game_rooms', ['id' => $room->id, 'status' => 'expired']);
-        $this->assertNotNull($invitation->fresh()->revoked_at);
-        Event::assertDispatched(RoomStateChanged::class, fn ($event) => $event->roomId === $room->id && $event->change === 'expired');
+        $this->assertDatabaseMissing('game_rooms', ['id' => $room->id]);
+        $this->assertDatabaseMissing('room_participants', ['room_id' => $room->id]);
+        $this->assertDatabaseMissing('room_invitations', ['id' => $invitation->id]);
+        Event::assertDispatched(RoomStateChanged::class, fn ($event) => $event->roomId === $room->id && $event->change === 'deleted');
     }
 
     public function test_player_cannot_join_a_room_past_its_server_side_deadline(): void
@@ -130,7 +133,7 @@ class GameRoomTest extends TestCase
             ->post(route('rooms.join', $token))
             ->assertGone();
 
-        $this->assertDatabaseHas('game_rooms', ['id' => $room->id, 'status' => 'expired']);
+        $this->assertDatabaseMissing('game_rooms', ['id' => $room->id]);
     }
 
     public function test_room_with_an_additional_player_does_not_expire(): void
@@ -163,7 +166,7 @@ class GameRoomTest extends TestCase
                 ->where('room.status', 'waiting'));
     }
 
-    public function test_opening_a_room_after_its_deadline_displays_it_as_expired(): void
+    public function test_opening_a_room_after_its_deadline_deletes_it_and_sends_the_host_to_the_dashboard(): void
     {
         $host = User::factory()->create();
         $this->actingAs($host)->post(route('rooms.store'));
@@ -173,8 +176,9 @@ class GameRoomTest extends TestCase
 
         $this->actingAs($host)
             ->get(route('rooms.show', $room))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->where('room.status', 'expired'));
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseMissing('game_rooms', ['id' => $room->id]);
+        $this->assertCount(1, $host->unreadNotifications);
     }
 }

@@ -109,7 +109,7 @@ class RoomRealtimeFlowTest extends TestCase
         $this->travel(5)->minutes();
         $this->artisan('rooms:expire-waiting')->assertSuccessful();
 
-        $this->assertDatabaseHas('game_rooms', ['id' => $room->id, 'status' => 'expired']);
+        $this->assertDatabaseMissing('game_rooms', ['id' => $room->id]);
     }
 
     /** @return array{0: GameRoom, 1: string} */

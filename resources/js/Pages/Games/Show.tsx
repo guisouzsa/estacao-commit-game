@@ -3,6 +3,7 @@ import FlightLayer, { type Flight } from '@/Components/game/FlightLayer';
 import GameBoard from '@/Components/game/GameBoard';
 import GameLog, { type LogActor } from '@/Components/game/GameLog';
 import PlayerPanel, { type PanelPlayer } from '@/Components/game/PlayerPanel';
+import TargetPicker from '@/Components/game/TargetPicker';
 import GameCard, { cardLabel } from '@/Components/GameCard';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { AREAS, sideOf, type Side } from '@/lib/gameGeometry';
@@ -107,6 +108,22 @@ export default function Show({
     const busyRef = useRef(false);
     const staleDuringAction = useRef(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
+    const [leaving, setLeaving] = useState(false);
+    // Indica (sombra + seta) quando a mão tem mais cartas fora da tela; só ela rola, a mesa não.
+    const handRef = useRef<HTMLDivElement>(null);
+    const [handHint, setHandHint] = useState({ left: false, right: false });
+    const measureHand = useCallback(() => {
+        const element = handRef.current;
+        if (!element) return;
+        const left = element.scrollLeft > 4;
+        const right =
+            element.scrollLeft + element.clientWidth < element.scrollWidth - 4;
+        setHandHint((current) =>
+            current.left === left && current.right === right
+                ? current
+                : { left, right },
+        );
+    }, []);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [online, setOnline] = useState(() => navigator.onLine);
     const reduced = useReducedMotion();
@@ -145,6 +162,18 @@ export default function Show({
             needsTarget),
     );
     const blockRequired = requiredCard?.startsWith('block_') ?? false;
+    // Sem carta jogável? Trocar uma carta é a jogada da vez (e passa a vez ao próximo).
+    const canPlayNow =
+        blockRequired ||
+        hand.some(
+            (card) =>
+                card === requiredCard ||
+                (card === 'git_pull' && viewer.step < 3) ||
+                ['clear_credentials', 'merge_conflict'].includes(card),
+        );
+    const turnHint = canPlayNow
+        ? 'Sua vez — escolha uma carta'
+        : 'Sem jogada? Troque uma carta — conta como sua vez';
     const isPlayable = (card: string) =>
         isTurn &&
         (card === requiredCard ||
@@ -386,6 +415,12 @@ export default function Show({
         );
     };
 
+    useEffect(() => {
+        measureHand();
+        window.addEventListener('resize', measureHand);
+        return () => window.removeEventListener('resize', measureHand);
+    }, [measureHand, hand.length]);
+
     // ---------- Turno e tempo ----------
     const [clock, setClock] = useState(() => ({
         base: game.turn_seconds_left ?? null,
@@ -497,15 +532,15 @@ export default function Show({
         ) : null;
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout immersive>
             <Head title="Partida em andamento" />
-            <main className="game-stage relative min-h-[calc(100dvh-5.2rem)] overflow-x-hidden text-white">
-                <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-black/40 px-3 py-1.5 backdrop-blur-sm sm:px-5 lg:pointer-events-none lg:absolute lg:inset-x-0 lg:top-0 lg:z-30 lg:border-0 lg:bg-transparent lg:backdrop-blur-none [&>*]:lg:pointer-events-auto">
+            <main className="game-stage relative flex-1 overflow-x-hidden text-white max-lg:flex max-lg:min-h-0 max-lg:flex-col max-lg:overflow-hidden">
+                <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-black/40 px-3 py-1.5 backdrop-blur-sm max-lg:shrink-0 sm:px-5 lg:pointer-events-none lg:absolute lg:inset-x-0 lg:top-0 lg:z-30 lg:border-0 lg:bg-transparent lg:backdrop-blur-none [&>*]:lg:pointer-events-auto">
                     <div className="flex items-center gap-3">
-                        <strong className="font-mono text-xs uppercase text-[#b4da33]">
+                        <strong className="font-mono text-xs uppercase text-[#b4da33] max-sm:hidden">
                             Estação Commit
                         </strong>
-                        <span className="text-white/30">/</span>
+                        <span className="text-white/30 max-sm:hidden">/</span>
                         <span className="font-mono text-[10px] uppercase text-white/65">
                             Turno {game.turn_number}
                         </span>
@@ -520,7 +555,7 @@ export default function Show({
                         </span>
                         <button
                             aria-expanded={historyOpen}
-                            className="relative min-h-9 border border-white/25 px-3 font-mono font-bold hover:border-[#b4da33] lg:hidden"
+                            className="relative min-h-11 border border-white/25 px-3 font-mono font-bold hover:border-[#b4da33] sm:min-h-9 lg:hidden"
                             onClick={() => setHistoryOpen((value) => !value)}
                             type="button"
                         >
@@ -532,7 +567,7 @@ export default function Show({
                             )}
                         </button>
                         <button
-                            className="min-h-9 border border-white/25 px-3 font-mono font-bold hover:border-[#f481c6]"
+                            className="min-h-11 border border-white/25 px-3 font-mono font-bold hover:border-[#f481c6] sm:min-h-9"
                             onClick={() => setLeaveOpen(true)}
                             type="button"
                         >
@@ -573,8 +608,8 @@ export default function Show({
                     <GameLog actors={logActors} items={game.history} />
                 </aside>
 
-                <section className="mx-auto w-full max-w-[1280px] px-2 py-2 sm:px-4">
-                    <div className="grid grid-cols-3 gap-2 [grid-template-areas:'left_top_right'_'board_board_board'] lg:grid-cols-[12rem_auto_12rem] lg:justify-center lg:gap-x-1 lg:[grid-template-areas:'._top_.'_'left_board_right']">
+                <section className="mx-auto w-full max-w-[1280px] px-2 py-2 max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-1 max-lg:py-1 sm:px-4">
+                    <div className="grid grid-cols-3 gap-2 [grid-template-areas:'left_top_right'_'board_board_board'] max-lg:min-h-0 max-lg:flex-1 max-lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[12rem_auto_12rem] lg:justify-center lg:gap-x-1 lg:[grid-template-areas:'._top_.'_'left_board_right']">
                         {panelFor(left, '[grid-area:left]')}
                         {panelFor(
                             top,
@@ -582,18 +617,23 @@ export default function Show({
                         )}
                         {panelFor(right, '[grid-area:right]')}
 
-                        <div className="mx-auto -mt-2 w-full [grid-area:board] lg:-mt-14 lg:w-[max(18rem,min(calc(100vw_-_29rem),calc(100dvh_-_16.8rem),60rem))]">
-                            <GameBoard
-                                deckCount={game.deck_count}
-                                discardCount={game.discard_count}
-                                freshSlot={freshSlot}
-                                players={boardPlayersFixed}
-                            />
+                        <div className="mx-auto w-full [grid-area:board] max-lg:min-h-0 max-lg:[container-type:size] lg:-mt-14 lg:w-[max(18rem,min(calc(100vw_-_29rem),calc(100dvh_-_16.8rem),60rem))]">
+                            {/* Celular: o tabuleiro ocupa o MAIOR quadrado que cabe no espaço livre (sem rolagem). */}
+                            <div className="max-lg:grid max-lg:size-full max-lg:place-items-center">
+                                <div className="w-full max-lg:w-[min(100cqw,100cqh)]">
+                                    <GameBoard
+                                        deckCount={game.deck_count}
+                                        discardCount={game.discard_count}
+                                        freshSlot={freshSlot}
+                                        players={boardPlayersFixed}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 shadow-[0_-10px_30px_#0006] sm:p-3 lg:-mt-14 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)_11rem] lg:items-end lg:gap-3">
-                        <div className="flex flex-col gap-1.5">
+                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_#0006] max-lg:mt-0 max-lg:shrink-0 sm:p-3 lg:-mt-14 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)_11rem] lg:items-end lg:gap-3">
+                        <div className="flex flex-col gap-1.5 max-lg:hidden">
                             <PlayerPanel
                                 active={isTurn}
                                 player={toPanel(viewer)}
@@ -609,105 +649,167 @@ export default function Show({
                                     : viewer.pending_discard > 0
                                       ? 'Descarte o excesso da mão'
                                       : isTurn
-                                        ? 'Sua vez — escolha uma carta'
+                                        ? turnHint
                                         : `Vez de @${currentPlayer?.player.username ?? '…'}`}
                             </p>
                         </div>
 
-                        <div className="flex min-h-[9.5rem] items-end justify-center gap-1.5 overflow-x-auto px-1 pb-2 pt-7 [scrollbar-width:thin] sm:gap-2">
-                            {holdsBlock(viewer) && (
-                                <GameCard
-                                    card={`block_${blocksPlayed(viewer) + 1}`}
-                                    dataKey="block"
-                                    onClick={
-                                        isTurn && !busy && blockRequired
-                                            ? () => send('play_block')
-                                            : undefined
-                                    }
-                                    playable={isTurn && blockRequired}
+                        <p
+                            aria-live="polite"
+                            className="mb-1 flex items-center justify-between gap-2 font-mono text-[11px] font-bold uppercase lg:hidden"
+                        >
+                            <span
+                                className={
+                                    isTurn ? 'text-[#b4da33]' : 'text-white/65'
+                                }
+                            >
+                                {game.status !== 'active'
+                                    ? 'Partida encerrada'
+                                    : viewer.pending_discard > 0
+                                      ? 'Descarte o excesso'
+                                      : isTurn
+                                        ? turnHint
+                                        : `Vez de @${currentPlayer?.player.username ?? '…'}`}
+                            </span>
+                            <span className="shrink-0 text-white/55">
+                                Etapa {viewer.step}/18
+                                {isTurn && secondsLeft !== null
+                                    ? ` · ${secondsLeft}s`
+                                    : ''}
+                            </span>
+                        </p>
+
+                        <div className="relative min-w-0">
+                            <div
+                                className="flex min-h-[9.5rem] items-end gap-0 overflow-x-auto px-1 pb-2 pt-7 [scrollbar-width:none] sm:gap-2 sm:[scrollbar-width:thin] max-sm:[&>*+*]:-ml-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto"
+                                onScroll={measureHand}
+                                ref={handRef}
+                            >
+                                {holdsBlock(viewer) && (
+                                    <GameCard
+                                        card={`block_${blocksPlayed(viewer) + 1}`}
+                                        dataKey="block"
+                                        onClick={
+                                            isTurn && !busy && blockRequired
+                                                ? () => send('play_block')
+                                                : undefined
+                                        }
+                                        playable={isTurn && blockRequired}
+                                    />
+                                )}
+                                <AnimatePresence
+                                    initial={false}
+                                    mode="popLayout"
+                                >
+                                    {handKeys
+                                        .filter(
+                                            ({ index }) =>
+                                                index !== hiddenIndex,
+                                        )
+                                        .map(({ card, index, key }) => (
+                                            <GameCard
+                                                card={card}
+                                                dataKey={key}
+                                                key={key}
+                                                onClick={
+                                                    isTurn && !busy
+                                                        ? () =>
+                                                              setSelected(
+                                                                  selected ===
+                                                                      index
+                                                                      ? null
+                                                                      : index,
+                                                              )
+                                                        : undefined
+                                                }
+                                                playable={isPlayable(card)}
+                                                selected={selected === index}
+                                            />
+                                        ))}
+                                </AnimatePresence>
+                            </div>
+                            {handHint.left && (
+                                <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#161615] to-transparent"
                                 />
                             )}
-                            <AnimatePresence initial={false} mode="popLayout">
-                                {handKeys
-                                    .filter(
-                                        ({ index }) => index !== hiddenIndex,
-                                    )
-                                    .map(({ card, index, key }) => (
-                                        <GameCard
-                                            card={card}
-                                            dataKey={key}
-                                            key={key}
-                                            onClick={
-                                                isTurn && !busy
-                                                    ? () =>
-                                                          setSelected(
-                                                              selected === index
-                                                                  ? null
-                                                                  : index,
-                                                          )
-                                                    : undefined
-                                            }
-                                            playable={isPlayable(card)}
-                                            selected={selected === index}
-                                        />
-                                    ))}
-                            </AnimatePresence>
+                            {handHint.right && (
+                                <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-gradient-to-l from-[#161615] to-transparent pr-1 text-lg font-black text-white/70"
+                                >
+                                    ›
+                                </span>
+                            )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-2 lg:flex-col lg:items-stretch lg:border-0 lg:pt-0">
-                            <span className="mr-auto font-mono text-[10px] uppercase text-white/50 lg:mr-0">
+                        <div className="grid grid-cols-2 gap-2 border-t border-white/10 pt-2 lg:flex lg:flex-col lg:items-stretch lg:border-0 lg:pt-0">
+                            <span className="col-span-2 truncate font-mono text-[10px] uppercase text-white/50 lg:order-first">
                                 {selectedCard
                                     ? cardLabel(selectedCard)
                                     : `Baralho ${game.deck_count} · Descarte ${game.discard_count}`}
                             </span>
-                            {needsTarget && (
-                                <select
-                                    className="min-h-10 border-2 border-white/30 bg-[#1d1d1b] px-2 text-xs text-white"
-                                    onChange={(event) =>
-                                        setTarget(event.target.value)
-                                    }
+                            {needsTarget && selectedCard && (
+                                <TargetPicker
+                                    card={selectedCard}
+                                    onChange={setTarget}
+                                    options={opponents.map((p) => ({
+                                        id: p.id,
+                                        username: p.player.username,
+                                        is_bot: p.player.is_bot,
+                                        hand_count:
+                                            p.hand_count +
+                                            (holdsBlock(p) ? 1 : 0),
+                                        step: p.step,
+                                        blocked: p.blocked,
+                                        profile: p.player,
+                                    }))}
                                     value={target}
-                                >
-                                    <option value="">Escolha o alvo</option>
-                                    {opponents.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            @{p.player.username}
-                                        </option>
-                                    ))}
-                                </select>
+                                    viewerStep={viewer.step}
+                                />
                             )}
-                            {selectedCard && viewer.pending_discard > 0 && (
+                            {viewer.pending_discard > 0 ? (
                                 <button
-                                    className="min-h-10 border-2 border-white bg-[#d01600] px-3 font-mono text-[10px] font-black uppercase"
-                                    disabled={busy}
+                                    className="col-span-2 min-h-12 border-2 border-white bg-[#d01600] px-3 font-mono text-xs font-black uppercase disabled:opacity-40"
+                                    disabled={busy || !selectedCard || !isTurn}
                                     onClick={() =>
+                                        selectedCard &&
                                         send('discard_excess', selectedCard)
                                     }
                                     type="button"
                                 >
-                                    Descartar excesso
+                                    {selectedCard
+                                        ? 'Descartar excesso'
+                                        : 'Escolha uma carta para descartar'}
                                 </button>
-                            )}
-                            {selectedCard && viewer.pending_discard === 0 && (
+                            ) : (
                                 <>
                                     <button
-                                        className="min-h-10 border-2 border-white/40 px-3 font-mono text-[10px] font-black uppercase"
-                                        disabled={busy}
+                                        className="min-h-12 border-2 border-white/60 bg-[#232323] px-3 font-mono text-xs font-black uppercase text-white disabled:opacity-35"
+                                        disabled={
+                                            busy || !isTurn || !selectedCard
+                                        }
                                         onClick={() =>
+                                            selectedCard &&
                                             send('exchange', selectedCard)
                                         }
+                                        title="Trocar uma carta conta como a sua jogada"
                                         type="button"
                                     >
                                         Trocar carta
                                     </button>
                                     <button
-                                        className="min-h-10 border-2 border-white bg-[#b4da33] px-4 font-mono text-[10px] font-black uppercase text-[#1d1d1b] disabled:opacity-35"
+                                        className="min-h-12 border-2 border-white bg-[#b4da33] px-3 font-mono text-xs font-black uppercase text-[#1d1d1b] shadow-[3px_3px_0_#f481c6] disabled:opacity-35 disabled:shadow-none"
                                         disabled={
                                             busy ||
+                                            !isTurn ||
+                                            !selectedCard ||
                                             !canPlaySelected ||
                                             (needsTarget && !target)
                                         }
                                         onClick={() =>
+                                            selectedCard &&
                                             send(
                                                 'play_card',
                                                 selectedCard,
@@ -801,16 +903,31 @@ export default function Show({
                 </div>
             )}
             <ConfirmDialog
-                confirmLabel="Sair da mesa"
+                busy={leaving}
+                busyLabel="Saindo..."
+                confirmLabel="Abandonar partida"
                 onClose={() => setLeaveOpen(false)}
-                onConfirm={() => router.visit(route('dashboard'))}
+                onConfirm={() => {
+                    setLeaving(true);
+                    router.delete(route('rooms.leave', room.id), {
+                        onFinish: () => setLeaving(false),
+                    });
+                }}
                 show={leaveOpen}
-                title="Sair da partida?"
+                title="Abandonar a partida?"
             >
                 <p>
-                    Seu lugar e seu progresso continuam na partida. Você poderá
-                    voltar pela Dashboard enquanto a sala existir.
+                    Você sai da mesa e um bot assume o seu lugar, com as suas
+                    cartas e o seu percurso. Se não restar nenhuma pessoa, a
+                    sala é encerrada.
                 </p>
+                <button
+                    className="mt-3 min-h-11 w-full border-2 border-[#1d1d1b] bg-white font-mono text-xs font-black uppercase"
+                    onClick={() => router.visit(route('dashboard'))}
+                    type="button"
+                >
+                    Só voltar à Dashboard (continuo na mesa)
+                </button>
             </ConfirmDialog>
         </AuthenticatedLayout>
     );

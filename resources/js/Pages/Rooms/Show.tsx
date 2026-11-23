@@ -268,6 +268,17 @@ export default function Show({
                                     Sair da sala
                                 </button>
                             ) : null}
+                            {isHost &&
+                                room.status === 'waiting' &&
+                                hasOtherHumans && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfirmingLeave(true)}
+                                        className="inline-flex min-h-10 items-center border-2 border-transparent px-2 font-mono text-[11px] font-black uppercase text-[#d01600] hover:border-[#d01600] hover:bg-white"
+                                    >
+                                        Sair da sala
+                                    </button>
+                                )}
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                             <div className="min-w-0">
@@ -344,7 +355,7 @@ export default function Show({
                                     4 lugares
                                 </span>
                             </div>
-                            <ol className="grid gap-px bg-[#1d1d1b]/20 sm:grid-cols-2">
+                            <ol className="grid grid-cols-2 gap-px bg-[#1d1d1b]/20">
                                 {[1, 2, 3, 4].map((seat) => {
                                     const participant = room.participants.find(
                                         (item) => item.seat === seat,
@@ -353,7 +364,7 @@ export default function Show({
                                     return (
                                         <li
                                             key={seat}
-                                            className="flex min-h-[4.75rem] items-center gap-3 bg-white p-3"
+                                            className="flex min-h-[4rem] items-center gap-2 bg-white p-2 sm:min-h-[4.75rem] sm:gap-3 sm:p-3"
                                         >
                                             <span
                                                 className="grid size-7 shrink-0 place-items-center border-2 border-[#1d1d1b] bg-[#e8e5dc] font-mono text-xs font-black"
@@ -408,7 +419,7 @@ export default function Show({
                         </section>
 
                         {isHost && room.status === 'waiting' ? (
-                            <section className="border-[3px] border-[#1d1d1b] bg-[#1d1d1b] p-4 text-white shadow-[4px_4px_0_#b4da33]">
+                            <section className="border-[3px] border-[#1d1d1b] bg-[#1d1d1b] p-4 text-white shadow-[4px_4px_0_#b4da33] max-lg:order-first">
                                 <p className="font-mono text-[10px] font-bold uppercase tracking-[.16em] text-[#b4da33]">
                                     Convite da sala
                                 </p>
@@ -526,8 +537,9 @@ export default function Show({
                 onConfirm={leave}
                 onClose={() => setConfirmingLeave(false)}
             >
-                Sua vaga ficará livre para outra pessoa. Você poderá voltar com
-                um convite válido enquanto a sala ainda estiver aguardando.
+                {isHost
+                    ? 'Você é o anfitrião: o comando da sala passa para o jogador que está há mais tempo nela e a sala continua. Se só restassem bots, ela seria encerrada.'
+                    : 'Sua vaga ficará livre para outra pessoa. Você poderá voltar com um convite válido enquanto a sala ainda estiver aguardando.'}
             </ConfirmDialog>
             <ConfirmDialog
                 show={confirmingRevoke}

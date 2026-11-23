@@ -1,7 +1,10 @@
 import type { ToastItem, ToastTone } from '@/lib/toast';
 import type { ReactNode } from 'react';
 
-const TONES: Record<ToastTone, { bar: string; label: string; icon: ReactNode }> = {
+const TONES: Record<
+    ToastTone,
+    { bar: string; label: string; icon: ReactNode }
+> = {
     success: {
         bar: 'bg-[#b4da33]',
         label: 'Pronto',
@@ -88,10 +91,14 @@ export default function ToastStack({
     return (
         <div
             aria-label="Avisos"
-            className="pointer-events-none fixed inset-x-3 bottom-4 z-[70] flex flex-col items-end gap-3 sm:left-auto sm:right-4 sm:w-96"
+            className="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[70] flex flex-col items-end gap-2 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:top-auto sm:w-96 sm:gap-3"
         >
             {toasts.map((toast) => (
-                <ToastCard key={toast.uid} toast={toast} onDismiss={onDismiss} />
+                <ToastCard
+                    key={toast.uid}
+                    toast={toast}
+                    onDismiss={onDismiss}
+                />
             ))}
         </div>
     );

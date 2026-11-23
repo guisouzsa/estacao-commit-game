@@ -36,7 +36,7 @@ export default memo(function PlayerPanel({
     return (
         <div
             data-panel={player.id}
-            className={`rounded-lg border-2 bg-[#1d1d1b]/90 p-2 backdrop-blur-sm transition-colors ${
+            className={`rounded-lg border-2 bg-[#1d1d1b]/90 p-1.5 transition-colors sm:p-2 sm:backdrop-blur-sm ${
                 active
                     ? 'turn-glow border-[#b4da33] bg-[#232a12]/90'
                     : 'border-white/15'
@@ -46,10 +46,10 @@ export default memo(function PlayerPanel({
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap">
                 <PlayerAvatar profile={player.profile} size="xs" />
                 <div className="order-3 w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
-                    <strong className="block truncate text-xs leading-4">
+                    <strong className="block truncate text-[11px] leading-4 sm:text-xs">
                         {you ? 'Você' : `@${player.username}`}
                     </strong>
-                    <div className="flex flex-wrap gap-x-1.5 font-mono text-[8px] font-bold uppercase leading-3 text-white/55">
+                    <div className="hidden flex-wrap gap-x-1.5 font-mono text-[8px] font-bold uppercase leading-3 text-white/55 sm:flex">
                         {player.is_host && <span>Anfitrião</span>}
                         {player.is_bot && (
                             <span className="text-[#b4da33]">Bot</span>

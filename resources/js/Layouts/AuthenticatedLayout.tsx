@@ -1,5 +1,5 @@
-import ConfirmDialog from '@/Components/ConfirmDialog';
 import BrandLogo from '@/Components/BrandLogo';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import NotificationBell from '@/Components/NotificationBell';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import PlayerSearch from '@/Components/PlayerSearch';
@@ -12,8 +12,16 @@ const navItem =
 export default function Authenticated({
     header,
     children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
-    const { user, kind, unread_notifications: unreadCount = 0 } = usePage().props.auth;
+    immersive = false,
+}: PropsWithChildren<{ header?: ReactNode; immersive?: boolean }>) {
+    // Na partida o celular precisa de toda a altura: a barra do site some (< lg). A própria
+    // partida oferece "Sair" e o Registro.
+    const [searchOpen, setSearchOpen] = useState(false);
+    const {
+        user,
+        kind,
+        unread_notifications: unreadCount = 0,
+    } = usePage().props.auth;
     // Visitante: joga sem conta. Rankings, busca e perfil são só de contas permanentes.
     const isGuest = kind === 'guest';
     const [leaving, setLeaving] = useState(false);
@@ -23,8 +31,12 @@ export default function Authenticated({
     const ranking = route().current('rankings');
 
     return (
-        <div className="min-h-screen w-full bg-[#e8e5dc]">
-            <header className="sticky top-0 z-30 border-b-[3px] border-[#b4da33] bg-[#1d1d1b] text-white shadow-[0_4px_0_rgba(29,29,27,.12)]">
+        <div
+            className={`flex min-h-[100dvh] w-full flex-col bg-[#e8e5dc] ${immersive ? 'max-lg:h-[100dvh] max-lg:overflow-hidden' : ''}`}
+        >
+            <header
+                className={`sticky top-0 z-30 border-b-[3px] border-[#b4da33] bg-[#1d1d1b] text-white shadow-[0_4px_0_rgba(29,29,27,.12)] ${immersive ? 'max-lg:hidden' : ''}`}
+            >
                 <div className="flex w-full flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:gap-5 lg:px-6">
                     <Link
                         aria-label="Estação Commit — início"
@@ -32,6 +44,14 @@ export default function Authenticated({
                         href={route('dashboard')}
                     >
                         <BrandLogo compact />
+                    </Link>
+                    {/* Celular: um único botão colorido ao lado da logo (sobra espaço para o jogo) */}
+                    <Link
+                        aria-current={dashboard ? 'page' : undefined}
+                        className="order-1 inline-flex min-h-11 items-center border-2 border-[#1d1d1b] bg-[#b4da33] px-4 font-mono text-xs font-black uppercase text-[#1d1d1b] shadow-[3px_3px_0_#f481c6] md:hidden"
+                        href={route('dashboard')}
+                    >
+                        Início
                     </Link>
 
                     <nav
@@ -58,36 +78,81 @@ export default function Authenticated({
                             Convite
                         </Link>
                         {!isGuest && (
-                        <Link
-                            aria-current={ranking ? 'page' : undefined}
-                            className={`${navItem} gap-1.5 ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75 hover:border-[#f481c6] hover:text-white'}`}
-                            href={route('rankings')}
-                        >
-                            <svg
-                                aria-hidden="true"
-                                className="size-4"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="1.8"
-                                viewBox="0 0 24 24"
+                            <Link
+                                aria-current={ranking ? 'page' : undefined}
+                                className={`${navItem} gap-1.5 ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75 hover:border-[#f481c6] hover:text-white'}`}
+                                href={route('rankings')}
                             >
-                                <path d="M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4" />
-                                <path d="M9 8h6" />
-                            </svg>
-                            Rankings
-                        </Link>
+                                <svg
+                                    aria-hidden="true"
+                                    className="size-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="1.8"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path d="M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4" />
+                                    <path d="M9 8h6" />
+                                </svg>
+                                Rankings
+                            </Link>
                         )}
                     </nav>
 
                     {!isGuest && (
-                        <div className="order-3 min-w-0 max-w-[420px] basis-full md:flex-1 md:basis-auto">
+                        <div
+                            className={`order-3 min-w-0 max-w-[420px] basis-full md:flex-1 md:basis-auto ${searchOpen ? '' : 'max-md:hidden'}`}
+                        >
                             <PlayerSearch />
                         </div>
                     )}
 
                     <div className="order-2 ml-auto flex shrink-0 items-center gap-2 md:order-4">
+                        {!isGuest && (
+                            <Link
+                                aria-current={ranking ? 'page' : undefined}
+                                aria-label="Rankings"
+                                className={`grid size-11 place-items-center border-2 transition focus:outline-none focus:ring-2 focus:ring-[#b4da33] md:hidden ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-white/25 hover:border-[#b4da33]'}`}
+                                href={route('rankings')}
+                            >
+                                <svg
+                                    aria-hidden="true"
+                                    className="size-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="1.8"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path d="M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4" />
+                                </svg>
+                            </Link>
+                        )}
+                        {!isGuest && (
+                            <button
+                                aria-expanded={searchOpen}
+                                aria-label="Buscar jogadores"
+                                className="grid size-11 place-items-center border-2 border-white/25 transition hover:border-[#b4da33] focus:outline-none focus:ring-2 focus:ring-[#b4da33] md:hidden"
+                                onClick={() => setSearchOpen((open) => !open)}
+                                type="button"
+                            >
+                                <svg
+                                    aria-hidden="true"
+                                    className="size-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeWidth="1.8"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle cx="11" cy="11" r="6" />
+                                    <path d="m20 20-4-4" />
+                                </svg>
+                            </button>
+                        )}
                         {isGuest ? (
                             <>
                                 <div
@@ -144,53 +209,6 @@ export default function Authenticated({
                             </>
                         )}
                     </div>
-
-                    <nav
-                        aria-label="Navegação principal"
-                        className="order-5 flex w-full items-center gap-1 overflow-x-auto border-t border-white/15 pt-2 md:hidden"
-                    >
-                        <Link
-                            aria-current={dashboard ? 'page' : undefined}
-                            className={`shrink-0 border-b-[3px] px-3 py-2 font-mono text-[11px] font-bold uppercase ${dashboard ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75'}`}
-                            href={route('dashboard')}
-                        >
-                            Jogar
-                        </Link>
-                        <Link
-                            className="shrink-0 border-b-[3px] border-transparent px-3 py-2 font-mono text-[11px] font-bold uppercase text-white/75"
-                            href={`${route('dashboard')}#criar-sala`}
-                        >
-                            Criar sala
-                        </Link>
-                        <Link
-                            className="shrink-0 border-b-[3px] border-transparent px-3 py-2 font-mono text-[11px] font-bold uppercase text-white/75"
-                            href={`${route('dashboard')}#entrar-convite`}
-                        >
-                            Entrar com convite
-                        </Link>
-                        {!isGuest && (
-                        <Link
-                            aria-current={ranking ? 'page' : undefined}
-                            className={`inline-flex shrink-0 items-center gap-1.5 border-b-[3px] px-3 py-2 font-mono text-[11px] font-bold uppercase ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75'}`}
-                            href={route('rankings')}
-                        >
-                            <svg
-                                aria-hidden="true"
-                                className="size-4"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="1.8"
-                                viewBox="0 0 24 24"
-                            >
-                                <path d="M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4" />
-                                <path d="M9 8h6" />
-                            </svg>
-                            Rankings
-                        </Link>
-                        )}
-                    </nav>
                 </div>
             </header>
 
@@ -203,12 +221,16 @@ export default function Authenticated({
                 busy={leavingBusy}
                 onConfirm={() => {
                     setLeavingBusy(true);
-                    router.post(route('guest.leave'), {}, {
-                        onFinish: () => {
-                            setLeavingBusy(false);
-                            setLeaving(false);
+                    router.post(
+                        route('guest.leave'),
+                        {},
+                        {
+                            onFinish: () => {
+                                setLeavingBusy(false);
+                                setLeaving(false);
+                            },
                         },
-                    });
+                    );
                 }}
                 onClose={() => setLeaving(false)}
             >
@@ -224,7 +246,7 @@ export default function Authenticated({
                     </div>
                 </section>
             )}
-            <main className="min-h-[calc(100vh-4.25rem)] w-full">
+            <main className="flex min-h-0 w-full flex-1 flex-col">
                 {children}
             </main>
         </div>

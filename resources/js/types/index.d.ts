@@ -18,10 +18,21 @@ export interface User {
     created_at?: string;
 }
 
+export type ToastTone = 'success' | 'warning' | 'info';
+
+export type ToastPayload = {
+    id: string;
+    tone: ToastTone;
+    message: string;
+};
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
     auth: {
         user: User;
+    };
+    flash?: {
+        toast?: ToastPayload | null;
     };
 };

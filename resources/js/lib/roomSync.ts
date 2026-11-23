@@ -18,10 +18,18 @@ export type RoomEcho = {
 
 type Target = Pick<EventTarget, 'addEventListener' | 'removeEventListener'>;
 
-export type RoomSyncOptions = {
+export type ChannelSyncOptions = {
     /** Instância do Echo, ou null quando o tempo real está desativado. */
     echo: RoomEcho | null;
-    roomId: string;
+    /** Canal privado a escutar (sem o prefixo "private-"). */
+    channelName: string;
+    /** Evento do servidor que significa "algo mudou, busque o estado de novo". */
+    event: string;
+    /**
+     * Permite tratar um evento de forma especial. Se retornar true, o evento
+     * foi tratado e NÃO provoca reload (ex.: a sala foi excluída).
+     */
+    onEvent?: (payload: unknown) => boolean | void;
     /** Dispara um reload no servidor e chama `done` ao terminar (com sucesso ou erro). */
     reload: (done: () => void) => void;
     /** Se o polling de segurança deve pedir o estado neste momento. */
@@ -35,6 +43,15 @@ export type RoomSyncOptions = {
     window?: Target;
 };
 
+export type RoomSyncOptions = Omit<
+    ChannelSyncOptions,
+    'channelName' | 'event' | 'onEvent'
+> & {
+    roomId: string;
+    /** Chamado quando o servidor avisa que a sala foi excluída. */
+    onRoomDeleted?: () => void;
+};
+
 export const ROOM_STATE_EVENT = '.room.state.changed';
 const SUBSCRIBED_EVENT = '.pusher:subscription_succeeded';
 const SUBSCRIPTION_ERROR_EVENT = '.pusher:subscription_error';
@@ -42,13 +59,15 @@ const SUBSCRIPTION_ERROR_EVENT = '.pusher:subscription_error';
 export const roomChannelName = (roomId: string) => `rooms.${roomId}`;
 
 /**
- * Liga a sala ao tempo real e ao polling de segurança.
+ * Liga uma página ao tempo real e ao polling de segurança.
  * Retorna a função de limpeza, que remove todos os listeners e timers.
  */
-export function startRoomSync(options: RoomSyncOptions): () => void {
+export function startChannelSync(options: ChannelSyncOptions): () => void {
     const {
         echo,
-        roomId,
+        channelName,
+        event,
+        onEvent,
         reload,
         shouldPoll,
         onSubscriptionError,
@@ -102,12 +121,16 @@ export function startRoomSync(options: RoomSyncOptions): () => void {
     const onOnline = () => sync();
     const onRealtimeError = (error: unknown) => onSubscriptionError?.(error);
 
-    const channelName = roomChannelName(roomId);
+    const onChange = (payload: unknown) => {
+        if (onEvent?.(payload) === true) return;
+        sync();
+    };
+
     let channel: RoomChannel | undefined;
 
     if (echo) {
         channel = echo.private(channelName);
-        channel.listen(ROOM_STATE_EVENT, sync);
+        channel.listen(event, onChange);
         // Dispara na primeira assinatura e em toda reassinatura após uma
         // reconexão, o que recupera eventos perdidos durante a queda.
         channel.listen(SUBSCRIBED_EVENT, sync);
@@ -130,10 +153,31 @@ export function startRoomSync(options: RoomSyncOptions): () => void {
         win?.removeEventListener('online', onOnline);
 
         if (echo && channel) {
-            channel.stopListening(ROOM_STATE_EVENT, sync);
+            channel.stopListening(event, onChange);
             channel.stopListening(SUBSCRIBED_EVENT, sync);
             channel.stopListening(SUBSCRIPTION_ERROR_EVENT, onRealtimeError);
             echo.leave(channelName);
         }
     };
+}
+
+/** Sincronização da página de uma sala: canal `rooms.{id}` e evento de estado. */
+export function startRoomSync(options: RoomSyncOptions): () => void {
+    const { roomId, onRoomDeleted, ...rest } = options;
+
+    return startChannelSync({
+        ...rest,
+        channelName: roomChannelName(roomId),
+        event: ROOM_STATE_EVENT,
+        // "deleted" só decide para onde navegar; nenhum estado vem do evento.
+        onEvent: onRoomDeleted
+            ? (payload) => {
+                  const change = (payload as { change?: unknown } | null)?.change;
+                  if (change === 'deleted') {
+                      onRoomDeleted();
+                      return true;
+                  }
+              }
+            : undefined,
+    });
 }

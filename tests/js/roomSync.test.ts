@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 import {
     ROOM_STATE_EVENT,
     roomChannelName,
+    startChannelSync,
     startRoomSync,
     type RoomSyncOptions,
 } from '../../resources/js/lib/roomSync.ts';
@@ -316,5 +317,118 @@ describe('startRoomSync', () => {
             assert.equal(reloads.length, 1);
             stop();
         });
+    });
+});
+
+describe('sala excluída', () => {
+    let fake: ReturnType<typeof createFakeEcho>;
+    let reloads: Array<() => void>;
+    let deleted: number;
+
+    const start = () =>
+        startRoomSync({
+            echo: fake.echo,
+            roomId: 'room-1',
+            reload: (done) => reloads.push(done),
+            shouldPoll: () => true,
+            onRoomDeleted: () => {
+                deleted += 1;
+            },
+        });
+
+    beforeEach(() => {
+        mock.timers.enable({ apis: ['setInterval', 'setTimeout'] });
+        fake = createFakeEcho();
+        reloads = [];
+        deleted = 0;
+    });
+    afterEach(() => mock.timers.reset());
+
+    it('avisa a página, sem recarregar, quando o evento informa exclusão', () => {
+        start();
+
+        fake.emit(ROOM_STATE_EVENT, { roomId: 'room-1', change: 'deleted' });
+
+        assert.equal(deleted, 1);
+        assert.equal(reloads.length, 0, 'a sala não existe mais para recarregar');
+    });
+
+    it('outras mudanças continuam apenas recarregando o estado do servidor', () => {
+        start();
+
+        fake.emit(ROOM_STATE_EVENT, { roomId: 'room-1', change: 'participant_joined' });
+        fake.emit(ROOM_STATE_EVENT);
+        fake.emit(ROOM_STATE_EVENT, null);
+
+        assert.equal(deleted, 0);
+        assert.equal(reloads.length, 1);
+    });
+
+    it('sem onRoomDeleted, qualquer evento recarrega como antes', () => {
+        startRoomSync({
+            echo: fake.echo,
+            roomId: 'room-1',
+            reload: (done) => reloads.push(done),
+            shouldPoll: () => false,
+        });
+
+        fake.emit(ROOM_STATE_EVENT, { change: 'deleted' });
+
+        assert.equal(reloads.length, 1);
+    });
+
+    it('a limpeza remove também o ouvinte de exclusão', () => {
+        const stop = start();
+        stop();
+
+        fake.emit(ROOM_STATE_EVENT, { change: 'deleted' });
+
+        assert.equal(deleted, 0);
+        assert.equal(fake.count(ROOM_STATE_EVENT), 0);
+    });
+});
+
+describe('canal do usuário (Dashboard)', () => {
+    beforeEach(() => mock.timers.enable({ apis: ['setInterval', 'setTimeout'] }));
+    afterEach(() => mock.timers.reset());
+
+    it('escuta o canal privado do próprio usuário e recarrega ao ser avisado', () => {
+        const fake = createFakeEcho();
+        const reloads: Array<() => void> = [];
+
+        startChannelSync({
+            echo: fake.echo,
+            channelName: 'App.Models.User.user-1',
+            event: '.user.notices.changed',
+            reload: (done) => reloads.push(done),
+            shouldPoll: () => false,
+        });
+
+        assert.deepEqual(fake.calls.private, ['App.Models.User.user-1']);
+
+        fake.emit('.user.notices.changed');
+
+        assert.equal(reloads.length, 1);
+    });
+
+    it('o polling de segurança só roda quando há sala aguardando', () => {
+        const fake = createFakeEcho();
+        const reloads: Array<() => void> = [];
+        let waiting = false;
+
+        startChannelSync({
+            echo: fake.echo,
+            channelName: 'App.Models.User.user-1',
+            event: '.user.notices.changed',
+            reload: (done) => reloads.push(done),
+            shouldPoll: () => waiting,
+        });
+
+        mock.timers.tick(15000);
+        assert.equal(reloads.length, 0);
+
+        waiting = true;
+        mock.timers.tick(15000);
+        assert.equal(reloads.length, 1);
     });
 });

@@ -202,6 +202,34 @@ class GameMatchTest extends TestCase
             ->assertSessionHas('pending_room_invite', $token);
     }
 
+    public function test_a_visitor_arriving_by_invite_joins_the_room_right_after_creating_the_profile(): void
+    {
+        $host = User::factory()->create();
+        $room = GameRoom::create(['host_user_id' => $host->id, 'status' => 'waiting']);
+        $room->participants()->create(['user_id' => $host->id, 'kind' => 'user', 'is_host' => true, 'seat' => 1, 'joined_at' => now()]);
+        RoomInvitation::create(['room_id' => $room->id, 'token_hash' => hash('sha256', 'A2B3C'), 'expires_at' => now()->addHour()]);
+
+        $this->get(route('invites.open', 'A2B3C'));
+        $this->post(route('guest.store'), ['name' => 'Visitante Novo', 'avatar_style' => 'pixel', 'avatar_seed' => 'abcdef12'])
+            ->assertRedirect(route('rooms.show', $room));
+
+        $this->assertSame(1, $room->participants()->where('kind', 'guest')->count());
+    }
+
+    public function test_a_revoked_invite_does_not_let_the_new_visitor_in(): void
+    {
+        $host = User::factory()->create();
+        $room = GameRoom::create(['host_user_id' => $host->id, 'status' => 'waiting']);
+        $room->participants()->create(['user_id' => $host->id, 'kind' => 'user', 'is_host' => true, 'seat' => 1, 'joined_at' => now()]);
+        RoomInvitation::create(['room_id' => $room->id, 'token_hash' => hash('sha256', 'A2B3C'), 'expires_at' => now()->addHour(), 'revoked_at' => now()]);
+
+        $this->withSession(['pending_room_invite' => 'A2B3C'])
+            ->post(route('guest.store'), ['name' => 'Visitante Novo', 'avatar_style' => 'pixel', 'avatar_seed' => 'abcdef12'])
+            ->assertRedirect(route('invites.open', 'A2B3C'));
+
+        $this->assertSame(0, $room->participants()->where('kind', 'guest')->count());
+    }
+
     private function humanRoom(): array
     {
         $users = User::factory()->count(4)->create()->values();
@@ -221,6 +249,58 @@ class GameMatchTest extends TestCase
         $match->forceFill(['current_seat' => 1])->save();
 
         return [$room, $users];
+    }
+
+    public function test_a_bot_takes_over_a_human_who_stays_idle_on_their_turn(): void
+    {
+        [$room, $users] = $this->humanRoom();
+        $this->actingAs($users[0])->post(route('games.start', $room));
+        $match = GameMatch::firstOrFail();
+        $match->forceFill(['current_seat' => 2])->save();
+        $idle = $room->participants()->where('user_id', $users[1]->id)->firstOrFail();
+
+        // Antes do prazo nada muda.
+        $this->actingAs($users[0])->get(route('games.show', $room))->assertOk();
+        $this->assertSame('user', $idle->fresh()->kind);
+
+        $this->travel(config('game.turn_timeout_seconds') + 5)->seconds();
+        $this->actingAs($users[0])->get(route('games.show', $room))->assertOk();
+
+        $idle->refresh();
+        $this->assertSame('bot', $idle->kind);
+        $this->assertNull($idle->user_id);
+        $this->assertNotNull($idle->bot_key);
+        $match->refresh();
+        // O bot jogou a vez dele com o mesmo motor; a mão do lugar foi preservada (4 cartas ou mais).
+        $this->assertNotSame(2, $match->current_seat);
+        $this->assertNotEmpty($match->state['players'][(string) $idle->id]['hand']);
+        $this->assertTrue(collect($match->state['history'])->contains(fn ($item) => ($item['notify'] ?? false) && str_contains($item['message'], 'assumiu')));
+    }
+
+    public function test_the_replaced_player_is_sent_back_to_the_dashboard_with_a_notice(): void
+    {
+        [$room, $users] = $this->humanRoom();
+        $this->actingAs($users[0])->post(route('games.start', $room));
+        GameMatch::firstOrFail()->forceFill(['current_seat' => 2])->save();
+
+        $this->travel(config('game.turn_timeout_seconds') + 5)->seconds();
+
+        $this->actingAs($users[1])->get(route('games.show', $room))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('toast.tone', 'warning');
+    }
+
+    public function test_only_the_player_whose_turn_it_is_gets_replaced(): void
+    {
+        [$room, $users] = $this->humanRoom();
+        $this->actingAs($users[0])->post(route('games.start', $room));
+        GameMatch::firstOrFail()->forceFill(['current_seat' => 1])->save();
+        $this->travel(config('game.turn_timeout_seconds') + 5)->seconds();
+
+        // Quem está na vez é o jogador 1: só ele poderia ser substituído, e ele é substituído.
+        $this->actingAs($users[1])->get(route('games.show', $room))->assertOk();
+        $this->assertSame(1, $room->participants()->where('kind', 'bot')->count());
+        $this->assertSame('user', $room->participants()->where('user_id', $users[1]->id)->firstOrFail()->kind);
     }
 
     private function botRoom(): array

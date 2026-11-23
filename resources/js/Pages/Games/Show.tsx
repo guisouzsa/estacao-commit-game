@@ -44,6 +44,7 @@ type Game = {
         participant_id?: number;
         message: string;
         turn: number;
+        notify?: boolean;
     }[];
 };
 
@@ -132,6 +133,19 @@ export default function Show({
         setSelected(null);
         setTarget('');
     }, [game.version]);
+
+    // Eventos que merecem aviso (ex.: bot assumiu um lugar). O id evita repetir o aviso
+    // quando o mesmo estado chega por Reverb e pela sincronização de segurança.
+    useEffect(() => {
+        game.history
+            .filter((item) => item.notify)
+            .forEach((item) =>
+                toast.info(item.message, {
+                    id: `game-event:${item.id}`,
+                    title: 'Mudança na mesa',
+                }),
+            );
+    }, [game.history]);
 
     const send = (action: string, card?: string, targetId?: string) => {
         setBusy(true);
@@ -478,6 +492,24 @@ function PlayerSeat({
                     {participant.hand_count} cartas
                 </span>
             </div>
+            <div
+                className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"
+                role="progressbar"
+                aria-label={`Progresso de ${participant.player.username}`}
+                aria-valuemin={0}
+                aria-valuemax={18}
+                aria-valuenow={participant.step}
+            >
+                <div
+                    className="h-full bg-[#b4da33] transition-[width] motion-reduce:transition-none"
+                    style={{ width: `${Math.round((participant.step / 18) * 100)}%` }}
+                />
+            </div>
+            {participant.blocked && (
+                <p className="mt-1 font-mono text-[8px] font-black uppercase text-[#f481c6]">
+                    Merge Conflict · perde a vez
+                </p>
+            )}
         </div>
     );
 }

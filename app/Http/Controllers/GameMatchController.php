@@ -6,11 +6,13 @@ use App\Models\GameAction;
 use App\Models\GameMatch;
 use App\Models\GameRoom;
 use App\Services\GameEngine;
+use App\Services\GameInactivityService;
 use App\Services\RoomStateBroadcaster;
 use App\Support\PlayerPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,10 +42,23 @@ class GameMatchController extends Controller
         return to_route('games.show', $room);
     }
 
-    public function show(Request $request, GameRoom $room): Response
+    public function show(Request $request, GameRoom $room): Response|RedirectResponse
     {
         $actor = $request->user();
         abort_unless($room->hasParticipant($actor), 404);
+        // Jogador da vez sumiu? Um bot assume (ver GameInactivityService) e avisa a mesa.
+        if (app(GameInactivityService::class)->sweep($room)) {
+            app(RoomStateBroadcaster::class)->publish($room->id, 'game_updated');
+
+            if (! $room->participants()->forActor($actor)->exists()) {
+                return to_route('dashboard')->with('toast', [
+                    'id' => (string) Str::uuid(),
+                    'tone' => 'warning',
+                    'title' => 'Um bot assumiu seu lugar',
+                    'message' => 'Você ficou parado na sua vez por tempo demais e a partida seguiu sem você.',
+                ]);
+            }
+        }
         $match = $room->gameMatch()->firstOrFail();
         $room->load(['participants.user', 'participants.guest']);
         $viewer = $room->participants()->forActor($actor)->firstOrFail();

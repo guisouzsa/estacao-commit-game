@@ -1,6 +1,7 @@
 import '../css/app.css';
 import './bootstrap';
 
+import LoadingHost from '@/Components/LoadingHost';
 import ToastHost from '@/Components/ToastHost';
 import { friendlyHttpMessage, toast } from '@/lib/toast';
 import { createInertiaApp, router } from '@inertiajs/react';
@@ -21,11 +22,19 @@ createInertiaApp({
 
         root.render(<App {...props} />);
 
+        // Sai a tela estática de abertura (ver app.blade.php) assim que o app monta.
+        requestAnimationFrame(() => document.getElementById('boot-splash')?.remove());
+
         // Host de avisos: montado uma única vez, fora da árvore do Inertia,
         // para os avisos sobreviverem à navegação entre páginas.
         const host = document.createElement('div');
         document.body.appendChild(host);
-        createRoot(host).render(<ToastHost />);
+        createRoot(host).render(
+            <>
+                <ToastHost />
+                <LoadingHost />
+            </>,
+        );
 
         // Aviso enviado pelo servidor junto de um redirecionamento. O id impede
         // que reapareça em recarregamentos parciais.

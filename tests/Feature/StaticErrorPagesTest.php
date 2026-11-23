@@ -33,4 +33,13 @@ class StaticErrorPagesTest extends TestCase
         $this->assertStringContainsString('error-pages.conf', $dockerfile);
         $this->assertStringContainsString('a2enconf reverb-proxy mpm-tuning error-pages', $dockerfile);
     }
+
+    public function test_every_page_ships_a_friendly_opening_screen_instead_of_a_black_one(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('id="boot-splash"', $html);
+        $this->assertStringContainsString('Aguarde um instante', $html);
+        $this->assertStringContainsString('preparando o ambiente para você jogar', $html);
+    }
 }

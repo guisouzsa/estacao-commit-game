@@ -170,6 +170,20 @@ class RealtimeInfrastructureTest extends TestCase
         $this->assertSame(25, $config['apps']['apps'][0]['max_connections']);
     }
 
+    public function test_programs_running_as_www_data_have_a_readable_home_for_the_database_client(): void
+    {
+        $supervisor = file_get_contents(base_path('docker/supervisor/supervisord.conf'));
+
+        // Sem HOME próprio, a libpq tenta ler /root/.postgresql/postgresql.crt
+        // ("Permission denied") e o Reverb e o scheduler não conectam ao banco.
+        foreach (['reverb', 'scheduler'] as $program) {
+            $this->assertSame(1, preg_match('/\[program:'.$program.'\].*?(?=
+\[|\z)/s', $supervisor, $section), "seção $program");
+            $this->assertStringContainsString('user=www-data', $section[0]);
+            $this->assertStringContainsString('environment=HOME="/var/www"', $section[0], "$program precisa de HOME legível");
+        }
+    }
+
     private function reverbConnectionOptions(): array
     {
         return (require base_path('config/broadcasting.php'))['connections']['reverb']['options'];

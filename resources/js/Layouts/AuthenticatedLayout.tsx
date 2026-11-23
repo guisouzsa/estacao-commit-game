@@ -1,5 +1,6 @@
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import BrandLogo from '@/Components/BrandLogo';
+import NotificationBell from '@/Components/NotificationBell';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import PlayerSearch from '@/Components/PlayerSearch';
 import { Link, router, usePage } from '@inertiajs/react';
@@ -119,34 +120,7 @@ export default function Authenticated({
                             </>
                         ) : (
                             <>
-                                <Link
-                                    aria-label={
-                                        unreadCount
-                                            ? `Notificações, ${unreadCount} não lidas`
-                                            : 'Notificações'
-                                    }
-                                    className="relative grid size-11 place-items-center border-2 border-white/25 transition hover:border-[#b4da33] focus:outline-none focus:ring-2 focus:ring-[#b4da33]"
-                                    href={route('notifications.index')}
-                                    title="Notificações"
-                                >
-                                    <svg
-                                        aria-hidden="true"
-                                        className="size-5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.8"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7Zm4 10a2 2 0 0 0 4 0" />
-                                    </svg>
-                                    {unreadCount > 0 && (
-                                        <span className="absolute -right-1.5 -top-1.5 min-w-5 border-2 border-[#1d1d1b] bg-[#f481c6] px-1 text-center font-mono text-[10px] font-black leading-4 text-[#1d1d1b]">
-                                            {unreadCount > 99 ? '99+' : unreadCount}
-                                        </span>
-                                    )}
-                                </Link>
+                                <NotificationBell unreadCount={unreadCount} />
                                 <Link
                                     aria-label="Meu perfil"
                                     className={`grid size-14 place-items-center border-2 transition focus:outline-none focus:ring-2 focus:ring-[#b4da33] ${

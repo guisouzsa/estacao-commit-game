@@ -367,4 +367,31 @@ class SocialTest extends TestCase
         $this->assertDatabaseCount('notifications', 0);
         $this->assertSame(1, GuestProfile::count());
     }
+
+    public function test_the_navbar_popover_gets_only_the_latest_eight_as_light_json(): void
+    {
+        $user = User::factory()->create();
+        $this->giveFollowerNotices($user, 12);
+        $user->notify(new RoomDeleted((string) Str::uuid(), RoomDeleted::EMPTY_TIMEOUT));
+
+        $response = $this->actingAs($user)->getJson(route('notifications.recent'))->assertOk();
+
+        $response->assertJsonCount(8, 'data');
+        $response->assertJsonPath('data.0.message', '@fa11 começou a seguir você.');
+        $response->assertJsonStructure(['data' => [['id', 'message', 'username', 'avatar_seed', 'read', 'created_at']]]);
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+    }
+
+    public function test_the_popover_never_shows_someone_elses_notifications_and_needs_an_account(): void
+    {
+        $other = User::factory()->create();
+        $this->giveFollowerNotices($other, 3);
+
+        $this->actingAs(User::factory()->create())->getJson(route('notifications.recent'))->assertJsonCount(0, 'data');
+    }
+
+    public function test_the_popover_endpoint_requires_login(): void
+    {
+        $this->getJson(route('notifications.recent'))->assertUnauthorized();
+    }
 }

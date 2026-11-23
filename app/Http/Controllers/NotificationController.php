@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Notifications\NewFollower;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -42,6 +43,26 @@ class NotificationController extends Controller
             'notifications' => $page,
             'unread' => $user->unreadNotifications()->whereIn('type', self::TYPES)->count(),
         ]);
+    }
+
+    /** Últimas notificações para o popover da navbar (JSON leve, buscado só ao abrir). */
+    public function recent(Request $request): JsonResponse
+    {
+        $items = $request->user()->notifications()
+            ->whereIn('type', self::TYPES)
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(fn ($notification) => [
+                'id' => $notification->id,
+                'message' => (string) ($notification->data['message'] ?? ''),
+                'username' => $notification->data['username'] ?? null,
+                'avatar_seed' => $notification->data['avatar_seed'] ?? null,
+                'read' => $notification->read_at !== null,
+                'created_at' => $notification->created_at->toIso8601String(),
+            ]);
+
+        return response()->json(['data' => $items])->header('Cache-Control', 'no-store');
     }
 
     public function read(Request $request, string $id): RedirectResponse

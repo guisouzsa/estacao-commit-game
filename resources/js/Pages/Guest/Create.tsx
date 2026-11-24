@@ -118,91 +118,81 @@ export default function Create({
             </h2>
 
             <form className="mt-3" onSubmit={submit} noValidate>
-                <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <PlayerAvatar profile={preview} size="lg" />
-                            <div className="min-w-0 flex-1">
-                                <label
-                                    className="auth-label"
-                                    htmlFor="guest-name"
-                                >
-                                    Seu nome
-                                </label>
-                                <input
-                                    id="guest-name"
-                                    className="auth-input"
-                                    value={data.name}
-                                    onChange={(event) =>
-                                        setData('name', event.target.value)
-                                    }
-                                    maxLength={nameRules.max + 12}
-                                    autoComplete="nickname"
-                                    autoFocus
-                                    required
-                                    aria-invalid={Boolean(nameError)}
-                                    aria-describedby="guest-name-status"
-                                />
-                            </div>
-                        </div>
-                        <p
-                            id="guest-name-status"
-                            aria-live="polite"
-                            className={`mt-2 min-h-5 text-sm font-semibold ${
-                                nameError
-                                    ? 'text-[#d01600]'
-                                    : availability.state === 'available'
-                                      ? 'text-[#2d6a00]'
-                                      : 'text-ink/55'
-                            }`}
-                        >
-                            {nameError ??
-                                (availability.state === 'checking'
-                                    ? 'Verificando...'
-                                    : availability.state === 'available'
-                                      ? 'Nome disponível!'
-                                      : `De ${nameRules.min} a ${nameRules.max} caracteres.`)}
-                        </p>
-                        <InputError className="mt-1" message={errors.name} />
-                        {availability.state === 'unavailable' &&
-                            (availability.suggestions?.length ?? 0) > 0 && (
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    <span className="text-ink/70 text-sm">
-                                        Que tal:
-                                    </span>
-                                    {availability.suggestions!.map(
-                                        (suggestion) => (
-                                            <button
-                                                key={suggestion}
-                                                type="button"
-                                                onClick={() =>
-                                                    setData('name', suggestion)
-                                                }
-                                                className="min-h-9 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-black hover:bg-[#b4da33]"
-                                            >
-                                                Usar {suggestion}
-                                            </button>
-                                        ),
-                                    )}
-                                </div>
-                            )}
-                    </div>
-
-                    <div>
-                        <AvatarPicker
-                            styles={styles}
-                            style={data.avatar_style}
-                            seed={data.avatar_seed}
-                            previewName={preview.username}
-                            onChange={(style, seed) =>
-                                setData((current) => ({
-                                    ...current,
-                                    avatar_style: style as AvatarStyle,
-                                    avatar_seed: seed,
-                                }))
+                <div className="flex items-center gap-3 border-2 border-[#1d1d1b] bg-white p-3 shadow-[3px_3px_0_#464498]">
+                    <PlayerAvatar profile={preview} size="lg" />
+                    <div className="min-w-0 flex-1">
+                        <label className="auth-label" htmlFor="guest-name">
+                            Seu nome
+                        </label>
+                        <input
+                            id="guest-name"
+                            className="auth-input"
+                            value={data.name}
+                            onChange={(event) =>
+                                setData('name', event.target.value)
                             }
+                            maxLength={nameRules.max + 12}
+                            autoComplete="nickname"
+                            autoFocus
+                            required
+                            aria-invalid={Boolean(nameError)}
+                            aria-describedby="guest-name-status"
                         />
                     </div>
+                </div>
+                <p
+                    id="guest-name-status"
+                    aria-live="polite"
+                    className={`mt-2 min-h-5 text-sm font-semibold ${
+                        nameError
+                            ? 'text-[#d01600]'
+                            : availability.state === 'available'
+                              ? 'text-[#2d6a00]'
+                              : 'text-ink/55'
+                    }`}
+                >
+                    {nameError ??
+                        (availability.state === 'checking'
+                            ? 'Verificando...'
+                            : availability.state === 'available'
+                              ? 'Nome disponível!'
+                              : `De ${nameRules.min} a ${nameRules.max} caracteres.`)}
+                </p>
+                <InputError className="mt-1" message={errors.name} />
+                {availability.state === 'unavailable' &&
+                    (availability.suggestions?.length ?? 0) > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="text-ink/70 text-sm">
+                                Que tal:
+                            </span>
+                            {availability.suggestions!.map((suggestion) => (
+                                <button
+                                    key={suggestion}
+                                    type="button"
+                                    onClick={() => setData('name', suggestion)}
+                                    className="min-h-9 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-black hover:bg-[#b4da33]"
+                                >
+                                    Usar {suggestion}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                <div className="mt-4 border-t-2 border-[#1d1d1b]/15 pt-4">
+                    <AvatarPicker
+                        styles={styles}
+                        style={data.avatar_style}
+                        seed={data.avatar_seed}
+                        previewName={preview.username}
+                        wide
+                        onChange={(style, seed) =>
+                            setData((current) => ({
+                                ...current,
+                                avatar_style: style as AvatarStyle,
+                                avatar_seed: seed,
+                            }))
+                        }
+                    />
                 </div>
                 <InputError
                     className="mt-1"

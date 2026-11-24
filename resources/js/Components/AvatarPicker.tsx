@@ -1,5 +1,9 @@
 import PlayerAvatar from '@/Components/PlayerAvatar';
-import { AVATAR_STYLE_LABELS, type AvatarStyle, randomSeed } from '@/lib/avatarArt';
+import {
+    AVATAR_STYLE_LABELS,
+    type AvatarStyle,
+    randomSeed,
+} from '@/lib/avatarArt';
 import { useState } from 'react';
 
 const OPTIONS = 8;
@@ -15,12 +19,14 @@ export default function AvatarPicker({
     style,
     seed,
     previewName,
+    wide = false,
     onChange,
 }: {
     styles: readonly string[];
     style: string;
     seed: string | null;
     previewName: string;
+    wide?: boolean;
     onChange: (style: string, seed: string) => void;
 }) {
     // O ícone atual entra na lista, para continuar visível e selecionado.
@@ -50,7 +56,8 @@ export default function AvatarPicker({
                                 style === option ? 'bg-[#b4da33]' : 'bg-white'
                             }`}
                         >
-                            {AVATAR_STYLE_LABELS[option as AvatarStyle] ?? option}
+                            {AVATAR_STYLE_LABELS[option as AvatarStyle] ??
+                                option}
                         </button>
                     ))}
                 </div>
@@ -59,7 +66,7 @@ export default function AvatarPicker({
             <fieldset className="mt-4">
                 <legend className="auth-label">Escolha seu ícone</legend>
                 <div
-                    className="mt-2 grid grid-cols-4 gap-3"
+                    className={`mt-2 grid grid-cols-4 gap-2 sm:gap-3 ${wide ? 'md:grid-cols-8' : ''}`}
                     role="radiogroup"
                     aria-label="Ícones disponíveis"
                 >

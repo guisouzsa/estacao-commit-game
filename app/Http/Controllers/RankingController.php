@@ -36,11 +36,14 @@ class RankingController extends Controller
         $weekEnd = $weekStart->addDays(6);
         $monthEnd = $monthStart->endOfMonth();
 
-        $rankings = [
+        // As listas (consultas mais pesadas) vêm DEPOIS da casca da página: o título, o período e os
+        // controles aparecem na hora e a classificação carrega com esqueleto (props adiadas do Inertia).
+        $build = fn () => [
             'weekly' => $this->forPeriod($weekStart, $weekStart->addWeek()),
             'monthly' => $this->forPeriod($monthStart, $monthStart->addMonthNoOverflow()),
             'overall' => $this->overall(),
         ];
+        $rankings = config('ranking.defer') ? Inertia::defer($build) : $build();
 
         $currentWeek = $now->startOfWeek(CarbonImmutable::MONDAY)->startOfDay();
         $currentMonth = $now->startOfMonth();

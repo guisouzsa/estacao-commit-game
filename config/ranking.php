@@ -6,4 +6,7 @@ return [
     'timezone' => 'America/Sao_Paulo',
 
     'limit' => 50,
+
+    // true: a página abre na hora e a classificação carrega depois, com esqueleto (props adiadas).
+    'defer' => true,
 ];

@@ -16,6 +16,12 @@ class RankingPeriodsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['ranking.defer' => false]); // estes testes verificam as listas na primeira resposta
+    }
+
     /** Vitória de $winner (contra $loser) concluída em $at (horário de São Paulo). */
     private function win(User $winner, User $loser, string $at): GameMatch
     {

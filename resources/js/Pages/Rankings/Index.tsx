@@ -1,6 +1,6 @@
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Deferred, Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
 type Entry = {
@@ -89,13 +89,24 @@ function TrophyIcon({ className = '' }: { className?: string }) {
 
 const MEDALS = ['#f0b429', '#c0c4cc', '#c98a52'];
 
+function RankingSkeleton() {
+    return (
+        <div aria-busy="true" aria-label="Carregando classificação" className="mt-6 space-y-4" role="status">
+            <div className="h-44 animate-pulse border-[3px] border-[#1d1d1b]/20 bg-white/60" />
+            {Array.from({ length: 5 }, (_, i) => (
+                <div className="h-14 animate-pulse border-2 border-[#1d1d1b]/15 bg-white/50" key={i} />
+            ))}
+        </div>
+    );
+}
+
 export default function Index({
     periods,
     rankings,
     viewerId,
 }: {
     periods: RankingPeriods;
-    rankings: Record<Scope, Entry[]>;
+    rankings?: Record<Scope, Entry[]>;
     viewerId: string;
 }) {
     const [periodType, setPeriodType] = useState<Scope>('weekly');
@@ -122,7 +133,8 @@ export default function Index({
         );
     };
     const selectedPeriod = periods[periodType === 'overall' ? 'monthly' : periodType];
-    const entries = rankings[periodType];
+    const loading = rankings === undefined;
+    const entries = rankings?.[periodType] ?? [];
     const podium = entries.slice(0, 3);
     const mine = entries.find((entry) => entry.user_id === viewerId);
     const label =
@@ -290,6 +302,8 @@ export default function Index({
                         )}
                     </section>
 
+                    <Deferred data="rankings" fallback={<RankingSkeleton />}>
+                        <>
                     <section
                         aria-labelledby="podium-title"
                         className="mt-6 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-5 shadow-[5px_5px_0_#1d1d1b] sm:p-8"
@@ -444,6 +458,8 @@ export default function Index({
                             )}
                         </section>
                     </section>
+                        </>
+                    </Deferred>
                 </div>
             </main>
         </AuthenticatedLayout>

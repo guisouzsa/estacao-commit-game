@@ -12,6 +12,12 @@ class RankingTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['ranking.defer' => false]); // estes testes verificam as listas na primeira resposta
+    }
+
     public function test_authenticated_user_can_view_weekly_and_monthly_periods(): void
     {
         $this->travelTo(now()->setDate(2026, 11, 19)->setTime(12, 0));

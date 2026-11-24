@@ -158,6 +158,21 @@ class EmailCodeVerificationTest extends TestCase
             && str_contains($req['htmlContent'], '123456'));
     }
 
+    public function test_the_password_reset_email_is_branded_and_the_link_works(): void
+    {
+        config(['app.url' => 'https://estacaocommit.onrender.com']);
+        $user = User::factory()->create(['email' => 'pessoa@gmail.com']);
+
+        $token = \Illuminate\Support\Facades\Password::createToken($user);
+        $html = (string) (new \Illuminate\Auth\Notifications\ResetPassword($token))->toMail($user)->render();
+
+        $this->assertStringContainsString('foguete-gato.png', $html);
+        $this->assertStringContainsString('Criar nova senha', $html);
+        $this->assertStringContainsString('/reset-password/'.$token, $html);
+        $this->assertStringContainsString('https://estacaocommit.onrender.com', $html);
+        $this->get('/reset-password/'.$token.'?email=pessoa@gmail.com')->assertOk();
+    }
+
     public function test_the_email_is_branded_escaped_and_has_a_text_version(): void
     {
         config(['app.url' => 'https://estacaocommit.onrender.com']);

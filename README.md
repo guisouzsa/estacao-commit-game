@@ -5,7 +5,7 @@
 
 **Toda missão começa com uma branch.**
 
-Jogo de tabuleiro multiplayer para aprender e praticar o fluxo de trabalho com Git — do primeiro login à Pull Request.
+Jogo de tabuleiro multiplayer para aprender e praticar o fluxo de trabalho com Git, do primeiro login à Pull Request.
 
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white)](https://www.php.net/)
 [![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)](https://laravel.com/)
@@ -17,95 +17,150 @@ Jogo de tabuleiro multiplayer para aprender e praticar o fluxo de trabalho com G
 
 ---
 
+## Sumário
+
+1. [Sobre o projeto](#sobre-o-projeto)
+2. [Como jogar](#como-jogar): [tabuleiro](#o-tabuleiro), [cartas](#as-cartas), [turno](#como-é-um-turno) e [conflitos](#conflitos-entre-jogadores)
+3. [Funcionalidades](#funcionalidades)
+4. [Tecnologias e arquitetura](#tecnologias-e-arquitetura)
+5. [Instalação e execução](#instalação-e-execução)
+6. [Configuração e manutenção](#configuração-e-manutenção)
+7. [Tempo real](#tempo-real)
+8. [Rotinas agendadas](#rotinas-agendadas)
+9. [Testes e qualidade](#testes-e-qualidade)
+10. [Deploy](#deploy)
+11. [Segurança](#segurança)
+12. [Contribuição](#contribuição)
+
+> **Documentação de manutenção:** tecnologias, **todas as variáveis de ambiente** e o passo a passo para trocar de
+> hospedagem, banco, e-mail ou Google estão em [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md).
+
+---
+
 ## Sobre o projeto
 
-O **Estação Commit** transforma conceitos de Git em uma corrida estratégica para quatro participantes. Cada pessoa monta seu percurso de desenvolvimento na ordem correta, administra cartas, enfrenta conflitos e tenta concluir uma Pull Request antes das demais.
+O **Estação Commit** transforma conceitos de Git em uma corrida estratégica para quatro participantes. Cada pessoa monta o
+seu percurso de desenvolvimento na ordem correta, administra cartas, enfrenta conflitos e tenta concluir uma Pull Request antes
+das demais.
 
-O repositório reúne a aplicação web, o motor de partidas, o sistema social, os perfis públicos, o ranking e duas opções de infraestrutura em tempo real:
+O repositório reúne a aplicação web, o motor de partidas, o sistema social, os perfis públicos, o ranking e duas opções de
+infraestrutura em tempo real: **Laravel Reverb** (padrão, dentro do contêiner) e **Cloudflare Workers + Durable Objects** (opcional).
 
-- Laravel Reverb, integrado e iniciado no contêiner principal;
-- Cloudflare Workers + Durable Objects, implementado como alternativa opcional de infraestrutura.
+---
 
-## Principais funcionalidades
+## Como jogar
+
+Cada partida tem **quatro participantes** (pessoas ou bots). Vence quem concluir primeiro o percurso de 18 etapas e jogar a **Pull Request**.
+
+### O tabuleiro
+
+O percurso de cada jogador é o mesmo, sempre nesta ordem:
+
+```text
+ TREINAMENTO                      ┌──────────────── 4 ciclos de desenvolvimento ────────────────┐
+┌───────────┐ ┌───────────┐ ┌──────────────┐ ┌─────────┐ ┌─────────┐ ┌────────────┐
+│ 1 Git     │▶│ 2 Git     │▶│ 3 Git        │▶│ Bloco 1 │▶│ git add │▶│ git commit │▶ ─┐
+│   Login   │ │   Clone   │ │   Checkout   │ └─────────┘ └─────────┘ └────────────┘   │
+└───────────┘ └───────────┘ └──────────────┘                                          │
+        ┌──────────────────────────────────────────────────────────────────────────────┘
+        ▼   (repete para o Bloco 2, o Bloco 3 e o Bloco 4)
+ Bloco 2 ▶ add ▶ commit  ▶  Bloco 3 ▶ add ▶ commit  ▶  Bloco 4 ▶ add ▶ commit
+        ▼
+ ENTREGA:   git pull  ▶  git push  ▶  Pull Request   (quem jogar a Pull Request vence)
+```
+
+| Fase | Etapas | O que acontece |
+| --- | --- | --- |
+| **Treinamento** | `Git Login` → `Git Clone` → `Git Checkout` | primeiras 3 etapas; é a única fase em que `Limpar Credenciais` funciona e em que `Git Pull` é um curinga |
+| **Desenvolvimento** | `Bloco N` → `git add` → `git commit` (4 vezes) | os **Blocos de Código** são peças do tabuleiro: não são cartas e entram sozinhos entre os ciclos de `add` e `commit` |
+| **Entrega** | `git pull` → `git push` → `Pull Request` | a última etapa conclui a partida |
+
+Ao todo são **18 etapas**. Cada jogador avança pela própria trilha, e o painel mostra o progresso de todos.
+
+### As cartas
+
+O baralho tem 78 cartas no total. As 4 cópias de `Git Login` são entregues uma a cada jogador (não entram no baralho de compra); sobram **62 cartas** para comprar.
+
+| Carta | Qtd. | Para que serve |
+| --- | :-: | --- |
+| **Git Login** | 4 | primeira etapa do percurso; **todos começam a partida com uma** |
+| **git clone** | 7 | segunda etapa do percurso |
+| **git checkout -b** | 7 | terceira etapa do percurso |
+| **git add .** | 16 | prepara as mudanças dentro de cada ciclo de desenvolvimento |
+| **git commit** | 16 | registra as mudanças e fecha o ciclo |
+| **git pull** | 4 | etapa de entrega; durante o **Treinamento** vira curinga e compra 2 cartas |
+| **git push** | 16 | envia o trabalho, logo depois do `pull` |
+| **Pull Request** | 4 | última etapa: jogá-la **vence a partida** |
+| **Limpar Credenciais** | 2 | ataque: manda um adversário **em Treinamento** de volta ao início |
+| **Merge Conflict** | 2 | ataque: o alvo **perde a próxima vez** |
+
+### Como é um turno
+
+1. A mão inicial tem **4 cartas**: o `Git Login` e outras 3 sorteadas.
+2. Na sua vez, você faz **uma** destas ações:
+   - **Jogar a carta da próxima etapa** do percurso (se estiver na mão). Depois de jogar, você compra 1 carta.
+   - **Encaixar o Bloco de Código**, quando a próxima etapa é um bloco.
+   - **Trocar uma carta**: devolve uma carta da mão e compra outra. Isso encerra a vez. A carta nova **é sorteada**: o jogo evita devolver a mesma carta e evita formar trincas, mas não entrega a carta que você quer.
+   - **Atacar** com `Limpar Credenciais` ou `Merge Conflict`, escolhendo o alvo.
+3. A mão tem **limite de 6 cartas**. Se passar disso, descarte o excesso antes de terminar a vez.
+4. Cada jogador, bots inclusive, joga a própria vez, uma jogada por vez. Se alguém ficar inativo, um bot assume o lugar.
+
+### Conflitos entre jogadores
+
+- **Limpar Credenciais:** só vale entre jogadores que ainda estão no **Treinamento** (etapas 1 a 3). O alvo perde o que já tinha jogado e volta ao início.
+- **Merge Conflict:** marca o alvo, que **perde a próxima vez**. Só um conflito por vez em cada jogador.
+- Ambos são descartados depois de usados, e você compra 1 carta.
+
+O tutorial interativo dentro da aplicação é a referência visual completa para cartas, fases e conflitos.
+
+---
+
+## Funcionalidades
 
 ### Jogo multiplayer
 
-- Salas para exatamente quatro participantes.
-- Preenchimento de lugares vazios com bots.
-- Convites por código e link compartilhável.
-- Turnos, compra, troca e descarte de cartas.
-- Ações idempotentes para impedir jogadas duplicadas.
-- Atualização em tempo real com fallback por polling.
-- Substituição de jogador inativo por bot.
-- Tela de vitória e histórico persistente de resultados.
-- Limpeza automática de salas vazias e partidas encerradas.
+- Salas para exatamente quatro participantes, com bots preenchendo os lugares vazios.
+- Convites por código e por link.
+- Jogadas idempotentes (uma jogada repetida não conta duas vezes) e proteção contra jogadas fora de ordem.
+- Atualização em tempo real, com polling de reserva.
+- Substituição de jogador inativo por bot; tela de vitória; histórico de resultados.
+- Limpeza automática de salas vazias e encerradas.
 
 ### Contas e autenticação
 
-- Cadastro e login por e-mail e senha.
-- Recuperação e alteração de senha.
-- Entrada com Google por Laravel Socialite.
-- Conta temporária sem cadastro, expirada após inatividade.
-- Validação de nomes e usernames únicos.
-- Onboarding para novos jogadores.
+- Cadastro e login por **e-mail e senha**.
+- **Verificação de e-mail por código** de 6 dígitos (opcional, `EMAIL_VERIFICATION`): a conta só é criada depois de digitar o código.
+- Recuperação e alteração de senha, com e-mails personalizados com a identidade do jogo.
+- **Entrar com Google**: quem já tem conta com o mesmo e-mail entra direto, e novos jogadores escolhem o username.
+- **Conta temporária** sem cadastro (visitante), que expira após inatividade.
+- Trocar a senha encerra as outras sessões.
 
 ### Perfis e comunidade
 
-- Perfil público com nome, bio, sistema operacional e data de entrada.
-- Avatar e banner armazenados no banco de dados.
-- Posicionamento e zoom de imagens.
-- Molduras, fundos, títulos e selos temáticos de programação.
-- Até oito links públicos ordenáveis.
-- Sistema de seguir e deixar de seguir.
-- Seguidores, seguindo, busca e jogadores recomendados.
+- Perfil público com avatar, banner, bio, links, molduras, fundos, títulos e selos de programação.
+- Seguir e deixar de seguir, seguidores, busca e jogadores recomendados.
 - Notificações persistentes.
 
 ### Ranking
 
-- Classificação geral baseada nas estatísticas do usuário.
-- Ranking semanal e mensal baseado em resultados concluídos.
-- Contabilização idempotente de vitórias e partidas.
-- Histórico preservado mesmo após a sala ser removida.
+- Classificação geral, semanal e mensal, baseada em resultados concluídos.
+- Contabilização idempotente de vitórias e partidas; histórico preservado mesmo após a sala ser removida.
 
-## Como jogar
+---
 
-O objetivo é concluir a sequência de desenvolvimento antes dos adversários:
+## Tecnologias e arquitetura
 
-```text
-Git Login → Git Clone → Git Checkout
-→ Bloco 1 → Git Add → Git Commit
-→ Bloco 2 → Git Add → Git Commit
-→ Bloco 3 → Git Add → Git Commit
-→ Bloco 4 → Git Add → Git Commit
-→ Git Pull → Git Push → Pull Request
-```
-
-Regras importantes:
-
-1. Todas as pessoas começam com uma carta `Git Login`.
-2. Em seu turno, jogue a próxima etapa válida ou troque uma carta.
-3. Os blocos de código fazem parte do tabuleiro e entram entre os ciclos de `add` e `commit`.
-4. `Limpar credenciais` e `Merge conflict` são cartas de conflito contra outro jogador.
-5. `Git Pull` tem um efeito especial durante a fase de treinamento.
-6. A mão possui limite; cartas excedentes devem ser descartadas.
-7. Vence quem concluir uma Pull Request válida primeiro.
-
-O tutorial interativo dentro da aplicação é a referência visual completa para cartas, fases e conflitos.
-
-## Stack
-
-| Camada         | Tecnologias                                                     |
-| -------------- | --------------------------------------------------------------- |
-| Backend        | PHP 8.2+, Laravel 12, Eloquent, Sanctum, Socialite              |
-| Frontend       | React 18, TypeScript, Inertia.js 2, Tailwind CSS, Framer Motion |
-| Build          | Vite 7, TypeScript, ESLint, Prettier                            |
-| Banco          | PostgreSQL (produção/Neon), SQLite em testes                    |
-| Tempo real     | Laravel Reverb ou Cloudflare Workers/Durable Objects            |
-| Filas e agenda | Laravel Queue e Scheduler                                       |
-| Deploy         | Docker, Apache, Supervisor e Render                             |
-| Testes         | PHPUnit 11, Node Test Runner e Vitest no Worker                 |
-
-## Arquitetura
+| Camada | Tecnologias |
+| --- | --- |
+| Backend | PHP 8.2+, Laravel 12, Eloquent, Sanctum, Socialite |
+| Frontend | React 18, TypeScript 5, Inertia.js 2, Tailwind CSS, Framer Motion |
+| Build | Vite 7 |
+| Banco | PostgreSQL (Neon) em produção; SQLite nos testes |
+| Tempo real | Laravel Reverb ou Cloudflare Workers + Durable Objects |
+| E-mail | Brevo (API HTTPS) |
+| Login social | Google OAuth 2.0 |
+| Execução | Docker, Apache, Supervisor, Render |
+| Testes | PHPUnit 11, Node Test Runner, Vitest |
 
 ```text
 ┌───────────────────────────┐
@@ -113,9 +168,9 @@ O tutorial interativo dentro da aplicação é a referência visual completa par
 │ páginas, jogo e perfis    │
 └─────────────┬─────────────┘
               │ HTTP / WebSocket
-┌─────────────▼─────────────┐
-│ Laravel 12                │
-│ auth, salas, regras, API  │
+┌─────────────▼─────────────┐        ┌──────────────┐
+│ Laravel 12                │───────▶│ Brevo (e-mail)│
+│ auth, salas, regras, API  │        └──────────────┘
 └───────┬───────────┬───────┘
         │           │
 ┌───────▼──────┐  ┌─▼──────────────────────────┐
@@ -124,367 +179,203 @@ O tutorial interativo dentro da aplicação é a referência visual completa par
 └──────────────┘  └────────────────────────────┘
 ```
 
-### Responsabilidades
+- **Laravel:** autenticação, autorização, perfis, lobby, convites, ranking e motor do jogo.
+- **PostgreSQL:** contas, imagens de perfil, salas, partidas, notificações, resultados, sessões, cache e fila.
+- **React/Inertia:** interface responsiva sem uma API duplicada para as páginas.
+- **Tempo real:** só avisa para recarregar o estado (`room.state.changed`, `user.notices.changed`); o estado do jogo é do Laravel.
 
-- **Laravel:** autenticação, autorização, perfis, lobby, convites, ranking e motor padrão do jogo.
-- **PostgreSQL:** contas, mídias de perfil, salas, participantes, partidas, notificações e resultados.
-- **React/Inertia:** interface responsiva sem manter uma API duplicada para as páginas.
-- **Reverb:** eventos `room.state.changed` e `user.notices.changed`.
-- **Cloudflare (opcional):** canais WebSocket e motor alternativo de partidas com Durable Objects.
+A lista completa de tecnologias, serviços externos e variáveis está em [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md).
 
-## Estrutura do repositório
+### Estrutura do repositório
 
 ```text
 app/
 ├── Console/Commands/       # limpeza, expiração e utilitários
 ├── Http/Controllers/       # páginas e ações HTTP
+├── Http/Middleware/        # sessão, cabeçalhos de segurança, Inertia
+├── Mail/                   # e-mails (código de verificação, transporte Brevo)
 ├── Models/                 # entidades Eloquent
-├── Services/               # jogo, salas, ranking e tempo real
-└── Support/                # identidade, avatares e utilitários
+├── Services/               # jogo, salas, ranking, e-mail e tempo real
+└── Support/                # identidade, avatares, bots e utilitários
+config/                     # configurações (bots, perfis, verificação, jogo)
 database/
 ├── migrations/             # esquema versionado
 └── manual-sql/             # scripts administrativos documentados
-resources/js/
-├── Components/             # componentes compartilhados
-├── Layouts/                # layouts Inertia
-├── Pages/                  # telas da aplicação
-└── lib/                    # sincronização e regras de interface
-routes/                     # web, autenticação, canais e scheduler
-tests/
-├── Feature/                # fluxos completos Laravel
-├── Unit/                   # testes unitários PHP
-└── js/                     # testes das bibliotecas frontend
+docs/                       # documentação de manutenção
+resources/
+├── js/                     # componentes, layouts, páginas e bibliotecas do front
+└── views/emails/           # modelos dos e-mails
+routes/                     # web, autenticação, canais e agendador
+tests/                      # Feature, Unit, js, parity
 worker/                     # alternativa Cloudflare + Durable Objects
 docker/                     # Apache, Supervisor e páginas de erro
 ```
 
-## Requisitos
+---
 
-- PHP 8.2 ou superior;
-- Composer 2;
-- Node.js 20 ou superior e npm;
-- PostgreSQL 14 ou superior;
-- extensões PHP exigidas pelo Laravel, PostgreSQL e processamento de imagens;
-- Git.
+## Instalação e execução
 
-Docker pode ser usado para reproduzir o ambiente de produção sem instalar toda a stack localmente.
+### Requisitos
 
-## Instalação local
+PHP 8.2+, Composer 2, Node.js 20+ com npm, PostgreSQL 14+ (ou um projeto no Neon), as extensões PHP do Laravel/PostgreSQL/imagens e Git.
+O Docker reproduz o ambiente de produção sem instalar toda a stack.
 
-### Instalação automatizada
+### Instalação
 
 ```bash
 git clone https://github.com/guisouzsa/estacao-commit-game.git
 cd estacao-commit-game
-composer run setup
-```
-
-O comando instala dependências, cria o `.env`, gera a chave, executa migrations e compila o frontend. Use esse atalho quando o `.env` já apontar para um PostgreSQL disponível; caso contrário, siga a instalação manual para configurar o banco antes da migration.
-
-### Instalação manual
-
-```bash
 composer install
-cp .env.example .env
+cp .env.example .env          # no PowerShell: Copy-Item .env.example .env
 php artisan key:generate
 npm install
 php artisan migrate
 npm run build
 ```
 
-No Windows PowerShell, substitua `cp` por:
+Atalho: `composer run setup` faz tudo isso, desde que o `.env` já aponte para um PostgreSQL disponível.
 
-```powershell
-Copy-Item .env.example .env
-```
-
-### Executar em desenvolvimento
+### Desenvolvimento
 
 ```bash
-composer run dev
+composer run dev          # Laravel em http://127.0.0.1:8001, fila e Vite
+composer run dev:logs     # acompanha os logs separadamente
+php artisan reverb:start  # tempo real local, se usar Reverb
 ```
 
-Esse comando inicia Laravel em `http://127.0.0.1:8001`, o worker da fila e o Vite. Para acompanhar os logs separadamente:
+### Comandos úteis
 
 ```bash
-composer run dev:logs
-```
-
-Quando usar Reverb localmente, execute também:
-
-```bash
-php artisan reverb:start
-```
-
-## Configuração do ambiente
-
-Nunca versione o arquivo `.env`, credenciais, tokens OAuth ou segredos do tempo real. O `.env.example` contém os nomes aceitos pela aplicação.
-
-### Aplicação e banco
-
-| Variável                     | Descrição                                               |
-| ---------------------------- | ------------------------------------------------------- |
-| `APP_URL`                    | URL pública ou local da aplicação                       |
-| `APP_KEY`                    | chave criptográfica gerada pelo Artisan                 |
-| `DB_CONNECTION`              | `pgsql` em produção                                     |
-| `DB_HOST`, `DB_PORT`         | host e porta do PostgreSQL                              |
-| `DB_DATABASE`                | nome do banco                                           |
-| `DB_USERNAME`, `DB_PASSWORD` | credenciais do banco                                    |
-| `DB_ENDPOINT`                | endpoint Neon sem `-pooler`, quando necessário para SNI |
-| `SESSION_DRIVER`             | `database` por padrão                                   |
-| `CACHE_STORE`                | `database` por padrão                                   |
-| `QUEUE_CONNECTION`           | `database` por padrão                                   |
-
-Para Neon, use SSL e copie os dados do painel do projeto. Não coloque uma URL real de conexão em commits, issues ou logs públicos.
-
-### E-mail
-
-Em desenvolvimento, `MAIL_MAILER=log` grava mensagens no log. Em produção, configure um provedor compatível. `RESEND_API_KEY` está disponível para integração com Resend.
-
-O cadastro pode validar se o domínio informado aceita e-mail por DNS:
-
-```dotenv
-EMAIL_DNS_CHECK=true
-```
-
-### Google OAuth
-
-Crie um cliente OAuth 2.0 Web no Google Cloud Console e cadastre localmente:
-
-```text
-http://127.0.0.1:8001/auth/google/callback
-```
-
-Depois configure:
-
-```dotenv
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
-```
-
-O callback precisa ser idêntico ao cadastrado. Usuários novos escolhem o próprio username. Uma conta existente só é vinculada após autenticação explícita.
-
-### Imagens de perfil
-
-Avatares e banners enviados são otimizados e armazenados no PostgreSQL. Isso evita perda de arquivos em deploys com filesystem efêmero. Os endpoints públicos entregam imagens com URL versionada e cache HTTP.
-
-Formatos aceitos: JPG, PNG e WebP, respeitando os limites definidos nas validações do perfil.
-
-## Tempo real
-
-### Opção A — Laravel Reverb
-
-É a opção padrão:
-
-```dotenv
-BROADCAST_CONNECTION=reverb
-REALTIME_DRIVER=reverb
-REVERB_APP_ID=gamehub
-REVERB_APP_KEY=troque-esta-chave
-REVERB_APP_SECRET=troque-este-segredo
-REVERB_HOST=127.0.0.1
-REVERB_PORT=8080
-REVERB_SCHEME=http
-```
-
-As variáveis `VITE_REVERB_*` são públicas e incorporadas ao bundle. **Nunca** exponha `REVERB_APP_SECRET` em uma variável `VITE_*`.
-
-No Render, o Apache recebe HTTPS/WSS na porta pública e encaminha `/app/` ao Reverb interno. Use no build:
-
-```dotenv
-VITE_REVERB_HOST=seu-servico.onrender.com
-VITE_REVERB_PORT=443
-VITE_REVERB_SCHEME=https
-```
-
-### Opção B — Cloudflare Workers
-
-O diretório [`worker/`](worker/) implementa WebSocket Hibernation, tokens HMAC de uso único, proteção contra replay e um motor opcional de partidas em Durable Objects.
-
-```bash
-cd worker
-npm install
-cp .dev.vars.example .dev.vars
-npm run dev
-npm test
-```
-
-Configuração Laravel:
-
-```dotenv
-REALTIME_DRIVER=cloudflare
-REALTIME_WORKER_URL=https://seu-worker.workers.dev
-REALTIME_TOKEN_SECRET=gere-um-segredo-forte
-REALTIME_NOTIFY_SECRET=gere-outro-segredo-forte
-```
-
-Para executar partidas novas no Worker:
-
-```dotenv
-GAME_ENGINE=cloudflare
-REALTIME_CALLBACK_SECRET=gere-um-terceiro-segredo
-```
-
-Partidas iniciadas continuam no motor em que foram criadas. Consulte [`worker/README.md`](worker/README.md) para publicação e rollback.
-
-## Filas, scheduler e manutenção
-
-Em produção, mantenha a fila e o scheduler ativos:
-
-```bash
-php artisan queue:work --tries=1
-php artisan schedule:work
-```
-
-| Frequência        | Comando                | Finalidade                                       |
-| ----------------- | ---------------------- | ------------------------------------------------ |
-| a cada minuto     | `rooms:expire-waiting` | remove salas vazias após o prazo                 |
-| a cada minuto     | `rooms:purge-finished` | remove salas encerradas preservando resultados   |
-| a cada 15 minutos | `guests:prune`         | remove visitantes inativos que não estão jogando |
-
-Configurações úteis:
-
-```dotenv
-GAME_TURN_TIMEOUT_SECONDS=120
-FINISHED_ROOM_TTL_MINUTES=2
-```
-
-O tempo de vida das contas temporárias é definido em `config/players.php`.
-
-## Comandos úteis
-
-```bash
-# Limpar caches
-php artisan optimize:clear
-
-# Atualizar o esquema
-php artisan migrate
-
-# Criar jogador comum para testes manuais
-php artisan player:create-test teste \
-  --email=teste@example.com \
-  --password="uma-senha-com-12-ou-mais-caracteres"
-
-# Executar rotinas manualmente
-php artisan rooms:expire-waiting
+php artisan optimize:clear                  # limpa caches
+php artisan migrate                         # atualiza o esquema
+php artisan player:create-test teste --email=teste@example.com --password="uma-senha-com-12-ou-mais-caracteres"
+php artisan rooms:expire-waiting            # rotinas manuais
 php artisan rooms:purge-finished
 php artisan guests:prune
 ```
 
-Os scripts em `database/manual-sql/` são ferramentas administrativas específicas. Leia cada arquivo antes de executá-lo e faça backup. Migrations são a fonte oficial do esquema.
+Os scripts em `database/manual-sql/` são ferramentas administrativas: leia cada arquivo e faça backup antes. As migrations são a fonte oficial do esquema.
+
+---
+
+## Configuração e manutenção
+
+O arquivo `.env.example` lista os nomes aceitos. **A referência completa das variáveis** (para que serve cada uma, quais são
+segredos, onde configurar no Render, no Worker e no build) está em:
+
+### 👉 [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md)
+
+Ela também traz o passo a passo para **trocar de hospedagem, banco de dados, serviço de e-mail, domínio ou conta do Google**, como girar
+segredos vazados e uma tabela de solução de problemas.
+
+Resumo do que é preciso para o site funcionar:
+
+| Grupo | Variáveis principais | Obrigatório |
+| --- | --- | :-: |
+| Aplicação | `APP_KEY`, `APP_URL` | sim |
+| Banco | `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | sim |
+| Tempo real (Reverb) | `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`, `VITE_REVERB_*` | sim |
+| E-mail e verificação | `MAIL_MAILER`, `BREVO_API_KEY`, `MAIL_FROM_ADDRESS`, `EMAIL_VERIFICATION` | opcional |
+| Login com Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | opcional |
+| Administração | `PROFILE_ADMIN_EMAILS` | opcional |
+| Cloudflare | `REALTIME_*`, `GAME_ENGINE`, `GAME_ENGINE_PARITY_ACK` | opcional |
+
+> Nunca versione `.env`, `.dev.vars`, dumps ou capturas com chaves, e nunca coloque segredos em variáveis `VITE_*`.
+
+---
+
+## Tempo real
+
+**Opção A, Laravel Reverb (padrão):** roda no mesmo contêiner. No Render, o Apache recebe HTTPS/WSS e encaminha `/app/` ao Reverb
+interno. As variáveis `VITE_REVERB_*` são públicas e entram no bundle durante o build.
+
+**Opção B, Cloudflare Workers:** o diretório [`worker/`](worker/) implementa WebSocket Hibernation, tokens HMAC de uso único,
+proteção contra replay e um motor opcional de partidas em Durable Objects. Detalhes, publicação e retorno ao Reverb em
+[`worker/README.md`](worker/README.md). O motor de partidas da Cloudflare só liga com `GAME_ENGINE=cloudflare` **e** a trava de
+paridade `GAME_ENGINE_PARITY_ACK`; partidas iniciadas continuam no motor em que foram criadas.
+
+---
+
+## Rotinas agendadas
+
+Em produção, o `scheduler` e o worker de fila ficam ativos (o Supervisor cuida disso no Docker):
+
+| Frequência | Comando | Finalidade |
+| --- | --- | --- |
+| a cada minuto | `rooms:expire-waiting` | remove salas vazias após o prazo |
+| a cada minuto | `rooms:purge-finished` | remove salas encerradas, preservando resultados |
+| a cada 15 minutos | `guests:prune` | remove visitantes inativos que não estão jogando |
+
+---
 
 ## Testes e qualidade
 
-### Backend
-
 ```bash
-composer test
-# ou
-php artisan test
+php artisan test            # backend: regras, segurança, fluxos HTTP
+npm run test:js             # bibliotecas do front
+npx tsc --noEmit            # tipos
+npm run lint && npm run build
+cd worker && npm test       # Worker (sobe o Worker real) e paridade com o motor PHP
 ```
 
-### Frontend
+Antes de abrir um Pull Request, rode também `vendor/bin/pint --test`.
 
-```bash
-npm run test:js
-npm run lint
-npm run build
-```
+Os testes de segurança ficam em `tests/Feature/Security/` (autenticação, isolamento entre contas, integridade do jogo, uploads, cabeçalhos).
+O motor de jogo existe em PHP e em TypeScript (Worker); a paridade entre os dois é verificada por cenários compartilhados em `tests/parity/`.
 
-### Cloudflare Worker
+---
 
-```bash
-cd worker
-npm test
-npm run typecheck
-```
+## Deploy
 
-Antes de abrir um Pull Request, execute:
-
-```bash
-vendor/bin/pint --test
-npm run lint
-npm run build
-php artisan test
-```
-
-## Deploy com Docker e Render
-
-O [`Dockerfile`](Dockerfile) usa build multi-stage:
-
-1. compila os assets com Node;
-2. instala dependências PHP sem pacotes de desenvolvimento;
-3. configura Apache, Supervisor, Reverb e processos auxiliares;
-4. inicia o serviço na porta fornecida por `PORT`.
-
-O entrypoint prepara permissões, cria caches, gera o link de storage e aplica migrations com até cinco tentativas antes de iniciar o Supervisor.
-
-Build local:
+O [`Dockerfile`](Dockerfile) é multi-stage: compila os assets com Node, instala as dependências PHP sem pacotes de desenvolvimento,
+configura Apache, Supervisor e Reverb, e inicia na porta de `PORT`. O entrypoint prepara permissões e caches, cria o link de storage
+e aplica as migrations com até cinco tentativas.
 
 ```bash
 docker build -t estacao-commit .
 docker run --rm -p 10000:10000 --env-file .env estacao-commit
 ```
 
-No Render:
+No Render: Web Service com runtime Docker, variáveis conforme [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md), e `APP_URL` com a URL pública.
+Depois de alterar qualquer `VITE_*`, faça um deploy com rebuild. O plano gratuito pode suspender o serviço, então o primeiro acesso
+pode demorar enquanto o Render e o Neon acordam.
 
-1. crie um Web Service conectado ao repositório;
-2. selecione o runtime Docker;
-3. configure as variáveis de ambiente;
-4. defina a URL pública em `APP_URL`;
-5. use **Save, rebuild, and deploy** após alterar qualquer `VITE_*`;
-6. acompanhe logs de migration, fila, Reverb e memória.
-
-O plano gratuito pode suspender o serviço. A interface possui reconexão e polling, mas o primeiro acesso pode demorar enquanto o serviço e o Neon despertam.
+---
 
 ## Segurança
 
-- Não versione `.env`, `.dev.vars`, cookies, dumps ou credenciais.
-- Use senhas e segredos diferentes em cada ambiente.
-- Restrinja `PROFILE_ADMIN_EMAILS` às contas administrativas necessárias.
-- Preserve CSRF, throttling, validação e autorização nas novas rotas.
-- Não exponha segredos backend com prefixo `VITE_`.
-- Trate credenciais compartilhadas em logs como comprometidas e rotacione-as.
-- Valide uploads no servidor; não confie apenas no navegador.
-- Execute `composer audit` e `npm audit` periodicamente.
+- Sessão por conta: trocar a senha encerra as outras sessões e os "lembrar-me" antigos.
+- Cabeçalhos de segurança em todas as respostas (nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS em HTTPS).
+- CSRF, limitação de requisições, validação e autorização em todas as rotas; uploads de imagem validados no servidor.
+- Códigos de verificação guardados só como hash, com validade, limite de tentativas e intervalo de reenvio.
+- Segredos só em variáveis do servidor; nada de segredo em `VITE_*`.
+- Execute `composer audit` e `npm audit` periodicamente; trate credenciais expostas como comprometidas e troque-as.
 
-Para relatar uma vulnerabilidade, não abra uma issue pública com detalhes exploráveis. Entre em contato privadamente com o mantenedor pelo e-mail indicado no perfil do repositório.
+Para relatar uma vulnerabilidade, não abra uma issue pública com detalhes exploráveis: contate o mantenedor em particular.
 
-## Convenções de desenvolvimento
+---
 
-- PHP segue PSR-12 e é formatado com Laravel Pint.
-- React é escrito em TypeScript.
-- Componentes compartilhados ficam em `resources/js/Components`.
-- Regras de domínio ficam no backend; o frontend não decide resultados.
-- Migrations não devem depender de dados locais.
-- Novos fluxos devem incluir testes de sucesso, autorização, validação e idempotência.
-- Mensagens apresentadas ao jogador permanecem em português.
+## Contribuição
 
-## Como contribuir
+1. Faça um fork e crie uma branch: `git switch -c feat/minha-melhoria`.
+2. Implemente com testes (sucesso, autorização, validação e idempotência).
+3. Rode as verificações de qualidade acima.
+4. Faça commits objetivos, sem dados sensíveis. Prefixos: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
+5. Abra um Pull Request descrevendo problema, solução e validação.
 
-1. Faça um fork do projeto.
-2. Crie uma branch: `git switch -c feat/minha-melhoria`.
-3. Implemente e adicione testes.
-4. Execute as verificações de qualidade.
-5. Faça commits objetivos e sem dados sensíveis.
-6. Abra um Pull Request descrevendo problema, solução e validação.
+Convenções: PHP em PSR-12 com Laravel Pint; React em TypeScript; regras de domínio no backend (o front não decide resultados);
+mensagens ao jogador em português.
 
-Prefixos sugeridos: `feat:`, `fix:`, `refactor:`, `test:`, `docs:` e `chore:`.
+### Roadmap
 
-## Roadmap
+- testes ponta a ponta em navegadores e observabilidade de partidas e filas;
+- domínio próprio para melhorar a entrega dos e-mails;
+- mais cartas, títulos, selos e eventos sazonais;
+- acessibilidade por teclado e leitores de tela.
 
-- ampliar testes ponta a ponta em navegadores;
-- acompanhar a capacidade do tempo real em produção;
-- melhorar observabilidade de partidas e filas;
-- expandir cartas, títulos, selos e eventos sazonais;
-- evoluir acessibilidade por teclado e leitores de tela;
-- internacionalizar a interface mantendo português como idioma principal.
+---
 
-## Autoria
+## Autoria e licença
 
 Desenvolvido e mantido por **Guilherme Rodrigues Souza ([@guisouzsa](https://github.com/guisouzsa))**.
-
-## Licença
-
-Distribuído sob a licença MIT. Consulte [`LICENSE`](LICENSE). Dependências de terceiros conservam suas próprias licenças.
+Distribuído sob a licença MIT (veja [`LICENSE`](LICENSE)); as dependências de terceiros conservam suas próprias licenças.

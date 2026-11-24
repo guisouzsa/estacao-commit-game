@@ -1,4 +1,3 @@
-import HowToPlayButton from '@/Components/HowToPlayButton';
 import InputError from '@/Components/InputError';
 import PasswordVisibilityToggle from '@/Components/PasswordVisibilityToggle';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -180,9 +179,6 @@ export default function Register({
                     Entrar na estação
                 </Link>
             </p>
-            <div className="mt-5">
-                <HowToPlayButton />
-            </div>
         </GuestLayout>
     );
 }

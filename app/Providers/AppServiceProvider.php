@@ -39,6 +39,22 @@ class AppServiceProvider extends ServiceProvider
         // Envio de e-mail por API (Brevo): `MAIL_MAILER=brevo` + BREVO_API_KEY.
         \Illuminate\Support\Facades\Mail::extend('brevo', fn () => new \App\Mail\BrevoTransport((string) config('services.brevo.key')));
 
+        // E-mail de recuperação de senha com a mesma identidade visual do código de cadastro.
+        \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(function (object $notifiable, string $token) {
+            $base = rtrim((string) config('app.url'), '/');
+            $minutes = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
+
+            return (new \Illuminate\Notifications\Messages\MailMessage)
+                ->subject('Redefinir sua senha na Estação Commit')
+                ->view(['emails.reset', 'emails.reset-text'], [
+                    'actionUrl' => url(route('password.reset', ['token' => $token, 'email' => $notifiable->getEmailForPasswordReset()], false)),
+                    'minutes' => $minutes,
+                    'logo' => $base.'/images/estacao-commit/mascots/foguete-gato.png',
+                    'url' => $base,
+                    'host' => parse_url($base, PHP_URL_HOST) ?: $base,
+                ]);
+        });
+
         Gate::define('manage-developer-badges', static function (User $user): bool {
             return $user->email_verified_at !== null
                 && in_array(strtolower($user->email), config('profiles.admin_emails'), true);

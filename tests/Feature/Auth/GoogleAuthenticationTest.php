@@ -104,17 +104,43 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $user->id);
     }
 
-    public function test_google_cannot_automatically_take_over_an_existing_password_account_by_email(): void
+    public function test_google_signs_into_an_existing_account_with_the_same_verified_email(): void
     {
-        User::factory()->create(['email' => 'NEW-PLAYER@EXAMPLE.COM']);
+        $user = User::factory()->create(['email' => 'NEW-PLAYER@EXAMPLE.COM', 'email_verified_at' => now()]);
+        $this->mockGoogleUser();
+
+        $this->get(route('google.callback'))->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame('google-123', $user->fresh()->google_id);
+        $this->assertDatabaseCount('users', 1);
+    }
+
+    public function test_google_on_an_unconfirmed_account_drops_its_old_sessions_and_confirms_the_email(): void
+    {
+        $user = User::factory()->create(['email' => 'new-player@example.com', 'email_verified_at' => null, 'remember_token' => 'antigo']);
+        \Illuminate\Support\Facades\DB::table('sessions')->insert([
+            'id' => 'sessao-antiga', 'user_id' => $user->id, 'ip_address' => '1.2.3.4', 'user_agent' => 'x', 'payload' => '', 'last_activity' => time(),
+        ]);
+        $this->mockGoogleUser();
+
+        $this->get(route('google.callback'))->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertDatabaseMissing('sessions', ['id' => 'sessao-antiga']);
+        $this->assertNotSame('antigo', $user->fresh()->remember_token);
+        $this->assertNotNull($user->fresh()->email_verified_at);
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_google_does_not_enter_an_account_tied_to_another_google_identity(): void
+    {
+        User::factory()->create(['email' => 'new-player@example.com', 'google_id' => 'outro-google']);
         $this->mockGoogleUser();
 
         $this->get(route('google.callback'))
             ->assertRedirect(route('login'))
-            ->assertSessionHas('status', 'Este e-mail já pertence a uma conta. Entre com e-mail e senha e vincule o Google pelo seu perfil.');
-
+            ->assertSessionHas('status', 'Este e-mail já está ligado a outra conta Google.');
         $this->assertGuest();
-        $this->assertDatabaseCount('users', 1);
     }
 
     public function test_google_username_must_be_available_case_insensitively(): void

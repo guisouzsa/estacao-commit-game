@@ -8,6 +8,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -90,11 +91,11 @@ class GoogleAuthController extends Controller
             return redirect()->intended(route('dashboard', absolute: false));
         }
 
-        if (User::whereRaw('LOWER(email) = ?', [$email])->exists()) {
-            return $this->oauthError(
-                $request,
-                'Este e-mail já pertence a uma conta. Entre com e-mail e senha e vincule o Google pelo seu perfil.'
-            );
+        // O Google já provou a posse deste e-mail (email_verified): quem tem conta com ele entra por aqui
+        // e a conta passa a aceitar o Google também.
+        $existing = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($existing) {
+            return $this->signInExisting($request, $existing, $googleId);
         }
 
         $displayName = trim((string) $googleUser->getName());
@@ -106,6 +107,38 @@ class GoogleAuthController extends Controller
         ]);
 
         return redirect()->route('google.username');
+    }
+
+    private function signInExisting(Request $request, User $user, string $googleId): RedirectResponse
+    {
+        if ($user->google_id !== null && $user->google_id !== $googleId) {
+            return $this->oauthError($request, 'Este e-mail já está ligado a outra conta Google.');
+        }
+
+        // Conta cujo e-mail nunca foi confirmado pode ter sido aberta por outra pessoa com este endereço:
+        // ao confirmar a posse pelo Google, derruba as sessões e os "lembrar-me" que já existiam nela.
+        if ($user->email_verified_at === null) {
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+            $user->forceFill(['remember_token' => Str::random(60)]);
+        }
+
+        $user->google_id = $googleId;
+        $user->email_verified_at ??= now();
+
+        try {
+            $user->save();
+        } catch (QueryException $exception) {
+            if (str_contains(Str::lower($exception->getMessage()), 'users_google_id_unique')) {
+                return $this->oauthError($request, 'Esta conta Google já está vinculada a outro usuário.');
+            }
+
+            throw $exception;
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 
     private function linkAccount(Request $request, string $googleId, string $email): RedirectResponse

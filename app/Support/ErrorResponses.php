@@ -149,6 +149,12 @@ class ErrorResponses
             return null;
         }
 
+        // Mensagens do próprio framework (em inglês, com rota/método/classe) nunca chegam ao usuário:
+        // só mensagens escritas pelo projeto, em português.
+        if ($exception->getStatusCode() === 405 || preg_match('/^(The |No |Call |Undefined|Attempt|Class|Method|Route|Unsupported|SQLSTATE|Invalid |Malformed)/', $message)) {
+            return null;
+        }
+
         return $message;
     }
 

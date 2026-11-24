@@ -33,7 +33,7 @@ class GameRoomController extends Controller
     public function open(Request $request, string $token, RoomJoinService $joins): Response|RedirectResponse
     {
         ['state' => $state, 'room' => $room] = $joins->inspect($token);
-        abort_if($state === RoomJoinService::INVALID, 404, 'Convite inválido ou sala já excluída.');
+        abort_if($state === RoomJoinService::INVALID, 404, 'Não encontramos uma sala com esse código.');
         abort_if($state === RoomJoinService::REVOKED, 410, 'Este convite foi revogado.');
         abort_if($state === RoomJoinService::EXPIRED, 410, 'Este convite expirou.');
         abort_if($state === RoomJoinService::FULL, 409, 'A sala está cheia.');

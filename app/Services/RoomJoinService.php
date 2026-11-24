@@ -88,7 +88,7 @@ class RoomJoinService
 
         [$room, $expired, $joined] = DB::transaction(function () use ($actor, $hash): array {
             $found = RoomInvitation::query()->where('token_hash', $hash)->first();
-            abort_if(! $found, 404, 'Convite inválido ou sala já excluída.');
+            abort_if(! $found, 404, 'Não encontramos uma sala com esse código.');
             // Mesma ordem de bloqueio da expiração e da exclusão: sala, depois convite.
             $room = GameRoom::query()->whereKey($found->room_id)->lockForUpdate()->first();
             abort_if(! $room, 410, 'Esta sala foi excluída.');

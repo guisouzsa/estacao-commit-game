@@ -265,7 +265,7 @@ class ErrorPagesTest extends TestCase
     {
         $this->assertErrorToast(
             $this->actingAs(User::factory()->create())->withHeaders(self::INERTIA)->post(route('rooms.join', 'A2B3C')),
-            'Convite inválido ou sala já excluída.',
+            'Não encontramos uma sala com esse código.',
         );
     }
 
@@ -305,5 +305,16 @@ class ErrorPagesTest extends TestCase
         $this->assertSame('Não encontramos o que você procurava. Pode ter sido removido.', $message);
         $this->assertStringNotContainsString('query', strtolower($message));
         $this->assertStringNotContainsString('App\\Models', $message);
+    }
+
+    public function test_wrong_method_errors_never_leak_framework_messages(): void
+    {
+        $this->actingAs(\App\Models\User::factory()->create());
+
+        $response = $this->get('/salas')->assertStatus(405);
+
+        $html = $response->getContent();
+        $this->assertStringNotContainsString('not supported for route', $html);
+        $this->assertStringNotContainsString('Supported methods', $html);
     }
 }

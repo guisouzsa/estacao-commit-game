@@ -18,7 +18,7 @@ export default function Guest({ children }: PropsWithChildren) {
                     <p className="mt-5 max-w-sm leading-7 text-white/70">Entre na estação, prepare sua contribuição e avance do primeiro comando à Pull Request.</p>
                 </div>
                 <div className="relative z-10 mt-4 flex min-h-0 flex-1 items-center justify-center py-3">
-                    <img src="/images/estacao-commit/mascots/foguete-gato.png" alt="Foguete com personagem do jogo" className="h-full w-full object-contain drop-shadow-[10px_13px_0_rgba(29,29,27,.45)]" />
+                    <img src="/images/estacao-commit/mascots/foguete-gato.webp" alt="Foguete com personagem do jogo" className="h-full w-full object-contain drop-shadow-[10px_13px_0_rgba(29,29,27,.45)]" />
                 </div>
                 <p className="relative z-20 mt-8 border-l-4 border-lime pl-3 font-mono text-xs text-white/60">git commit -m "começar missão"</p>
             </aside>

@@ -1,7 +1,6 @@
-import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
-import { toast } from '@/lib/toast';
 import AvatarPicker from '@/Components/AvatarPicker';
 import InputError from '@/Components/InputError';
+import OptionPicker from '@/Components/OptionPicker';
 import PlayerProfileCard, {
     PlayerProfile,
     ProfileBadge,
@@ -10,6 +9,8 @@ import PlayerProfileCard, {
 import ProfileExtras from '@/Components/ProfileExtras';
 import ProfileImageEditor from '@/Components/ProfileImageEditor';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
+import { toast } from '@/lib/toast';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     ChangeEvent,
@@ -22,6 +23,21 @@ import {
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+
+const RARITY_LABEL: Record<string, string> = {
+    common: 'Comum',
+    uncommon: 'Incomum',
+    rare: 'Rara',
+    epic: 'Épica',
+    legendary: 'Lendária',
+};
+const RARITY_COLOR: Record<string, string> = {
+    common: '#b4da33',
+    uncommon: '#f481c6',
+    rare: '#464498',
+    epic: '#d01600',
+    legendary: '#f0b429',
+};
 
 type Options = {
     frames: Record<string, string>;
@@ -231,7 +247,9 @@ export default function Edit({
                 setCoverUrl(props.auth.user.cover ?? null);
                 setEditor(null);
                 setEditing(false);
-                toast.success('Perfil atualizado com sucesso!', { id: 'profile:saved' });
+                toast.success('Perfil atualizado com sucesso!', {
+                    id: 'profile:saved',
+                });
             },
         });
     };
@@ -403,6 +421,9 @@ export default function Edit({
 
                                 <div className="grid gap-7 lg:grid-cols-2">
                                     <div className="space-y-5">
+                                        <h3 className="border-b-2 border-[#1d1d1b]/15 pb-2 text-sm font-black uppercase tracking-wide text-[#464498]">
+                                            Identidade
+                                        </h3>
                                         <label className="block text-sm font-bold">
                                             Username público
                                             <input
@@ -457,194 +478,96 @@ export default function Edit({
                                         </label>
                                         <InputError message={errors.bio} />
 
-                                        <fieldset>
-                                            <legend className="mb-2 text-sm font-bold">
-                                                Moldura de avatar
-                                            </legend>
-                                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                                {Object.entries(
-                                                    appearanceOptions.frames,
-                                                ).map(([key, label]) => (
-                                                    <button
-                                                        aria-pressed={
-                                                            data.profile_frame ===
-                                                            key
-                                                        }
-                                                        className={`flex min-h-20 items-center gap-3 border-2 bg-white p-3 text-left text-xs font-bold ${
-                                                            data.profile_frame ===
-                                                            key
-                                                                ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
-                                                                : 'border-[#1d1d1b]/25'
-                                                        }`}
-                                                        key={key}
-                                                        onClick={() =>
-                                                            setData(
-                                                                'profile_frame',
-                                                                key,
-                                                            )
-                                                        }
-                                                        type="button"
-                                                    >
-                                                        <span
-                                                            aria-hidden="true"
-                                                            className={`size-9 shrink-0 rounded-full border-[3px] bg-[#464498] ${frameColors[key] ?? frameColors.standard}`}
-                                                        />
-                                                        {label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </fieldset>
+                                        <OptionPicker
+                                            hint="Aparece junto do seu nome no perfil."
+                                            label="Selo do perfil"
+                                            onChange={(value) =>
+                                                setData('primary_badge', value)
+                                            }
+                                            options={Object.entries(
+                                                appearanceOptions.badges,
+                                            ).map(([key, label]) => ({
+                                                value: key,
+                                                label,
+                                                accent: '#464498',
+                                            }))}
+                                            value={data.primary_badge}
+                                        />
 
-                                        {appearanceOptions.backgrounds && (
-                                            <fieldset>
-                                                <legend className="mb-1 text-sm font-bold">
-                                                    Fundo do perfil
-                                                </legend>
-                                                <p className="mb-2 text-xs text-[#5b5953]">
-                                                    A pré-visualização acima muda ao escolher. São fundos leves, sem imagem para baixar.
-                                                </p>
-                                                <div
-                                                    aria-label="Fundos de perfil"
-                                                    className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
-                                                    role="group"
-                                                >
-                                                    <button
-                                                        aria-pressed={!data.profile_background}
-                                                        className={`relative flex h-16 flex-col justify-end border-2 bg-[linear-gradient(135deg,#464498_0_52%,#b4da33_52%_56%,#1d1d1b_56%)] p-1 text-left ${
-                                                            !data.profile_background
-                                                                ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
-                                                                : 'border-[#1d1d1b]/25'
-                                                        }`}
-                                                        onClick={() => setData('profile_background', null)}
-                                                        type="button"
-                                                    >
-                                                        <span className="bg-white/90 px-1 font-mono text-[9px] font-black uppercase">
-                                                            Padrão
-                                                        </span>
-                                                        {!data.profile_background && (
-                                                            <span aria-hidden="true" className="absolute right-1 top-1 grid size-4 place-items-center bg-[#b4da33] text-[10px] font-black">✓</span>
-                                                        )}
-                                                    </button>
-                                                    {Object.entries(appearanceOptions.backgrounds).map(([key, label]) => (
-                                                        <button
-                                                            aria-label={`Fundo ${label}`}
-                                                            aria-pressed={data.profile_background === key}
-                                                            className={`relative flex h-16 flex-col justify-end border-2 p-1 text-left ${
-                                                                data.profile_background === key
-                                                                    ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
-                                                                    : 'border-[#1d1d1b]/25'
-                                                            }`}
-                                                            key={key}
-                                                            onClick={() => setData('profile_background', key)}
-                                                            style={profileBackgroundStyle(key)}
-                                                            title={label}
-                                                            type="button"
-                                                        >
-                                                            <span className="truncate bg-white/90 px-1 font-mono text-[9px] font-black uppercase">
-                                                                {label}
-                                                            </span>
-                                                            {data.profile_background === key && (
-                                                                <span aria-hidden="true" className="absolute right-1 top-1 grid size-4 place-items-center bg-[#b4da33] text-[10px] font-black">✓</span>
-                                                            )}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                                <InputError message={errors.profile_background} className="mt-2" />
-                                            </fieldset>
-                                        )}
-
-                                        <label className="block text-sm font-bold">
-                                            Selo do perfil
-                                            <select
-                                                className="mt-2 block min-h-11 w-full border-2 border-[#1d1d1b] bg-white px-3 py-2"
-                                                onChange={(event) =>
-                                                    setData(
-                                                        'primary_badge',
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                value={data.primary_badge}
-                                            >
-                                                {Object.entries(
-                                                    appearanceOptions.badges,
-                                                ).map(([key, label]) => (
-                                                    <option
-                                                        key={key}
-                                                        value={key}
-                                                    >
-                                                        {label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-
-                                        <label className="block text-sm font-bold">
-                                            Título disponível
-                                            <select
-                                                className="mt-2 block min-h-11 w-full border-2 border-[#1d1d1b] bg-white px-3 py-2"
-                                                onChange={(event) =>
-                                                    setData(
-                                                        'profile_title',
-                                                        event.target.value ||
-                                                            null,
-                                                    )
-                                                }
-                                                value={data.profile_title ?? ''}
-                                            >
-                                                <option value="">
-                                                    Sem título
-                                                </option>
-                                                {Object.entries(
+                                        <OptionPicker
+                                            hint="Uma frase curta que descreve você."
+                                            label="Título disponível"
+                                            onChange={(value) =>
+                                                setData(
+                                                    'profile_title',
+                                                    value || null,
+                                                )
+                                            }
+                                            options={[
+                                                {
+                                                    value: '',
+                                                    label: 'Sem título',
+                                                    description:
+                                                        'Nenhum título aparece no perfil.',
+                                                },
+                                                ...Object.entries(
                                                     appearanceOptions.titles,
-                                                ).map(([key, label]) => (
-                                                    <option
-                                                        key={key}
-                                                        value={key}
-                                                    >
-                                                        {label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
+                                                ).map(([key, label]) => ({
+                                                    value: key,
+                                                    label,
+                                                    accent: '#b4da33',
+                                                })),
+                                            ]}
+                                            value={data.profile_title ?? ''}
+                                        />
 
-                                        <label className="block text-sm font-bold">
-                                            Conquista em destaque
-                                            <select
-                                                className="mt-2 block min-h-11 w-full border-2 border-[#1d1d1b] bg-white px-3 py-2"
-                                                onChange={(event) =>
-                                                    setData(
-                                                        'achievement_badge_id',
-                                                        event.target.value
-                                                            ? Number(
-                                                                  event.target
-                                                                      .value,
-                                                              )
-                                                            : null,
-                                                    )
-                                                }
-                                                value={
-                                                    data.achievement_badge_id ??
-                                                    ''
-                                                }
-                                            >
-                                                <option value="">
-                                                    Sem destaque
-                                                </option>
-                                                {profileExtras.badges
+                                        <OptionPicker
+                                            hint="Só as conquistas que você já desbloqueou."
+                                            label="Conquista em destaque"
+                                            onChange={(value) =>
+                                                setData(
+                                                    'achievement_badge_id',
+                                                    value
+                                                        ? Number(value)
+                                                        : null,
+                                                )
+                                            }
+                                            options={[
+                                                {
+                                                    value: '',
+                                                    label: 'Sem destaque',
+                                                    description:
+                                                        'Nenhuma conquista em destaque.',
+                                                },
+                                                ...profileExtras.badges
                                                     .filter(
                                                         (badge) =>
                                                             badge.unlocked,
                                                     )
-                                                    .map((badge) => (
-                                                        <option
-                                                            key={badge.id}
-                                                            value={badge.id}
-                                                        >
-                                                            {badge.name}
-                                                        </option>
-                                                    ))}
-                                            </select>
-                                        </label>
+                                                    .map((badge) => ({
+                                                        value: String(badge.id),
+                                                        label: badge.name,
+                                                        description:
+                                                            badge.description,
+                                                        tag:
+                                                            RARITY_LABEL[
+                                                                badge.rarity
+                                                            ] ?? badge.rarity,
+                                                        accent:
+                                                            RARITY_COLOR[
+                                                                badge.rarity
+                                                            ] ?? '#b4da33',
+                                                    })),
+                                            ]}
+                                            value={
+                                                data.achievement_badge_id ===
+                                                null
+                                                    ? ''
+                                                    : String(
+                                                          data.achievement_badge_id,
+                                                      )
+                                            }
+                                        />
                                         <InputError
                                             message={
                                                 errors.achievement_badge_id
@@ -679,17 +602,20 @@ export default function Edit({
                                                 >
                                                     Trocar foto
                                                 </button>
-                                                {avatarUrl && !data.avatar_generated && (
-                                                    <button
-                                                        className="min-h-11 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase"
-                                                        onClick={() =>
-                                                            startCrop('avatar')
-                                                        }
-                                                        type="button"
-                                                    >
-                                                        Ajustar recorte
-                                                    </button>
-                                                )}
+                                                {avatarUrl &&
+                                                    !data.avatar_generated && (
+                                                        <button
+                                                            className="min-h-11 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase"
+                                                            onClick={() =>
+                                                                startCrop(
+                                                                    'avatar',
+                                                                )
+                                                            }
+                                                            type="button"
+                                                        >
+                                                            Ajustar recorte
+                                                        </button>
+                                                    )}
                                                 <button
                                                     className="min-h-11 border-2 border-[#d01600] px-3 font-mono text-xs font-bold uppercase text-[#d01600]"
                                                     onClick={() => {
@@ -756,6 +682,47 @@ export default function Edit({
                                                     }
                                                 />
                                             </div>
+                                            <div className="mt-6 border-t-2 border-[#1d1d1b]/15 pt-5">
+                                                <fieldset>
+                                                    <legend className="mb-2 text-sm font-bold">
+                                                        Moldura de avatar
+                                                    </legend>
+                                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                                        {Object.entries(
+                                                            appearanceOptions.frames,
+                                                        ).map(
+                                                            ([key, label]) => (
+                                                                <button
+                                                                    aria-pressed={
+                                                                        data.profile_frame ===
+                                                                        key
+                                                                    }
+                                                                    className={`flex min-h-20 items-center gap-3 border-2 bg-white p-3 text-left text-xs font-bold ${
+                                                                        data.profile_frame ===
+                                                                        key
+                                                                            ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
+                                                                            : 'border-[#1d1d1b]/25'
+                                                                    }`}
+                                                                    key={key}
+                                                                    onClick={() =>
+                                                                        setData(
+                                                                            'profile_frame',
+                                                                            key,
+                                                                        )
+                                                                    }
+                                                                    type="button"
+                                                                >
+                                                                    <span
+                                                                        aria-hidden="true"
+                                                                        className={`size-9 shrink-0 rounded-full border-[3px] bg-[#464498] ${frameColors[key] ?? frameColors.standard}`}
+                                                                    />
+                                                                    {label}
+                                                                </button>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                </fieldset>
+                                            </div>
                                         </section>
 
                                         <section className="border-t-2 border-[#1d1d1b]/15 pt-5">
@@ -817,6 +784,116 @@ export default function Edit({
                                                 className="mt-2"
                                                 message={errors.cover}
                                             />
+                                            <div className="mt-6 border-t-2 border-[#1d1d1b]/15 pt-5">
+                                                {appearanceOptions.backgrounds && (
+                                                    <fieldset>
+                                                        <legend className="mb-1 text-sm font-bold">
+                                                            Fundo do perfil
+                                                        </legend>
+                                                        <p className="mb-2 text-xs text-[#5b5953]">
+                                                            A pré-visualização
+                                                            acima muda ao
+                                                            escolher. São fundos
+                                                            leves, sem imagem
+                                                            para baixar.
+                                                        </p>
+                                                        <div
+                                                            aria-label="Fundos de perfil"
+                                                            className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
+                                                            role="group"
+                                                        >
+                                                            <button
+                                                                aria-pressed={
+                                                                    !data.profile_background
+                                                                }
+                                                                className={`relative flex h-16 flex-col justify-end border-2 bg-[linear-gradient(135deg,#464498_0_52%,#b4da33_52%_56%,#1d1d1b_56%)] p-1 text-left ${
+                                                                    !data.profile_background
+                                                                        ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
+                                                                        : 'border-[#1d1d1b]/25'
+                                                                }`}
+                                                                onClick={() =>
+                                                                    setData(
+                                                                        'profile_background',
+                                                                        null,
+                                                                    )
+                                                                }
+                                                                type="button"
+                                                            >
+                                                                <span className="bg-white/90 px-1 font-mono text-[9px] font-black uppercase">
+                                                                    Padrão
+                                                                </span>
+                                                                {!data.profile_background && (
+                                                                    <span
+                                                                        aria-hidden="true"
+                                                                        className="absolute right-1 top-1 grid size-4 place-items-center bg-[#b4da33] text-[10px] font-black"
+                                                                    >
+                                                                        ✓
+                                                                    </span>
+                                                                )}
+                                                            </button>
+                                                            {Object.entries(
+                                                                appearanceOptions.backgrounds,
+                                                            ).map(
+                                                                ([
+                                                                    key,
+                                                                    label,
+                                                                ]) => (
+                                                                    <button
+                                                                        aria-label={`Fundo ${label}`}
+                                                                        aria-pressed={
+                                                                            data.profile_background ===
+                                                                            key
+                                                                        }
+                                                                        className={`relative flex h-16 flex-col justify-end border-2 p-1 text-left ${
+                                                                            data.profile_background ===
+                                                                            key
+                                                                                ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
+                                                                                : 'border-[#1d1d1b]/25'
+                                                                        }`}
+                                                                        key={
+                                                                            key
+                                                                        }
+                                                                        onClick={() =>
+                                                                            setData(
+                                                                                'profile_background',
+                                                                                key,
+                                                                            )
+                                                                        }
+                                                                        style={profileBackgroundStyle(
+                                                                            key,
+                                                                        )}
+                                                                        title={
+                                                                            label
+                                                                        }
+                                                                        type="button"
+                                                                    >
+                                                                        <span className="truncate bg-white/90 px-1 font-mono text-[9px] font-black uppercase">
+                                                                            {
+                                                                                label
+                                                                            }
+                                                                        </span>
+                                                                        {data.profile_background ===
+                                                                            key && (
+                                                                            <span
+                                                                                aria-hidden="true"
+                                                                                className="absolute right-1 top-1 grid size-4 place-items-center bg-[#b4da33] text-[10px] font-black"
+                                                                            >
+                                                                                ✓
+                                                                            </span>
+                                                                        )}
+                                                                    </button>
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                        <InputError
+                                                            message={
+                                                                errors.profile_background
+                                                            }
+                                                            className="mt-2"
+                                                        />
+                                                    </fieldset>
+                                                )}
+                                            </div>
                                         </section>
                                     </div>
                                 </div>
@@ -1076,9 +1153,7 @@ export default function Edit({
                                 </p>
                             </div>
                             <div className="grid items-stretch gap-4 lg:grid-cols-3">
-                                <UpdateProfileInformationForm
-                                    className="h-full"
-                                />
+                                <UpdateProfileInformationForm className="h-full" />
                                 <UpdatePasswordForm />
                                 <DeleteUserForm />
                             </div>
@@ -1086,7 +1161,6 @@ export default function Edit({
                     )}
                 </div>
             </main>
-
 
             {editor && (editor.file || editor.src) && (
                 <ProfileImageEditor

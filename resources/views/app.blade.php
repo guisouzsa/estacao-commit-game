@@ -10,6 +10,11 @@
         <meta name="realtime-driver" content="cloudflare">
         @endif
 
+        {{-- Na página da partida, o tabuleiro (a maior imagem) começa a baixar já no HTML. --}}
+        @if (request()->routeIs('games.show'))
+        <link rel="preload" as="image" href="/images/estacao-commit/tabuleiro.webp" type="image/webp">
+        @endif
+
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         {{-- Fontes: o CSS delas NÃO bloqueia mais a renderização (antes um @import no CSS principal

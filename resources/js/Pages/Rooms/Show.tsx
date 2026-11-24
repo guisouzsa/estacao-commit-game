@@ -5,6 +5,7 @@ import MissionTutorial, {
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import RoomCountdown from '@/Components/RoomCountdown';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { preloadGameAssets } from '@/lib/preloadGame';
 import { startRoomSync } from '@/lib/roomSync';
 import { toast } from '@/lib/toast';
 import { Head, Link, router } from '@inertiajs/react';
@@ -63,6 +64,11 @@ export default function Show({
         autoShown.current = true;
         if (room.status === 'waiting' && !hasSeenMissionTutorial())
             setTutorial(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    // Aquece a mesa (código + imagens estáticas) enquanto a sala espera os jogadores.
+    useEffect(() => {
+        if (room.status === 'waiting') preloadGameAssets();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const [confirmingRevoke, setConfirmingRevoke] = useState(false);

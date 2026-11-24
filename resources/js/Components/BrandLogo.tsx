@@ -16,7 +16,7 @@ export default function BrandLogo({
             className={`inline-flex shrink-0 items-center gap-2 ${dark ? 'text-[#1d1d1b]' : 'text-white'} ${className}`}
         >
             <img
-                src="/images/estacao-commit/mascots/foguete-gato.png"
+                src="/images/estacao-commit/mascots/foguete-gato.webp"
                 alt=""
                 className={compact ? 'size-10 object-contain' : 'size-11 object-contain sm:size-12'}
             />

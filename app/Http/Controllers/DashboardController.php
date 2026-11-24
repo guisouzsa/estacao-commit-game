@@ -7,6 +7,7 @@ use App\Models\RoomParticipant;
 use App\Models\User;
 use App\Notifications\RoomDeleted;
 use App\Services\FinishedRoomCleanup;
+use App\Services\RecommendedPlayers;
 use App\Services\RoomExpirationService;
 use App\Support\Bots;
 use App\Support\PlayerPresenter;
@@ -25,6 +26,7 @@ class DashboardController extends Controller
     {
         $actor = $request->user();
         $expiration = app(RoomExpirationService::class);
+        $recommended = app(RecommendedPlayers::class);
 
         // Complementa o scheduler: salas suas com prazo vencido são excluídas agora.
         $expiration->expireDueRoomsHostedBy($actor);
@@ -63,18 +65,14 @@ class DashboardController extends Controller
             // "lidos", então não reaparecem. A closure só roda quando incluída.
             'notices' => fn () => $this->takeNotices($actor),
             'inviteUrl' => session('invite_url'),
-            'recommendedPlayers' => User::query()
-                ->orderByRaw("CASE WHEN LOWER(username) = 'gui' THEN 0 ELSE 1 END")
-                ->inRandomOrder()
-                ->limit(5)
-                ->get(['id', 'username', 'avatar', 'profile_frame', 'profile_title'])
-                ->sortBy(fn (User $user) => strtolower($user->username) === 'gui' ? 0 : 1)
-                ->values()
-                ->map(fn (User $user) => [
-                    // Sem `key` (que carrega o ID): a Dashboard só precisa exibir o jogador.
-                    ...Arr::except(PlayerPresenter::user($user), ['key']),
-                    'profile_title' => $user->profile_title,
-                ]),
+            // Gui sempre primeiro; os demais por sorteio sem repetição e com rodízio entre
+            // recarregamentos (ver RecommendedPlayers).
+            'recommendedPlayers' => $recommended->initial($actor)->map(fn (User $user) => RecommendedPlayers::present($user))->values(),
+            // "Ver mais jogadores recomendados": só calculado quando a pessoa pede (reload parcial),
+            // sem repetir quem já está na tela.
+            'moreRecommendedPlayers' => Inertia::optional(fn () => $recommended
+                ->more($actor, array_slice(array_filter((array) request()->input('shown', []), 'is_string'), 0, 40))
+                ->map(fn (User $user) => RecommendedPlayers::present($user))->values()),
         ]);
     }
 

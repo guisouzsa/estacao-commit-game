@@ -5,42 +5,42 @@ const steps = [
     [
         'Objetivo',
         'Complete sua contribuição antes dos outros: treinamento, quatro ciclos de desenvolvimento, envio e uma Pull Request válida.',
-        '/images/estacao-commit/mascots/foguete-gato.png',
+        '/images/estacao-commit/mascots/foguete-gato.webp',
     ],
     [
         'Preparação',
         'A partida tem quatro jogadores. Cada pessoa começa no Treinamento com o Bloco 1 e quatro cartas comuns. O primeiro turno é sorteado.',
-        '/images/estacao-commit/tabuleiro.png',
+        '/images/estacao-commit/tabuleiro.webp',
     ],
     [
         'Treinamento',
         'Jogue, nesta ordem: Git Login, git clone e git checkout -b.',
-        '/images/estacao-commit/corrected/git-login.png',
+        '/images/estacao-commit/corrected/git-login.webp',
     ],
     [
         'Desenvolvimento',
         'Complete quatro ciclos. Em cada ciclo: bloco correspondente, git add . e git commit.',
-        '/images/estacao-commit/corrected/git-commit.png',
+        '/images/estacao-commit/corrected/git-commit.webp',
     ],
     [
         'Envio',
         'Depois do quarto commit, jogue git pull, git push e finalize com Pull Request.',
-        '/images/estacao-commit/corrected/git-push.png',
+        '/images/estacao-commit/corrected/git-push.webp',
     ],
     [
         'Mão e trocas',
         'O limite é de seis cartas comuns. O Code Block não conta. Você pode descartar exatamente uma carta comum para comprar outra.',
-        '/images/estacao-commit/corrected/bloco-1.png',
+        '/images/estacao-commit/corrected/bloco-1.webp',
     ],
     [
         'Cartas especiais',
         'Limpar Credenciais reinicia o treinamento de um adversário elegível. Merge Conflict faz o alvo perder a próxima vez inteira.',
-        '/images/estacao-commit/corrected/merge-conflict.png',
+        '/images/estacao-commit/corrected/merge-conflict.webp',
     ],
     [
         'Vitória',
         'Uma Pull Request válida, após toda a sequência obrigatória, encerra a partida imediatamente.',
-        '/images/estacao-commit/mascots/gato-commit.png',
+        '/images/estacao-commit/mascots/gato-commit.webp',
     ],
 ];
 export default function WelcomeTutorial() {
@@ -71,7 +71,7 @@ export default function WelcomeTutorial() {
                 {!tutorial ? (
                     <>
                         <img
-                            src="/images/estacao-commit/mascots/foguete-gato.png"
+                            src="/images/estacao-commit/mascots/foguete-gato.webp"
                             alt="Foguete do Estação Commit"
                             className="mx-auto h-32 w-auto object-contain"
                         />

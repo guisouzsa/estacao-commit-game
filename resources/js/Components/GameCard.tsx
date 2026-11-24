@@ -4,54 +4,54 @@ const CARD_META: Record<
     string,
     { label: string; image?: string; tone: string }
 > = {
-    git_login: { label: 'Git Login', image: 'git-login.png', tone: '#464498' },
-    git_clone: { label: 'git clone', image: 'git-clone.png', tone: '#464498' },
+    git_login: { label: 'Git Login', image: 'git-login.webp', tone: '#464498' },
+    git_clone: { label: 'git clone', image: 'git-clone.webp', tone: '#464498' },
     git_checkout: {
         label: 'git checkout -b',
-        image: 'git-checkout.png',
+        image: 'git-checkout.webp',
         tone: '#464498',
     },
-    git_pull: { label: 'git pull', image: 'git-pull.png', tone: '#464498' },
-    git_add: { label: 'git add .', image: 'git-add.png', tone: '#b4da33' },
+    git_pull: { label: 'git pull', image: 'git-pull.webp', tone: '#464498' },
+    git_add: { label: 'git add .', image: 'git-add.webp', tone: '#b4da33' },
     git_commit: {
         label: 'git commit',
-        image: 'git-commit.png',
+        image: 'git-commit.webp',
         tone: '#f481c6',
     },
-    git_push: { label: 'git push', image: 'git-push.png', tone: '#d01600' },
+    git_push: { label: 'git push', image: 'git-push.webp', tone: '#d01600' },
     pull_request: {
         label: 'Pull Request',
-        image: 'pull-request.png',
+        image: 'pull-request.webp',
         tone: '#464498',
     },
     clear_credentials: {
         label: 'Limpar Credenciais',
-        image: 'limpar-credenciais.png',
+        image: 'limpar-credenciais.webp',
         tone: '#d01600',
     },
     merge_conflict: {
         label: 'Merge Conflict',
-        image: 'merge-conflict.png',
+        image: 'merge-conflict.webp',
         tone: '#f481c6',
     },
     block_1: {
         label: 'Bloco de Código 1',
-        image: 'bloco-1.png',
+        image: 'bloco-1.webp',
         tone: '#f481c6',
     },
     block_2: {
         label: 'Bloco de Código 2',
-        image: 'bloco-2.png',
+        image: 'bloco-2.webp',
         tone: '#464498',
     },
     block_3: {
         label: 'Bloco de Código 3',
-        image: 'bloco-3.png',
+        image: 'bloco-3.webp',
         tone: '#b4da33',
     },
     block_4: {
         label: 'Bloco de Código 4',
-        image: 'bloco-4.png',
+        image: 'bloco-4.webp',
         tone: '#d01600',
     },
 };
@@ -79,6 +79,7 @@ export default function GameCard({
     selected = false,
     playable = false,
     compact = false,
+    dimmed = false,
     dataKey,
     onClick,
 }: {
@@ -86,6 +87,8 @@ export default function GameCard({
     selected?: boolean;
     playable?: boolean;
     compact?: boolean;
+    /** Fora da vez: a carta fica escura, como as que não podem ser jogadas. */
+    dimmed?: boolean;
     /** Identifica a carta na mão (de onde a animação de jogada parte). */
     dataKey?: string;
     onClick?: () => void;
@@ -121,7 +124,7 @@ export default function GameCard({
             transition={{ duration: 0.18 }}
             aria-pressed={selected}
             aria-label={`${meta.label}${playable ? ', pode ser jogada' : ''}`}
-            className={`focus-visible:outline-3 relative shrink-0 overflow-hidden rounded-xl border-[3px] bg-[#f3f1ec] text-left shadow-[4px_5px_0_#10100f] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#b4da33] ${compact ? 'h-24 w-[4.25rem]' : 'h-28 w-[5rem] sm:h-32 sm:w-[5.75rem] lg:h-[8.25rem] lg:w-[5.9rem]'} ${onClick && !playable && !selected ? 'brightness-[.7]' : ''} ${selected ? 'border-[#b4da33]' : playable ? 'border-white' : 'border-[#1d1d1b]'} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
+            className={`focus-visible:outline-3 relative shrink-0 overflow-hidden rounded-xl border-[3px] bg-[#f3f1ec] text-left shadow-[4px_5px_0_#10100f] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#b4da33] ${compact ? 'h-24 w-[4.25rem]' : 'h-28 w-[5rem] sm:h-32 sm:w-[5.75rem] lg:h-[8.25rem] lg:w-[5.9rem]'} ${(onClick && !playable && !selected) || (dimmed && !selected) ? 'brightness-[.7]' : ''} ${selected ? 'border-[#b4da33]' : playable ? 'border-white' : 'border-[#1d1d1b]'} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
             style={{
                 transformOrigin: '50% 100%',
                 boxShadow: selected

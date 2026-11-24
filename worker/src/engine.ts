@@ -27,7 +27,16 @@ const LABELS: Record<string, string> = {
 
 export type Participant = { id: number; seat: number; kind: 'user' | 'guest' | 'bot'; bot_key?: string | null };
 
-export type PlayerState = { seat: number; hand: string[]; path: string[]; step: number; blocked: boolean; pending_discard: number };
+export type PlayerState = {
+  seat: number;
+  hand: string[];
+  path: string[];
+  step: number;
+  blocked: boolean;
+  pending_discard: number;
+  /** Últimas cartas trocadas (máx. 3): a próxima troca evita devolvê-las. */
+  recent_swaps?: string[];
+};
 export type HistoryItem = { id: string; participant_id?: number; message: string; turn: number; notify?: boolean };
 
 export type MatchState = {
@@ -222,7 +231,10 @@ function exchange(m: MatchState, id: number, card: string, rng: Rng): void {
   if (index === -1) throw new RuleError('card', 'Escolha uma carta da sua mão para trocar.');
   player.hand.splice(index, 1);
   m.discard.push(card);
-  draw(m, player, 1, rng);
+  // Troca com variedade (mesma regra do motor PHP): evita a carta que saiu, as últimas trocas e trincas.
+  const recent = player.recent_swaps ?? [];
+  draw(m, player, 1, rng, [card, ...recent]);
+  player.recent_swaps = [...recent, card].slice(-3);
   history(m, id, 'trocou uma carta.');
   advance(m);
 }
@@ -276,14 +288,34 @@ function advance(m: MatchState): void {
   }
 }
 
-function draw(m: MatchState, player: PlayerState, quantity: number, rng: Rng): void {
+export const DRAW_LOOKAHEAD = 8;
+
+/**
+ * Qual carta do topo comprar: a PRIMEIRA, entre as DRAW_LOOKAHEAD primeiras do baralho embaralhado,
+ * que não esteja em `avoid` e não forme trinca na mão; se nenhuma serve, a do topo. Continua sorte:
+ * só se pula o que repetiria, nunca se procura carta útil.
+ */
+export function pickIndex(deck: string[], hand: string[], avoid: string[]): number {
+  const limit = Math.min(deck.length, DRAW_LOOKAHEAD);
+  for (let i = 0; i < limit; i++) {
+    const candidate = deck[i];
+    if (avoid.includes(candidate)) continue;
+    if (hand.filter((c) => c === candidate).length >= 2) continue;
+    return i;
+  }
+  return 0;
+}
+
+function draw(m: MatchState, player: PlayerState, quantity: number, rng: Rng, avoid: string[] = []): void {
   for (let i = 0; i < quantity; i++) {
     if (m.deck.length === 0 && m.discard.length > 0) {
       m.deck = shuffle(m.discard, rng);
       m.discard = [];
     }
     if (m.deck.length === 0) return;
-    player.hand.push(m.deck.shift()!);
+    const index = pickIndex(m.deck, player.hand, avoid);
+    player.hand.push(m.deck[index]);
+    m.deck.splice(index, 1);
   }
 }
 

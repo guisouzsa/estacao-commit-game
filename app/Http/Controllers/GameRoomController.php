@@ -151,19 +151,32 @@ class GameRoomController extends Controller
     {
         $actor = $request->user();
 
+        // Uma leitura de participantes (com contas e visitantes) autoriza e monta a página: antes
+        // eram consultas separadas para "participa?" e para a lista.
         // Sala de outra pessoa e sala inexistente respondem igual (404): não revela salas privadas.
-        abort_unless($room->hasParticipant($actor), 404);
+        $room->load(['participants.user', 'participants.guest']);
+        abort_unless(
+            $room->participants->contains(fn ($p) => (string) $p->{Actor::participantColumn($actor)} === Actor::id($actor)),
+            404,
+        );
 
-        // Complementa o scheduler: se o prazo venceu, a sala é excluída agora e
-        // o aviso persistido aparece na Dashboard.
-        if (app(RoomExpirationService::class)->expireIfEligible($room)) {
+        // Complementa o scheduler: se o prazo venceu, a sala é excluída agora e o aviso persistido
+        // aparece na Dashboard. A transação só abre quando o prazo realmente venceu (antes era a
+        // TODA abertura do lobby).
+        $overdue = $room->status === 'waiting'
+            && $room->started_at === null
+            && $room->empty_since !== null
+            && $room->empty_since->lte(now()->subMinutes(RoomExpirationService::WAITING_MINUTES));
+        if ($overdue && app(RoomExpirationService::class)->expireIfEligible($room)) {
             return to_route('dashboard');
         }
-        $room->refresh();
-        if ($room->gameMatch()->exists()) {
+        if ($overdue) {
+            $room->refresh()->load(['participants.user', 'participants.guest']);
+        }
+        // Sala que já saiu do lobby (partida em andamento ou concluída) vai para a mesa.
+        if ($room->status !== 'waiting' || $room->started_at !== null) {
             return to_route('games.show', $room);
         }
-        $room->load(['participants.user', 'participants.guest']);
 
         return Inertia::render('Rooms/Show', [
             'room' => [

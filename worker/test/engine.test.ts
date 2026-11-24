@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { REQUIRED, RuleError, act, createMatch, runBots, type MatchState, type Participant } from '../src/engine';
+import { REQUIRED, RuleError, act, createMatch, pickIndex, runBots, type MatchState, type Participant } from '../src/engine';
 
 // RNG determinístico (mulberry32) para reproduzir partidas.
 const seeded = (seed: number) => () => {
@@ -147,5 +147,58 @@ describe('motor: partidas completas com bots (várias sementes)', () => {
     act(m, 1, 'exchange', { card: m.players['1'].hand[0] });
     runBots(m, ps, seeded(72));
     expect(m.current_seat).toBe(1);
+  });
+});
+
+describe('motor: troca com variedade', () => {
+  it('pula a carta trocada, as trocas recentes e trincas, sem tirar a sorte', () => {
+    expect(pickIndex(['git_add', 'git_pull', 'git_commit'], ['git_commit', 'git_push'], ['git_add'])).toBe(1);
+    expect(pickIndex(['git_add', 'git_push'], ['git_add', 'git_add', 'git_clone'], [])).toBe(1); // evita a trinca
+    expect(pickIndex(['git_add', 'git_push', 'git_commit'], [], ['git_add', 'git_push'])).toBe(2); // trocas recentes
+    expect(pickIndex(['git_add', 'git_add', 'git_add'], [], ['git_add'])).toBe(0); // nada melhor: segue o topo
+    expect(pickIndex([], [], [])).toBe(0);
+  });
+
+  it('a troca não devolve a mesma carta e guarda só as 3 últimas trocas', () => {
+    const m = createMatch(humans, seeded(31));
+    const p = cur(m, humans);
+    const pl = () => m.players[String(p.id)];
+    pl().hand = ['git_add', 'git_commit', 'git_push', 'git_clone'];
+    m.deck = ['git_add', 'git_pull', 'git_commit'];
+    m.discard = [];
+    pl().recent_swaps = ['a', 'b', 'c'];
+    const total = m.deck.length + m.discard.length + pl().hand.length;
+
+    act(m, p.id, 'exchange', { card: 'git_add' });
+
+    expect(pl().hand).toEqual(['git_commit', 'git_push', 'git_clone', 'git_pull']);
+    expect(pl().recent_swaps).toEqual(['b', 'c', 'git_add']);
+    expect(m.deck.length + m.discard.length + pl().hand.length).toBe(total); // nenhuma carta criada ou perdida
+  });
+
+  it('simulação: devolver a mesma carta cai de ~1 em 5 para quase nunca, e continua variado', () => {
+    const rng = seeded(99);
+    const pool = [
+      ...Array(16).fill('git_add'), ...Array(16).fill('git_commit'), ...Array(16).fill('git_push'),
+      ...Array(7).fill('git_clone'), ...Array(7).fill('git_checkout'), ...Array(4).fill('git_pull'),
+      ...Array(4).fill('pull_request'), ...Array(2).fill('merge_conflict'), ...Array(2).fill('clear_credentials'),
+    ];
+    let plain = 0;
+    let smart = 0;
+    const seen = new Set<string>();
+    for (let t = 0; t < 400; t++) {
+      const deck = [...pool];
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      if (deck[0] === 'git_add') plain++;
+      const i = pickIndex(deck, ['git_commit', 'git_add', 'git_clone'], ['git_add']);
+      if (deck[i] === 'git_add') smart++;
+      seen.add(deck[i]);
+    }
+    expect(plain).toBeGreaterThan(40);
+    expect(smart).toBe(0);
+    expect(seen.size).toBeGreaterThanOrEqual(6);
   });
 });

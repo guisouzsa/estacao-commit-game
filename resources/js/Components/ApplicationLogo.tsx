@@ -7,7 +7,7 @@ export default function ApplicationLogo(
     return (
         <img
             {...props}
-            src="/images/estacao-commit/mascots/foguete-gato.png"
+            src="/images/estacao-commit/mascots/foguete-gato.webp"
             alt={props.alt ?? 'Estação Commit'}
         />
     );

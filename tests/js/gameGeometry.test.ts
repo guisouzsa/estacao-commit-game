@@ -53,3 +53,20 @@ describe('geometria da mesa', () => {
         assert.equal(AREAS[3].rotate, -90);
     });
 });
+
+describe('indicadores dos jogadores', () => {
+  it('marcações de progresso: 6 fases (Treinamento, 4 ciclos, Envio) acendem ao concluir cada uma', async () => {
+    const { phasesDone, PHASE_ENDS, INDICATOR_POSITION, AREAS } = await import('../../resources/js/lib/gameGeometry.ts');
+    assert.equal(PHASE_ENDS.length, 6);
+    const cases: Array<[number, number]> = [[0, 0], [2, 0], [3, 1], [5, 1], [6, 2], [11, 3], [12, 4], [14, 4], [15, 5], [17, 5], [18, 6]];
+    for (const [step, done] of cases) assert.equal(phasesDone(step), done, `etapa ${step}`);
+
+    // O indicador de cada lado fica FORA da área de cartas daquele jogador (nunca cobre os espaços).
+    for (const side of [0, 1, 2, 3] as const) {
+        const area = AREAS[side];
+        const p = INDICATOR_POSITION[side];
+        const inside = p.left > area.left && p.left < area.left + area.width && p.top > area.top && p.top < area.top + area.height;
+        assert.equal(inside, false, `lado ${side}`);
+    }
+});
+});

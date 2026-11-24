@@ -1,13 +1,15 @@
+import BoardIndicator from '@/Components/game/BoardIndicator';
+import type { PanelPlayer } from '@/Components/game/PlayerPanel';
 import { cardImageUrl, cardMeta } from '@/Components/GameCard';
-import {
-    AREAS,
-    PATH_LENGTH,
-    PATH_SEQUENCE,
-    STEP_LABEL,
-    slotRect,
-    type Side,
-} from '@/lib/gameGeometry';
+import { AREAS, PATH_LENGTH, slotRect, type Side } from '@/lib/gameGeometry';
 import { memo } from 'react';
+
+export type BoardIndicatorData = {
+    player: PanelPlayer;
+    side: Side;
+    active: boolean;
+    you: boolean;
+};
 
 export type BoardPlayer = {
     id: number;
@@ -37,7 +39,6 @@ const Slot = memo(function Slot({
     const rect = slotRect(side, index);
     const rotate = AREAS[side].rotate;
     const sideways = rotate === 90 || rotate === -90;
-    const step = PATH_SEQUENCE[index];
     const art = card ? cardImageUrl(card) : null;
 
     return (
@@ -63,32 +64,30 @@ const Slot = memo(function Slot({
                 {card ? (
                     <div
                         className={`size-full overflow-hidden rounded-[3px] border border-[#1d1d1b] shadow-[1px_2px_0_#0007] ${fresh ? 'card-settle' : ''}`}
-                        title={cardMeta(card).label}
                     >
                         {art ? (
                             <img
-                                alt={cardMeta(card).label}
+                                alt=""
                                 className="size-full object-cover"
                                 draggable={false}
                                 src={art}
                             />
                         ) : (
                             <span
-                                className="grid size-full place-items-center text-[7px] font-black leading-none text-white"
+                                aria-hidden="true"
+                                className="block size-full"
                                 style={{
                                     background: `linear-gradient(145deg, ${cardMeta(card).tone}, #1d1d1b)`,
                                 }}
-                            >
-                                PR
-                            </span>
+                            />
                         )}
                     </div>
                 ) : (
-                    <div className="grid size-full place-items-center rounded-[3px] border border-dashed border-[#1d1d1b]/25 bg-[#1d1d1b]/[.04]">
-                        <span className="px-px text-center font-mono text-[max(5px,.5vw)] font-bold uppercase leading-none text-[#1d1d1b]/30">
-                            {STEP_LABEL[step]}
-                        </span>
-                    </div>
+                    // Espaço vazio: só a linha de delimitação (sem nome do passo).
+                    <div
+                        aria-hidden="true"
+                        className="size-full rounded-[3px] border border-dashed border-[#1d1d1b]/25 bg-[#1d1d1b]/[.04]"
+                    />
                 )}
             </div>
         </div>
@@ -128,7 +127,7 @@ function Pile({
                         <img
                             alt=""
                             className="h-3/5 object-contain opacity-90"
-                            src="/images/estacao-commit/mascots/gato-commit.png"
+                            src="/images/estacao-commit/mascots/gato-commit.webp"
                         />
                     )}
                 </div>
@@ -141,7 +140,7 @@ function Pile({
 }
 
 /**
- * O tabuleiro original (tabuleiro.png) como superfície de jogo.
+ * O tabuleiro original (tabuleiro.webp) como superfície de jogo.
  * As quatro áreas brancas viram os percursos de cada jogador (18 espaços cada).
  * Só o jogador da vez tem a própria área iluminada.
  */
@@ -150,8 +149,13 @@ export default memo(function GameBoard({
     deckCount,
     discardCount,
     freshSlot,
+    indicators = [],
+    onSelectPlayer,
 }: {
     players: BoardPlayer[];
+    /** Indicadores circulares dos jogadores, junto à área de cada um. */
+    indicators?: BoardIndicatorData[];
+    onSelectPlayer?: (id: number, element: HTMLElement) => void;
     deckCount: number;
     discardCount: number;
     /** `${playerId}:${index}` da carta recém-colocada (ganha a animação de encaixe). */
@@ -165,7 +169,7 @@ export default memo(function GameBoard({
                     className="absolute inset-0 size-full select-none object-cover"
                     draggable={false}
                     height={1404}
-                    src="/images/estacao-commit/tabuleiro.png"
+                    src="/images/estacao-commit/tabuleiro.webp"
                     width={1404}
                 />
 
@@ -202,6 +206,17 @@ export default memo(function GameBoard({
 
                 <Pile count={deckCount} kind="deck" left={55} top={64} />
                 <Pile count={discardCount} kind="discard" left={44} top={64} />
+
+                {indicators.map((indicator) => (
+                    <BoardIndicator
+                        active={indicator.active}
+                        key={indicator.player.id}
+                        onSelect={(id, element) => onSelectPlayer?.(id, element)}
+                        player={indicator.player}
+                        side={indicator.side}
+                        you={indicator.you}
+                    />
+                ))}
             </div>
         </div>
     );

@@ -71,7 +71,7 @@ class GameEngine
             ],
         ]);
 
-        return $match->fresh();
+        return $match;
     }
 
     public function act(GameMatch $match, RoomParticipant $participant, string $action, array $payload, string $actionUuid): void
@@ -138,7 +138,6 @@ class GameEngine
         }
 
         $this->act($match, $bot, $action, $payload, (string) Str::uuid());
-        $match->refresh();
 
         return true;
     }
@@ -228,7 +227,12 @@ class GameEngine
         }
         $this->removeCard($player['hand'], $index);
         $state['discard'][] = $card;
-        $this->draw($state, $player, 1);
+        // Troca com variedade: a carta nova evita a que acabou de sair e as últimas trocas do
+        // jogador, e não forma trinca na mão. Continua sendo sorte (ver pickIndex): nada é entregue
+        // "de propósito" e a mão pode, sim, continuar sem a carta que o jogador queria.
+        $recent = $player['recent_swaps'] ?? [];
+        $this->draw($state, $player, 1, [$card, ...$recent]);
+        $player['recent_swaps'] = array_slice([...$recent, $card], -3);
         $this->history($state, $participant, 'trocou uma carta.', $match);
         $this->advance($match, $state);
     }
@@ -308,7 +312,10 @@ class GameEngine
         }
     }
 
-    private function draw(array &$state, array &$player, int $quantity): void
+    /** Quantas cartas do topo do baralho (já embaralhado) podem ser consideradas ao comprar. */
+    public const DRAW_LOOKAHEAD = 8;
+
+    private function draw(array &$state, array &$player, int $quantity, array $avoid = []): void
     {
         for ($i = 0; $i < $quantity; $i++) {
             if ($state['deck'] === [] && $state['discard'] !== []) {
@@ -319,8 +326,38 @@ class GameEngine
             if ($state['deck'] === []) {
                 return;
             }
-            $player['hand'][] = array_shift($state['deck']);
+            $index = $this->pickIndex($state['deck'], $player['hand'], $avoid);
+            $player['hand'][] = $state['deck'][$index];
+            array_splice($state['deck'], $index, 1);
         }
+    }
+
+    /**
+     * Qual carta do topo comprar. Percorre as primeiras DRAW_LOOKAHEAD cartas do baralho embaralhado e
+     * fica com a PRIMEIRA aceitável: que não esteja em `$avoid` (ex.: a carta que o jogador acabou de
+     * trocar) e que não forme uma trinca na mão. Se nenhuma serve, compra a do topo, como sempre.
+     *
+     * A escolha continua aleatória: a ordem do baralho já é sorteada e só se "pula" o que repetiria;
+     * não se procura carta útil. A quantidade de cartas e todas as regras ficam intactas.
+     *
+     * @param  list<string>  $deck
+     * @param  list<string>  $hand
+     * @param  list<string>  $avoid
+     */
+    private function pickIndex(array $deck, array $hand, array $avoid): int
+    {
+        $counts = array_count_values($hand);
+        $limit = min(count($deck), self::DRAW_LOOKAHEAD);
+        for ($i = 0; $i < $limit; $i++) {
+            $candidate = $deck[$i];
+            if (in_array($candidate, $avoid, true) || ($counts[$candidate] ?? 0) >= 2) {
+                continue;
+            }
+
+            return $i;
+        }
+
+        return 0;
     }
 
     private function removeCard(array &$hand, int $index): void

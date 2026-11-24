@@ -1,5 +1,6 @@
 import InputError from '@/Components/InputError';
 import AvatarPicker from '@/Components/AvatarPicker';
+import HowToPlayButton from '@/Components/HowToPlayButton';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { type AvatarStyle, randomSeed } from '@/lib/avatarArt';
@@ -99,38 +100,26 @@ export default function Create({
             <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">
                 Jogar agora
             </p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight">
-                Quem vai jogar?
+            {/* Título normal, sem caixa: a hierarquia (tamanho e peso) é que organiza a leitura. */}
+            <h1 className="mt-3 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+                Você está entrando com uma conta temporária.
             </h1>
+            <p className="mt-3 text-base leading-7 text-ink/75">
+                Você pode começar a jogar imediatamente sem precisar criar uma
+                conta. Entretanto, essa conta é temporária e poderá ser removida
+                após um período de inatividade (6 horas sem jogar).
+            </p>
+            <p className="mt-2 text-sm leading-6 text-ink/55">
+                Quer guardar seu perfil e suas vitórias no ranking? Crie uma
+                conta permanente com e-mail. O que você jogar como visitante
+                não é transferido.
+            </p>
 
-            {/* Deixa claro que NÃO é um login: é uma conta temporária, sem e-mail nem senha. */}
-            <section
-                aria-labelledby="temp-account-title"
-                className="mt-4 border-2 border-[#1d1d1b] bg-[#f6f9e4] p-4 shadow-[4px_4px_0_#b4da33]"
-            >
-                <p
-                    className="font-mono text-[11px] font-black uppercase tracking-wider text-[#464498]"
-                    id="temp-account-title"
-                >
-                    Conta temporária · sem login
-                </p>
-                <p className="mt-1 text-lg font-black leading-snug">
-                    Você está entrando com uma conta temporária.
-                </p>
-                <p className="mt-2 text-sm leading-6 text-ink/70">
-                    Você pode começar a jogar imediatamente sem precisar criar
-                    uma conta. Entretanto, essa conta é temporária e poderá ser
-                    removida após um período de inatividade (6 horas sem
-                    jogar).
-                </p>
-                <p className="mt-2 text-sm leading-6 text-ink/70">
-                    Quer guardar seu perfil e suas vitórias no ranking? Crie uma
-                    conta permanente com e-mail. Ela é nova: o que você jogar
-                    como visitante não é transferido.
-                </p>
-            </section>
+            <h2 className="mt-8 text-xl font-black tracking-tight">
+                Escolha seu nome e seu avatar
+            </h2>
 
-            <form className="mt-6" onSubmit={submit} noValidate>
+            <form className="mt-4" onSubmit={submit} noValidate>
                 <div className="flex items-center gap-4">
                     <PlayerAvatar profile={preview} size="lg" />
                     <div className="min-w-0 flex-1">
@@ -222,12 +211,15 @@ export default function Create({
                 <span className="h-px flex-1 bg-ink/15" />
             </div>
 
-            <Link
-                className="flex min-h-12 w-full items-center justify-center border-2 border-[#1d1d1b] bg-white px-4 text-center font-mono text-xs font-black uppercase shadow-[4px_4px_0_#464498] transition hover:-translate-y-0.5 hover:bg-[#f3f1ec]"
-                href={route('register')}
-            >
-                Criar conta permanente com e-mail
-            </Link>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <Link
+                    className="flex min-h-12 w-full items-center justify-center border-2 border-[#1d1d1b] bg-white px-4 text-center font-mono text-xs font-black uppercase shadow-[4px_4px_0_#464498] transition hover:-translate-y-0.5 hover:bg-[#f3f1ec]"
+                    href={route('register')}
+                >
+                    Criar conta permanente com e-mail
+                </Link>
+                <HowToPlayButton />
+            </div>
 
             <p className="mt-8 text-center text-sm text-ink/55">
                 Já tem uma conta?{' '}

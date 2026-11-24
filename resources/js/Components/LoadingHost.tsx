@@ -148,7 +148,7 @@ export default function LoadingHost() {
                 <img
                     alt=""
                     className="mx-auto h-16 w-auto object-contain"
-                    src="/images/estacao-commit/mascots/gato-login.png"
+                    src="/images/estacao-commit/mascots/gato-login.webp"
                 />
                 <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[.2em] text-[#464498]">
                     Estação Commit

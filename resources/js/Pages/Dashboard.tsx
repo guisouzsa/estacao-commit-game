@@ -27,17 +27,27 @@ type Notice = {
     message: string;
 };
 
+const TITLE_LABEL: Record<string, string> = {
+    explorer: 'Explorador', builder: 'Montador', collaborator: 'Colaborador', 'coffee-developer': 'Dev Cafeteiro',
+    'git-master': 'Mestre do Git', 'docker-captain': 'Capitão Docker', 'bug-hunter': 'Caçador de Bugs',
+    'code-guardian': 'Guardião do Código', 'api-architect': 'Arquiteto de APIs', 'container-tamer': 'Domador de Containers',
+    'terminal-wizard': 'Mago do Terminal', 'open-source-hero': 'Herói Open Source', 'full-stack-alchemist': 'Alquimista Full Stack',
+};
+const titleLabel = (key: string) => TITLE_LABEL[key] ?? key;
+
 export default function Dashboard({
     rooms = [],
     notices = [],
     inviteUrl,
     recommendedPlayers = [],
+    moreRecommendedPlayers,
     botPreviews = [],
 }: {
     rooms: Room[];
     notices?: Notice[];
     inviteUrl?: string;
     recommendedPlayers: PlayerSummary[];
+    moreRecommendedPlayers?: PlayerSummary[];
     botPreviews: BotPreview[];
 }) {
     const { auth } = usePage<PageProps>().props;
@@ -47,6 +57,24 @@ export default function Dashboard({
     const [joining, setJoining] = useState(false);
     const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [expanded, setExpanded] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+
+    // Lista de recomendados: os 5 iniciais (gui primeiro) e, sob demanda, mais jogadores. A lista
+    // extra só é pedida ao servidor quando a pessoa clica, sem repetir quem já está na tela.
+    const visibleRecommended = expanded
+        ? [...recommendedPlayers, ...(moreRecommendedPlayers ?? [])]
+        : recommendedPlayers;
+    const showMoreRecommended = () => {
+        if (moreRecommendedPlayers) return setExpanded(true);
+        setLoadingMore(true);
+        router.reload({
+            only: ['moreRecommendedPlayers'],
+            data: { shown: recommendedPlayers.map((player) => player.username) },
+            onSuccess: () => setExpanded(true),
+            onFinish: () => setLoadingMore(false),
+        });
+    };
 
     // A Dashboard NÃO usa WebSocket: no Render Free o Apache atende só 2 requisições ao mesmo tempo
     // e cada WebSocket aberto ocupa uma delas por inteiro (uma pessoa parada aqui travaria o site
@@ -254,24 +282,44 @@ export default function Dashboard({
                                 Encontre qualquer jogador pela busca no topo da
                                 página.
                             </p>
-                            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                {recommendedPlayers.map((player) => (
-                                    <Link
-                                        className="flex items-center gap-3 border-2 border-[#1d1d1b] bg-white p-2 hover:bg-[#b4da33]"
-                                        href={route(
-                                            'profile.public',
-                                            player.username,
-                                        )}
-                                        key={player.username}
-                                    >
-                                        <PlayerAvatar
-                                            profile={player}
-                                            size="sm"
-                                        />
-                                        <strong>@{player.username}</strong>
-                                    </Link>
+                            <ul className="mt-4 grid gap-2 sm:max-w-xl">
+                                {visibleRecommended.map((player, index) => (
+                                    <li key={player.username}>
+                                        <Link
+                                            className="group flex items-center gap-3 border-2 border-[#1d1d1b] bg-white p-2.5 shadow-[3px_3px_0_#1d1d1b] transition hover:-translate-y-0.5 hover:bg-[#b4da33]"
+                                            href={route('profile.public', player.username)}
+                                        >
+                                            <PlayerAvatar profile={player} size="sm" />
+                                            <span className="min-w-0 flex-1">
+                                                <strong className="block truncate">@{player.username}</strong>
+                                                {player.profile_title ? (
+                                                    <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">
+                                                        {titleLabel(player.profile_title)}
+                                                    </span>
+                                                ) : null}
+                                            </span>
+                                            {index === 0 && player.username.toLowerCase() === 'gui' ? (
+                                                <span className="shrink-0 border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase group-hover:bg-white">
+                                                    Criador
+                                                </span>
+                                            ) : null}
+                                        </Link>
+                                    </li>
                                 ))}
-                            </div>
+                            </ul>
+                            {!expanded && (
+                                <button
+                                    className="mt-3 inline-flex min-h-11 items-center gap-2 border-2 border-[#1d1d1b] bg-white px-4 font-mono text-xs font-black uppercase shadow-[3px_3px_0_#464498] transition enabled:hover:-translate-y-0.5 disabled:opacity-60"
+                                    disabled={loadingMore}
+                                    onClick={showMoreRecommended}
+                                    type="button"
+                                >
+                                    {loadingMore ? (
+                                        <span aria-hidden="true" className="size-3.5 animate-spin rounded-full border-2 border-[#464498] border-t-transparent" />
+                                    ) : null}
+                                    {loadingMore ? 'Carregando…' : 'Ver mais jogadores recomendados'}
+                                </button>
+                            )}
                         </article>
                     </section>
                 </div>

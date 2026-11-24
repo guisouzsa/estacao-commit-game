@@ -11,6 +11,7 @@ use App\Services\GameEngine;
 use App\Services\GameInactivityService;
 use App\Services\MatchStatistics;
 use App\Services\RoomStateBroadcaster;
+use App\Support\Actor;
 use App\Support\PlayerPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,9 +50,15 @@ class GameMatchController extends Controller
     public function show(Request $request, GameRoom $room): Response|RedirectResponse
     {
         $actor = $request->user();
-        abort_unless($room->hasParticipant($actor), 404);
-        // Partida concluída há mais de 2 minutos: a sala já deveria ter sumido.
-        if (app(FinishedRoomCleanup::class)->purgeIfDue($room)) {
+        // UMA leitura de participantes (com contas e visitantes) serve para autorizar, achar o
+        // jogador e montar a mesa. Antes eram 3 consultas separadas (existe, jogador, lista).
+        $room->load(['participants.user', 'participants.guest']);
+        $viewer = $room->participants->first(fn ($p) => (string) $p->{Actor::participantColumn($actor)} === Actor::id($actor));
+        abort_unless($viewer, 404);
+
+        // Partida concluída há mais de 2 minutos: a sala já deveria ter sumido. (Só abre a
+        // transação de exclusão quando a sala está mesmo concluída: antes era a TODA abertura.)
+        if ($room->status === 'finished' && app(FinishedRoomCleanup::class)->purgeIfDue($room)) {
             return to_route('dashboard')->with('toast', [
                 'id' => (string) Str::uuid(),
                 'tone' => 'info',
@@ -59,11 +66,25 @@ class GameMatchController extends Controller
                 'message' => 'A partida terminou e a sala foi encerrada. O resultado ficou salvo no ranking.',
             ]);
         }
-        if ($this->isRemote($room)) {
-            return $this->showRemote($room, $actor);
+
+        $match = $room->gameMatch;
+        abort_unless($match, 404);
+
+        // O motor da partida vem do próprio registro já lido (sem consulta extra).
+        if (($match->state['engine'] ?? null) === CloudflareMatchGateway::ENGINE) {
+            return $this->showRemote($room, $match, $viewer);
         }
-        // Jogador da vez sumiu? Um bot assume (ver GameInactivityService) e avisa a mesa.
-        if (app(GameInactivityService::class)->sweep($room)) {
+
+        // Jogador da vez sumiu? Um bot assume (ver GameInactivityService) e avisa a mesa. A
+        // verificação barata (em memória) vem primeiro: a transação com trava só abre quando a
+        // partida realmente está parada além do prazo.
+        $timeout = (int) config('game.turn_timeout_seconds');
+        if (
+            $timeout > 0
+            && $match->status === 'active'
+            && $match->updated_at->lte(now()->subSeconds($timeout))
+            && app(GameInactivityService::class)->sweep($room)
+        ) {
             app(RoomStateBroadcaster::class)->publish($room->id, 'game_updated');
 
             if (! $room->participants()->forActor($actor)->exists()) {
@@ -74,10 +95,12 @@ class GameMatchController extends Controller
                     'message' => 'Você ficou parado na sua vez por tempo demais e a partida seguiu sem você.',
                 ]);
             }
+
+            // Ainda estou na mesa: relê o estado já com o bot no lugar do jogador parado.
+            $room->refresh()->load(['participants.user', 'participants.guest']);
+            $match = $room->gameMatch()->firstOrFail();
+            $viewer = $room->participants->first(fn ($p) => (string) $p->{Actor::participantColumn($actor)} === Actor::id($actor));
         }
-        $match = $room->gameMatch()->firstOrFail();
-        $room->load(['participants.user', 'participants.guest']);
-        $viewer = $room->participants()->forActor($actor)->firstOrFail();
 
         return Inertia::render('Games/Show', $this->present($room, $match, $viewer->id));
     }
@@ -85,7 +108,9 @@ class GameMatchController extends Controller
     public function action(Request $request, GameRoom $room, GameEngine $engine): RedirectResponse
     {
         $actor = $request->user();
-        abort_unless($room->hasParticipant($actor), 404);
+        // Um único SELECT confirma que a pessoa está na sala E traz o jogador (antes: existe + busca).
+        $participant = $room->participants()->forActor($actor)->first();
+        abort_unless($participant, 404);
         $validated = $request->validate([
             'action_uuid' => ['required', 'uuid'],
             'action' => ['required', Rule::in(['play_card', 'play_block', 'exchange', 'discard_excess'])],
@@ -94,26 +119,32 @@ class GameMatchController extends Controller
             'version' => ['required', 'integer', 'min:1'],
         ]);
 
-        if ($this->isRemote($room)) {
-            return $this->actRemote($room, $actor, $validated);
-        }
-
-        DB::transaction(function () use ($room, $actor, $engine, $validated): void {
+        $remote = false;
+        DB::transaction(function () use ($room, $participant, $engine, $validated, &$remote): void {
             $match = GameMatch::query()->where('room_id', $room->id)->lockForUpdate()->firstOrFail();
+            // O motor da partida vem do registro já bloqueado: sem a consulta extra de antes.
+            if (($match->state['engine'] ?? null) === CloudflareMatchGateway::ENGINE) {
+                $remote = true;
+
+                return;
+            }
             if (GameAction::query()->where('game_match_id', $match->id)->where('action_uuid', $validated['action_uuid'])->exists()) {
                 return;
             }
             if ((int) $validated['version'] !== (int) $match->version) {
                 abort(409, 'A partida foi atualizada. Tente a jogada novamente.');
             }
-            $participant = $room->participants()->forActor($actor)->firstOrFail();
             $wasActive = $match->status === 'active';
+            // O motor atualiza ESTE mesmo modelo: reler do banco (refresh) era uma ida e volta à toa.
             $engine->act($match, $participant, $validated['action'], $validated, $validated['action_uuid']);
-            $match->refresh();
             if ($wasActive && $match->status === 'finished') {
                 $this->recordStatistics($room, $match);
             }
         }, 3);
+
+        if ($remote) {
+            return $this->actRemote($room, $participant, $validated);
+        }
 
         app(RoomStateBroadcaster::class)->publish($room->id, 'game_updated');
 
@@ -131,13 +162,18 @@ class GameMatchController extends Controller
         abort_unless($room->hasParticipant($actor), 404);
         $validated = $request->validate(['version' => ['required', 'integer', 'min:1']]);
 
-        if ($this->isRemote($room)) {
-            return back(); // no Durable Object os bots jogam lá dentro
-        }
-
-        $played = DB::transaction(function () use ($room, $engine, $validated): bool {
+        $remote = false;
+        $played = DB::transaction(function () use ($room, $engine, $validated, &$remote): bool {
             $match = GameMatch::query()->where('room_id', $room->id)->lockForUpdate()->first();
-            if (! $match || (int) $validated['version'] !== (int) $match->version) {
+            if (! $match) {
+                return false;
+            }
+            if (($match->state['engine'] ?? null) === CloudflareMatchGateway::ENGINE) {
+                $remote = true; // no Durable Object os bots jogam lá dentro
+
+                return false;
+            }
+            if ((int) $validated['version'] !== (int) $match->version) {
                 return false;
             }
             $wasActive = $match->status === 'active';
@@ -163,15 +199,6 @@ class GameMatchController extends Controller
 
     // ---- Partidas no Durable Object (GAME_ENGINE=cloudflare) -------------------------------
 
-    /** Cada partida fica no motor em que nasceu: trocar a flag não órfã jogos em andamento. */
-    private function isRemote(GameRoom $room): bool
-    {
-        $state = $room->gameMatch()->value('state');
-        $state = is_string($state) ? json_decode($state, true) : $state;
-
-        return ($state['engine'] ?? null) === CloudflareMatchGateway::ENGINE;
-    }
-
     /** Registro leve no Neon: o estado do jogo vive no Durable Object; aqui fica o resultado. */
     private function createRemote(GameRoom $room): GameMatch
     {
@@ -188,10 +215,8 @@ class GameMatchController extends Controller
         return $match;
     }
 
-    private function showRemote(GameRoom $room, $actor): Response
+    private function showRemote(GameRoom $room, GameMatch $match, \App\Models\RoomParticipant $viewer): Response
     {
-        $room->load(['participants.user', 'participants.guest']);
-        $viewer = $room->participants()->forActor($actor)->firstOrFail();
         $remote = app(CloudflareMatchGateway::class)->view($room->id, $viewer->id);
 
         $byId = collect($remote['participants'])->keyBy('id');
@@ -214,7 +239,7 @@ class GameMatchController extends Controller
         return Inertia::render('Games/Show', [
             'room' => ['id' => $room->id],
             'game' => [
-                'id' => $room->gameMatch()->value('id'), 'status' => $game['status'], 'current_seat' => $game['current_seat'],
+                'id' => $match->id, 'status' => $game['status'], 'current_seat' => $game['current_seat'],
                 'turn_number' => $game['turn_number'], 'version' => $game['version'],
                 'winner_participant_id' => $game['winner_participant_id'],
                 'deck_count' => $game['deck_count'], 'discard_count' => $game['discard_count'],
@@ -226,12 +251,12 @@ class GameMatchController extends Controller
             'participants' => $participants,
             'hand' => $remote['hand'],
             'requiredCard' => $remote['requiredCard'],
+            'profileLabels' => ['titles' => config('profiles.titles'), 'badges' => config('profiles.badges')],
         ]);
     }
 
-    private function actRemote(GameRoom $room, $actor, array $validated): RedirectResponse
+    private function actRemote(GameRoom $room, \App\Models\RoomParticipant $participant, array $validated): RedirectResponse
     {
-        $participant = $room->participants()->forActor($actor)->firstOrFail();
         $response = app(CloudflareMatchGateway::class)->act($room->id, $participant->id, $validated);
 
         if ($response->status() === 422) {
@@ -305,6 +330,8 @@ class GameMatchController extends Controller
             'participants' => $participants,
             'hand' => $viewer['hand'],
             'requiredCard' => GameEngine::REQUIRED[$viewer['step']] ?? null,
+            // Rótulos para a prévia de perfil (pequeno e estático: títulos e selos do perfil).
+            'profileLabels' => ['titles' => config('profiles.titles'), 'badges' => config('profiles.badges')],
         ];
     }
 }

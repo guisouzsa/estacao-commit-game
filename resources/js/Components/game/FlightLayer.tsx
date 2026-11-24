@@ -16,7 +16,18 @@ export type Flight = {
     slotKey?: string;
     /** Chamado quando a carta chega ao destino (ex.: mostrar a carta real da mão). */
     onLand?: () => void;
+    /**
+     * Chamado no instante da chegada, ANTES de a carta em voo sair: a carta real aparece por baixo
+     * (fade) e a em voo some depois, sem piscar nem buraco entre as duas.
+     */
+    onArrive?: () => void;
+    /** Anel de destaque (carta que ENTRA na mão). */
+    glow?: boolean;
+    /** Duração do voo, em segundos (padrão 0,42). */
+    duration?: number;
 };
+
+const HANDOFF_MS = 170; // tempo que a carta em voo fica sobre a real enquanto esta aparece
 
 const FROM_W = 96; // largura base da carta em voo
 
@@ -62,6 +73,9 @@ export default function FlightLayer({
                             width: fromW,
                             height: fromH,
                             filter: 'drop-shadow(0 10px 8px #0008)',
+                            boxShadow: flight.glow
+                                ? '0 0 0 3px #b4da33, 0 0 18px #b4da33aa'
+                                : undefined,
                         }}
                         initial={{
                             x: 0,
@@ -78,11 +92,17 @@ export default function FlightLayer({
                             opacity: 1,
                         }}
                         transition={{
-                            duration: 0.42,
+                            duration: flight.duration ?? 0.42,
                             ease: [0.22, 0.9, 0.3, 1],
                         }}
                         onAnimationComplete={() => {
-                            if (!flight.hold) onDone(flight.id);
+                            if (flight.hold) return;
+                            if (flight.onArrive) {
+                                flight.onArrive();
+                                window.setTimeout(() => onDone(flight.id), HANDOFF_MS);
+                            } else {
+                                onDone(flight.id);
+                            }
                         }}
                     >
                         {art ? (

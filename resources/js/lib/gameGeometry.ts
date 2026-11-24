@@ -43,7 +43,7 @@ export type Area = {
     rotate: 0 | 90 | 180 | -90;
 };
 
-// Medidas tiradas da arte original (tabuleiro.png, 1404 x 1404): as quatro áreas brancas.
+// Medidas tiradas da arte original (tabuleiro.webp, 1404 x 1404): as quatro áreas brancas.
 export const AREAS: Record<Side, Area> = {
     0: {
         left: 31.3,
@@ -134,4 +134,19 @@ export const STEP_LABEL: Record<string, string> = {
     block_2: 'bloco 2',
     block_3: 'bloco 3',
     block_4: 'bloco 4',
+};
+
+/**
+ * Fases do percurso (de 18 etapas) usadas nas marcações: Treinamento, os 4 ciclos de
+ * desenvolvimento e o Envio. Cada bolinha acende quando a fase termina (etapa 3, 6, 9, 12, 15, 18).
+ */
+export const PHASE_ENDS = [3, 6, 9, 12, 15, 18] as const;
+export const phasesDone = (step: number) => PHASE_ENDS.filter((end) => step >= end).length;
+
+// Posição (em % do tabuleiro) do indicador de cada lado: fora da área de cartas daquele jogador.
+export const INDICATOR_POSITION: Record<Side, { left: number; top: number }> = {
+    0: { left: 50, top: 93.2 },
+    1: { left: 6.8, top: 50 },
+    2: { left: 50, top: 6.8 },
+    3: { left: 93.2, top: 50 },
 };

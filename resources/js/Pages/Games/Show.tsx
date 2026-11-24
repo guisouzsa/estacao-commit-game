@@ -3,13 +3,16 @@ import FlightLayer, { type Flight } from '@/Components/game/FlightLayer';
 import GameBoard from '@/Components/game/GameBoard';
 import VictoryScreen from '@/Components/game/VictoryScreen';
 import GameLog, { type LogActor } from '@/Components/game/GameLog';
-import PlayerPanel, { type PanelPlayer } from '@/Components/game/PlayerPanel';
+import type { PanelPlayer } from '@/Components/game/PlayerPanel';
+import PlayerPreview, { type PreviewPlayer } from '@/Components/game/PlayerPreview';
+import TurnBanner from '@/Components/game/TurnBanner';
 import TargetPicker from '@/Components/game/TargetPicker';
 import GameCard, { cardLabel } from '@/Components/GameCard';
 import MissionTutorial from '@/Components/MissionTutorial';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { AREAS, sideOf, type Side } from '@/lib/gameGeometry';
 import { startRoomSync } from '@/lib/roomSync';
+import { claimTutorial } from '@/lib/tutorialOnce';
 import { toast } from '@/lib/toast';
 import { Head, Link, router } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -25,6 +28,9 @@ type Player = {
     avatar_seed?: string;
     profile_frame?: string;
     profile_background?: string | null;
+    profile_title?: string | null;
+    primary_badge?: string | null;
+    matches_won?: number | null;
 };
 type Participant = {
     id: number;
@@ -95,12 +101,14 @@ export default function Show({
     participants,
     hand,
     requiredCard,
+    profileLabels = { titles: {}, badges: {} },
 }: {
     room: { id: string };
     game: Game;
     participants: Participant[];
     hand: string[];
     requiredCard?: string | null;
+    profileLabels?: { titles: Record<string, string>; badges: Record<string, string> };
 }) {
     const [selected, setSelected] = useState<number | null>(null);
     const [target, setTarget] = useState('');
@@ -115,8 +123,23 @@ export default function Show({
     const busyRef = useRef(false);
     const staleDuringAction = useRef(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
+    // Prévia de perfil: só guarda QUEM e ONDE (a posição vem do indicador clicado); os dados são os da partida.
+    const [preview, setPreview] = useState<{ id: number; anchor: DOMRect } | null>(null);
+    const closePreview = useCallback(() => setPreview(null), []);
+    const selectPlayer = useCallback((id: number, element: HTMLElement) => {
+        setPreview((current) => (current?.id === id ? null : { id, anchor: element.getBoundingClientRect() }));
+    }, []);
     const [leaving, setLeaving] = useState(false);
     const [tutorial, setTutorial] = useState(false);
+    // "Como jogar" abre sozinho ao ENTRAR numa partida nova. A decisão é por id da partida
+    // (lib/tutorialOnce): re-renderizações, reconexões e atualizações do estado multiplayer
+    // nunca o reabrem; só o botão "Como jogar" abre de novo.
+    useEffect(() => {
+        // Só nas primeiras rodadas: quem entra (ou volta de outro aparelho) numa partida já em andamento
+        // não é interrompido por um tutorial; o botão "Como jogar" continua disponível.
+        if (game.status === 'active' && game.turn_number <= 6 && claimTutorial(game.id)) setTutorial(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [game.id]);
     // Indica (sombra + seta) quando a mão tem mais cartas fora da tela; só ela rola, a mesa não.
     const handRef = useRef<HTMLDivElement>(null);
     const [handHint, setHandHint] = useState({ left: false, right: false });
@@ -259,6 +282,12 @@ export default function Show({
     const viewerBlocks = blocksPlayed(viewer);
     const previousBlocks = useRef<number | null>(null);
     const [blockIncoming, setBlockIncoming] = useState(false);
+    // Bloco que SAIU da mão (voando para o tabuleiro, ainda sem confirmação do servidor): a casa
+    // fica vazia em vez de mostrar a mesma carta duas vezes (na mão e no ar).
+    const [blockOutgoing, setBlockOutgoing] = useState(false);
+    // Anel curto no bloco que ACABOU DE ENTRAR, para a troca ser fácil de ler: o que sai voa para o
+    // tabuleiro, o que entra pousa na mão com destaque.
+    const [blockArrived, setBlockArrived] = useState(false);
     useEffect(() => {
         const before = previousBlocks.current;
         previousBlocks.current = viewerBlocks;
@@ -269,6 +298,7 @@ export default function Show({
             reduced
         )
             return;
+        setBlockOutgoing(false); // o servidor confirmou: o bloco antigo já está no tabuleiro
         setBlockIncoming(true);
         const safety = window.setTimeout(() => setBlockIncoming(false), 1800);
         const frame = requestAnimationFrame(() =>
@@ -282,6 +312,15 @@ export default function Show({
                     to,
                     rotate: 0,
                     hold: false,
+                    glow: true,
+                    duration: 0.5,
+                    // A carta real aparece (fade) por baixo da que está pousando; a de voo sai
+                    // logo depois. Sem piscar, sem buraco, sem carta duplicada.
+                    onArrive: () => {
+                        setBlockIncoming(false);
+                        setBlockArrived(true);
+                        window.setTimeout(() => setBlockArrived(false), 950);
+                    },
                     onLand: () => setBlockIncoming(false),
                 });
             }),
@@ -441,7 +480,10 @@ export default function Show({
                 hold: true,
                 slotKey: advances ? slotKey : undefined,
             });
-            if (id) ownFlights.current.push(id);
+            if (id) {
+                ownFlights.current.push(id);
+                if (action === 'play_block') setBlockOutgoing(true);
+            }
         }
         if (selected !== null && action !== 'play_block') {
             setOptimistic({ index: selected, version: game.version });
@@ -477,6 +519,7 @@ export default function Show({
                     busyRef.current = false;
                     setBusy(false);
                     setOptimistic(null);
+                    setBlockOutgoing(false); // recusada: o bloco volta para a mão
                     // A carta em espera pousa (jogada aceita) ou some (recusada: voltou para a mão).
                     const ids = ownFlights.current;
                     ownFlights.current = [];
@@ -588,23 +631,22 @@ export default function Show({
         [participants, game.winner_participant_id],
     );
 
-    const panelFor = (participant: Participant | undefined, area: string) =>
-        participant ? (
-            <div className={`${area} min-w-0 lg:self-center`}>
-                <PlayerPanel
-                    active={
-                        game.status === 'active' &&
-                        game.current_seat === participant.seat
-                    }
-                    player={toPanel(participant)}
-                    secondsLeft={
-                        game.current_seat === participant.seat
-                            ? secondsLeft
-                            : null
-                    }
-                />
-            </div>
-        ) : null;
+    // Indicadores circulares: um por jogador, junto à área dele no tabuleiro.
+    const indicators = participants.map((participant) => ({
+        player: toPanel(participant),
+        side: sideOf(participant.seat, viewer.seat),
+        active: game.status === 'active' && game.current_seat === participant.seat,
+        you: participant.is_viewer,
+    }));
+    const previewTarget = preview ? participants.find((p) => p.id === preview.id) : undefined;
+    const bannerHint =
+        game.status !== 'active'
+            ? ''
+            : viewer.pending_discard > 0 && isTurn
+              ? 'Descarte o excesso da mão'
+              : isTurn
+                ? turnHint
+                : 'Aguarde a jogada';
 
     return (
         <AuthenticatedLayout immersive>
@@ -619,23 +661,6 @@ export default function Show({
                         <span className="font-mono text-[10px] uppercase text-white/65">
                             Turno {game.turn_number}
                         </span>
-                        {/* Quem está jogando agora (sempre visível, também no celular). */}
-                        {game.status === 'active' && currentPlayer && (
-                            <span
-                                aria-live="polite"
-                                className="inline-flex min-w-0 max-w-[11rem] items-center gap-1.5 rounded-full border border-[#b4da33]/60 bg-[#b4da33]/15 px-2.5 py-1 font-mono text-[10px] font-black uppercase text-[#b4da33] sm:max-w-xs"
-                            >
-                                <span
-                                    aria-hidden="true"
-                                    className="size-2 shrink-0 animate-pulse rounded-full bg-[#b4da33] motion-reduce:animate-none"
-                                />
-                                <span className="truncate">
-                                    {isTurn
-                                        ? 'Você está jogando'
-                                        : `@${currentPlayer.player.username} está jogando`}
-                                </span>
-                            </span>
-                        )}
                     </div>
                     <div className="relative flex items-center gap-2 text-[10px] uppercase">
                         <span
@@ -709,77 +734,42 @@ export default function Show({
                     <GameLog actors={logActors} items={game.history} />
                 </aside>
 
-                <section className="mx-auto w-full max-w-[1280px] px-2 py-2 max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-1 max-lg:py-1 sm:px-4">
-                    <div className="grid grid-cols-3 gap-2 [grid-template-areas:'left_top_right'_'board_board_board'] max-lg:min-h-0 max-lg:flex-1 max-lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[12rem_auto_12rem] lg:justify-center lg:gap-x-1 lg:[grid-template-areas:'._top_.'_'left_board_right']">
-                        {panelFor(left, '[grid-area:left]')}
-                        {panelFor(
-                            top,
-                            '[grid-area:top] relative z-10 mx-auto w-full lg:max-w-xs',
-                        )}
-                        {panelFor(right, '[grid-area:right]')}
+                <section className="mx-auto w-full max-w-[1280px] px-2 py-2 max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-1.5 max-lg:py-1 sm:px-4">
+                    {/* Prioridade visual: 1) tabuleiro e cartas, 2) quem joga agora, 3) indicadores. */}
+                    <div className="relative z-20 shrink-0 lg:pt-10">
+                        <TurnBanner
+                            current={
+                                currentPlayer
+                                    ? { username: currentPlayer.player.username, profile: currentPlayer.player }
+                                    : winner
+                                      ? { username: winner.player.username, profile: winner.player }
+                                      : null
+                            }
+                            finished={game.status !== 'active'}
+                            hint={bannerHint}
+                            isTurn={isTurn}
+                            secondsLeft={game.status === 'active' ? secondsLeft : null}
+                            turnNumber={game.turn_number}
+                        />
+                    </div>
 
-                        <div className="mx-auto w-full [grid-area:board] max-lg:min-h-0 max-lg:[container-type:size] lg:-mt-14 lg:w-[max(18rem,min(calc(100vw_-_29rem),calc(100dvh_-_16.8rem),60rem))]">
-                            {/* Celular: o tabuleiro ocupa o MAIOR quadrado que cabe no espaço livre (sem rolagem). */}
-                            <div className="max-lg:grid max-lg:size-full max-lg:place-items-center">
-                                <div className="w-full max-lg:w-[min(100cqw,100cqh)]">
-                                    <GameBoard
-                                        deckCount={game.deck_count}
-                                        discardCount={game.discard_count}
-                                        freshSlot={freshSlot}
-                                        players={boardPlayersFixed}
-                                    />
-                                </div>
+                    <div className="mx-auto w-full max-lg:min-h-0 max-lg:flex-1 max-lg:[container-type:size] lg:mt-1 lg:w-[max(18rem,min(calc(100vw_-_21rem),calc(100dvh_-_19rem),58rem))]">
+                        {/* Celular: o tabuleiro ocupa o MAIOR quadrado que cabe no espaço livre (sem rolagem). */}
+                        <div className="max-lg:grid max-lg:size-full max-lg:place-items-center">
+                            <div className="w-full max-lg:w-[min(100cqw,100cqh)]">
+                                <GameBoard
+                                    deckCount={game.deck_count}
+                                    discardCount={game.discard_count}
+                                    freshSlot={freshSlot}
+                                    indicators={indicators}
+                                    onSelectPlayer={selectPlayer}
+                                    players={boardPlayersFixed}
+                                />
                             </div>
                         </div>
                     </div>
 
-                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_#0006] max-lg:mt-0 max-lg:shrink-0 sm:p-3 lg:-mt-14 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)_11rem] lg:items-end lg:gap-3">
-                        <div className="flex flex-col gap-1.5 max-lg:hidden">
-                            <PlayerPanel
-                                active={isTurn}
-                                player={toPanel(viewer)}
-                                secondsLeft={isTurn ? secondsLeft : null}
-                                you
-                            />
-                            <p
-                                aria-live="polite"
-                                className="font-mono text-[10px] font-bold uppercase text-white/60"
-                            >
-                                {game.status !== 'active'
-                                    ? 'Partida encerrada'
-                                    : viewer.pending_discard > 0
-                                      ? 'Descarte o excesso da mão'
-                                      : isTurn
-                                        ? turnHint
-                                        : `Vez de @${currentPlayer?.player.username ?? '…'}`}
-                            </p>
-                        </div>
-
-                        <p
-                            aria-live="polite"
-                            className="mb-1 flex items-center justify-between gap-2 font-mono text-[11px] font-bold uppercase lg:hidden"
-                        >
-                            <span
-                                className={
-                                    isTurn ? 'text-[#b4da33]' : 'text-white/65'
-                                }
-                            >
-                                {game.status !== 'active'
-                                    ? 'Partida encerrada'
-                                    : viewer.pending_discard > 0
-                                      ? 'Descarte o excesso'
-                                      : isTurn
-                                        ? turnHint
-                                        : `Vez de @${currentPlayer?.player.username ?? '…'}`}
-                            </span>
-                            <span className="shrink-0 text-white/55">
-                                Etapa {viewer.step}/18
-                                {isTurn && secondsLeft !== null
-                                    ? ` · ${secondsLeft}s`
-                                    : ''}
-                            </span>
-                        </p>
-
+                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_#0006] max-lg:mt-0 max-lg:shrink-0 sm:p-3 lg:mt-1 lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3">
                         <div className="relative min-w-0">
                             <div
                                 className="flex min-h-[9.5rem] items-end gap-0 overflow-x-auto px-1 pb-2 pt-7 [scrollbar-width:none] sm:gap-2 sm:[scrollbar-width:thin] max-sm:[&>*+*]:-ml-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto"
@@ -787,14 +777,32 @@ export default function Show({
                                 ref={handRef}
                             >
                                 {holdsBlock(viewer) && (
-                                    <div
-                                        className={
-                                            blockIncoming ? 'invisible' : ''
-                                        }
+                                    <motion.div
+                                        animate={{
+                                            opacity:
+                                                blockIncoming || blockOutgoing
+                                                    ? 0
+                                                    : 1,
+                                        }}
+                                        className="relative"
+                                        transition={{
+                                            // some na hora (a carta em voo assume); volta suave.
+                                            duration:
+                                                blockIncoming || blockOutgoing
+                                                    ? 0
+                                                    : 0.16,
+                                        }}
                                     >
+                                        {blockArrived && (
+                                            <span
+                                                aria-hidden="true"
+                                                className="block-arrive-ring pointer-events-none absolute inset-0 rounded-xl"
+                                            />
+                                        )}
                                         <GameCard
                                             card={`block_${blocksPlayed(viewer) + 1}`}
                                             dataKey="block"
+                                            dimmed={!isTurn}
                                             onClick={
                                                 isTurn && !busy && blockRequired
                                                     ? () => send('play_block')
@@ -802,7 +810,7 @@ export default function Show({
                                             }
                                             playable={isTurn && blockRequired}
                                         />
-                                    </div>
+                                    </motion.div>
                                 )}
                                 <AnimatePresence
                                     initial={false}
@@ -817,6 +825,7 @@ export default function Show({
                                             <GameCard
                                                 card={card}
                                                 dataKey={key}
+                                                dimmed={!isTurn}
                                                 key={key}
                                                 onClick={
                                                     isTurn && !busy
@@ -939,6 +948,15 @@ export default function Show({
                 show={tutorial}
             />
             <FlightLayer flights={flights} onDone={finishFlight} />
+
+            {preview && previewTarget ? (
+                <PlayerPreview
+                    anchor={preview.anchor}
+                    labels={profileLabels}
+                    onClose={closePreview}
+                    target={previewTarget as unknown as PreviewPlayer}
+                />
+            ) : null}
 
             {game.status === 'finished' && (
                 <VictoryScreen

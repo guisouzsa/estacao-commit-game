@@ -1,4 +1,5 @@
 import InputError from '@/Components/InputError';
+import HowToPlayButton from '@/Components/HowToPlayButton';
 import PasswordVisibilityToggle from '@/Components/PasswordVisibilityToggle';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -134,6 +135,9 @@ export default function Register({
                     Entrar na estação
                 </Link>
             </p>
+            <div className="mt-5">
+                <HowToPlayButton />
+            </div>
         </GuestLayout>
     );
 }

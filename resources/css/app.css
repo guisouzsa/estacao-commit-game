@@ -125,3 +125,6 @@ body { margin: 0; background: var(--ec-ink); font-family: 'Space Grotesk', sans-
 .confetti-piece { position: absolute; top: -20px; width: 9px; height: 14px; animation: confetti linear forwards; }
 @media (prefers-reduced-motion: reduce) { .card-settle, .turn-glow, .impact, .confetti-piece { animation: none !important; } .game-board { --tilt: 8deg !important; } }
 @keyframes fade-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+@keyframes block-arrive { 0% { box-shadow: 0 0 0 0 #b4da33cc; opacity: 1; } 100% { box-shadow: 0 0 0 16px #b4da3300; opacity: 0; } }
+.block-arrive-ring { animation: block-arrive .9s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .block-arrive-ring { animation: none; opacity: 0; } }

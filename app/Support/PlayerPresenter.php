@@ -68,6 +68,10 @@ class PlayerPresenter
             'avatar_zoom' => $user->avatar_zoom ?? 100,
             'profile_frame' => $user->profile_frame ?? 'standard',
             'profile_background' => $user->profile_background,
+            // Prévia de perfil na partida: dados que já vêm na linha do usuário (sem consulta extra).
+            'profile_title' => $user->profile_title,
+            'primary_badge' => $user->primary_badge,
+            'matches_won' => (int) ($user->matches_won ?? 0),
         ];
     }
 

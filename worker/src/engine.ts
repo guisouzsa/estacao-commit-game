@@ -70,13 +70,18 @@ const newId = () => crypto.randomUUID();
 export function createMatch(participants: Participant[], rng: Rng = cryptoRng, now = new Date()): MatchState {
   if (participants.length !== MAX_PARTICIPANTS) throw new RuleError('room', 'A partida exige exatamente quatro participantes.');
 
+  // Regra: TODOS começam com o Git Login (uma cópia por jogador, fora do baralho) + 3 cartas comuns.
   let deck: string[] = [];
-  for (const [card, quantity] of Object.entries(COMMON_COUNTS)) deck = deck.concat(Array(quantity).fill(card));
+  for (const [card, quantity] of Object.entries(COMMON_COUNTS)) {
+    const left = Math.max(0, quantity - (card === 'git_login' ? participants.length : 0));
+    deck = deck.concat(Array(left).fill(card));
+  }
   shuffle(deck, rng);
 
   const players: Record<string, PlayerState> = {};
   for (const p of [...participants].sort((a, b) => a.seat - b.seat)) {
-    players[String(p.id)] = { seat: p.seat, hand: deck.splice(0, 4), path: [], step: 0, blocked: false, pending_discard: 0 };
+    const hand = shuffle(['git_login', ...deck.splice(0, 3)], rng);
+    players[String(p.id)] = { seat: p.seat, hand, path: [], step: 0, blocked: false, pending_discard: 0 };
   }
 
   const state: MatchState = {

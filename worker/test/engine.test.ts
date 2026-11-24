@@ -31,6 +31,8 @@ describe('motor: distribuição', () => {
     const m = createMatch(humans, seeded(1));
     expect(m.deck.length).toBe(78 - 16);
     for (const p of Object.values(m.players)) expect(p.hand).toHaveLength(4);
+    for (const p of Object.values(m.players)) expect(p.hand).toContain('git_login'); // todos começam com o Git Login
+    expect(m.deck).not.toContain('git_login');
     expect(m.current_seat).toBeGreaterThanOrEqual(1);
     expect(m.current_seat).toBeLessThanOrEqual(4);
     expect(m.version).toBe(1);

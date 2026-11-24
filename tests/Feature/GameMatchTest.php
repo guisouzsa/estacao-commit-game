@@ -49,7 +49,9 @@ class GameMatchTest extends TestCase
         foreach ($match->state['players'] as $player) {
             $this->assertCount(4, $player['hand']);
             $this->assertSame(0, $player['step']);
+            $this->assertContains('git_login', $player['hand'], 'todos começam com o Git Login');
         }
+        $this->assertNotContains('git_login', $match->state['deck'], 'as 4 cópias já estão nas mãos');
 
         $this->actingAs($users[0])->get(route('games.show', $room))->assertInertia(fn (Assert $page) => $page
             ->component('Games/Show')

@@ -33,17 +33,22 @@ class GameEngine
             throw ValidationException::withMessages(['room' => 'A partida exige exatamente quatro participantes.']);
         }
 
+        // Regra: TODOS começam com o Git Login. As 4 cópias vão uma para cada jogador e não entram
+        // no baralho; o resto da mão (3 cartas comuns) sai do baralho embaralhado.
         $deck = [];
         foreach (self::COMMON_COUNTS as $card => $quantity) {
-            $deck = [...$deck, ...array_fill(0, $quantity, $card)];
+            $quantity -= $card === 'git_login' ? $participants->count() : 0;
+            $deck = [...$deck, ...array_fill(0, max(0, $quantity), $card)];
         }
         shuffle($deck);
 
         $players = [];
         foreach ($participants as $participant) {
+            $hand = ['git_login', ...array_splice($deck, 0, 3)];
+            shuffle($hand);
             $players[(string) $participant->id] = [
                 'seat' => $participant->seat,
-                'hand' => array_splice($deck, 0, 4),
+                'hand' => $hand,
                 'path' => [],
                 'step' => 0,
                 'blocked' => false,

@@ -138,9 +138,7 @@ export default function Edit({
     appearanceOptions,
     avatarStyles = ['pixel', 'robot', 'terminal'],
     profileExtras = emptyExtras,
-    status,
 }: {
-    status?: string;
     appearanceOptions: Options;
     avatarStyles?: string[];
     profileExtras: ProfileExtrasData;
@@ -419,7 +417,7 @@ export default function Edit({
                                     )}
                                 </div>
 
-                                <div className="grid gap-7 lg:grid-cols-2">
+                                <div className="grid gap-7 lg:grid-cols-2 xl:grid-cols-3">
                                     <div className="space-y-5">
                                         <h3 className="border-b-2 border-[#1d1d1b]/15 pb-2 text-sm font-black uppercase tracking-wide text-[#464498]">
                                             Identidade
@@ -896,213 +894,237 @@ export default function Edit({
                                             </div>
                                         </section>
                                     </div>
-                                </div>
-
-                                <fieldset className="mt-7 border-t-2 border-[#1d1d1b]/15 pt-5">
-                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                        <div>
-                                            <legend className="text-lg font-black">
-                                                Conecte-se comigo
-                                            </legend>
-                                            <p className="mt-1 text-sm text-[#68665f]">
-                                                Até oito links HTTPS no perfil
-                                                público.
-                                            </p>
-                                        </div>
-                                        <button
-                                            className="min-h-11 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase disabled:opacity-40"
-                                            disabled={data.links.length >= 8}
-                                            onClick={() =>
-                                                setData('links', [
-                                                    ...data.links,
-                                                    {
-                                                        platform: 'github',
-                                                        label: 'GitHub',
-                                                        url: 'https://github.com/',
-                                                        is_public: true,
-                                                    },
-                                                ])
-                                            }
-                                            type="button"
-                                        >
-                                            Adicionar link
-                                        </button>
-                                    </div>
-                                    <div className="mt-4 space-y-3">
-                                        {data.links.map((link, index) => (
-                                            <div
-                                                className="grid gap-2 border-2 border-[#1d1d1b] bg-white p-3 md:grid-cols-[130px_1fr_1.5fr_auto]"
-                                                key={`${index}-${link.url}`}
+                                    <fieldset className="mt-7 border-t-2 border-[#1d1d1b]/15 pt-5 lg:col-span-2 xl:col-span-1 xl:mt-0 xl:border-t-0 xl:pt-0">
+                                        <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                                <legend className="text-lg font-black">
+                                                    Conecte-se comigo
+                                                </legend>
+                                                <p className="mt-1 text-sm text-[#68665f]">
+                                                    Até oito links HTTPS no
+                                                    perfil público.
+                                                </p>
+                                            </div>
+                                            <button
+                                                className="min-h-11 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase disabled:opacity-40"
+                                                disabled={
+                                                    data.links.length >= 8
+                                                }
+                                                onClick={() =>
+                                                    setData('links', [
+                                                        ...data.links,
+                                                        {
+                                                            platform: 'github',
+                                                            label: 'GitHub',
+                                                            url: 'https://github.com/',
+                                                            is_public: true,
+                                                        },
+                                                    ])
+                                                }
+                                                type="button"
                                             >
-                                                <select
-                                                    aria-label="Plataforma do link"
-                                                    className="min-h-10 border border-[#1d1d1b] text-sm"
-                                                    onChange={(event) =>
-                                                        updateLink(
-                                                            index,
-                                                            'platform',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    value={link.platform}
+                                                Adicionar link
+                                            </button>
+                                        </div>
+                                        <div className="mt-4 space-y-3">
+                                            {data.links.map((link, index) => (
+                                                <div
+                                                    className="grid gap-2 border-2 border-[#1d1d1b] bg-white p-3"
+                                                    key={`${index}-${link.url}`}
                                                 >
-                                                    <option value="github">
-                                                        GitHub
-                                                    </option>
-                                                    <option value="linkedin">
-                                                        LinkedIn
-                                                    </option>
-                                                    <option value="instagram">
-                                                        Instagram
-                                                    </option>
-                                                    <option value="youtube">
-                                                        YouTube
-                                                    </option>
-                                                    <option value="twitch">
-                                                        Twitch
-                                                    </option>
-                                                    <option value="portfolio">
-                                                        Portfólio
-                                                    </option>
-                                                    <option value="website">
-                                                        Site
-                                                    </option>
-                                                    <option value="other">
-                                                        Outro
-                                                    </option>
-                                                </select>
-                                                <input
-                                                    aria-label="Nome do link"
-                                                    className="min-h-10 border border-[#1d1d1b] px-2 text-sm"
-                                                    maxLength={60}
-                                                    onChange={(event) =>
-                                                        updateLink(
-                                                            index,
-                                                            'label',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    value={link.label}
-                                                />
-                                                <input
-                                                    aria-label="URL HTTPS"
-                                                    className="min-h-10 border border-[#1d1d1b] px-2 text-sm"
-                                                    onChange={(event) =>
-                                                        updateLink(
-                                                            index,
-                                                            'url',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    type="url"
-                                                    value={link.url}
-                                                />
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        aria-label="Mover para cima"
-                                                        className="size-10 border border-[#1d1d1b] disabled:opacity-30"
-                                                        disabled={index === 0}
-                                                        onClick={() => {
-                                                            const links = [
-                                                                ...data.links,
-                                                            ];
-                                                            [
-                                                                links[
-                                                                    index - 1
-                                                                ],
-                                                                links[index],
-                                                            ] = [
-                                                                links[index],
-                                                                links[
-                                                                    index - 1
-                                                                ],
-                                                            ];
-                                                            setData(
-                                                                'links',
-                                                                links,
-                                                            );
-                                                        }}
-                                                        type="button"
-                                                    >
-                                                        ↑
-                                                    </button>
-                                                    <button
-                                                        aria-label="Mover para baixo"
-                                                        className="size-10 border border-[#1d1d1b] disabled:opacity-30"
-                                                        disabled={
-                                                            index ===
-                                                            data.links.length -
-                                                                1
-                                                        }
-                                                        onClick={() => {
-                                                            const links = [
-                                                                ...data.links,
-                                                            ];
-                                                            [
-                                                                links[index],
-                                                                links[
-                                                                    index + 1
-                                                                ],
-                                                            ] = [
-                                                                links[
-                                                                    index + 1
-                                                                ],
-                                                                links[index],
-                                                            ];
-                                                            setData(
-                                                                'links',
-                                                                links,
-                                                            );
-                                                        }}
-                                                        type="button"
-                                                    >
-                                                        ↓
-                                                    </button>
-                                                    <button
-                                                        aria-label="Remover link"
-                                                        className="size-10 border border-[#d01600] font-bold text-[#d01600]"
-                                                        onClick={() =>
-                                                            setData(
-                                                                'links',
-                                                                data.links.filter(
-                                                                    (_, item) =>
-                                                                        item !==
-                                                                        index,
-                                                                ),
-                                                            )
-                                                        }
-                                                        type="button"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                                <label className="flex min-h-10 items-center gap-2 text-sm md:col-span-4">
-                                                    <input
-                                                        checked={link.is_public}
+                                                    <select
+                                                        aria-label="Plataforma do link"
+                                                        className="min-h-10 border border-[#1d1d1b] text-sm"
                                                         onChange={(event) =>
                                                             updateLink(
                                                                 index,
-                                                                'is_public',
+                                                                'platform',
                                                                 event.target
-                                                                    .checked,
+                                                                    .value,
                                                             )
                                                         }
-                                                        type="checkbox"
+                                                        value={link.platform}
+                                                    >
+                                                        <option value="github">
+                                                            GitHub
+                                                        </option>
+                                                        <option value="linkedin">
+                                                            LinkedIn
+                                                        </option>
+                                                        <option value="instagram">
+                                                            Instagram
+                                                        </option>
+                                                        <option value="youtube">
+                                                            YouTube
+                                                        </option>
+                                                        <option value="twitch">
+                                                            Twitch
+                                                        </option>
+                                                        <option value="portfolio">
+                                                            Portfólio
+                                                        </option>
+                                                        <option value="website">
+                                                            Site
+                                                        </option>
+                                                        <option value="other">
+                                                            Outro
+                                                        </option>
+                                                    </select>
+                                                    <input
+                                                        aria-label="Nome do link"
+                                                        className="min-h-10 border border-[#1d1d1b] px-2 text-sm"
+                                                        maxLength={60}
+                                                        onChange={(event) =>
+                                                            updateLink(
+                                                                index,
+                                                                'label',
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        value={link.label}
                                                     />
-                                                    Exibir no perfil público
-                                                </label>
-                                                <InputError
-                                                    className="md:col-span-4"
-                                                    message={
-                                                        errors[
-                                                            `links.${index}.url`
-                                                        ]
-                                                    }
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </fieldset>
+                                                    <input
+                                                        aria-label="URL HTTPS"
+                                                        className="min-h-10 border border-[#1d1d1b] px-2 text-sm"
+                                                        onChange={(event) =>
+                                                            updateLink(
+                                                                index,
+                                                                'url',
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        type="url"
+                                                        value={link.url}
+                                                    />
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            aria-label="Mover para cima"
+                                                            className="size-10 border border-[#1d1d1b] disabled:opacity-30"
+                                                            disabled={
+                                                                index === 0
+                                                            }
+                                                            onClick={() => {
+                                                                const links = [
+                                                                    ...data.links,
+                                                                ];
+                                                                [
+                                                                    links[
+                                                                        index -
+                                                                            1
+                                                                    ],
+                                                                    links[
+                                                                        index
+                                                                    ],
+                                                                ] = [
+                                                                    links[
+                                                                        index
+                                                                    ],
+                                                                    links[
+                                                                        index -
+                                                                            1
+                                                                    ],
+                                                                ];
+                                                                setData(
+                                                                    'links',
+                                                                    links,
+                                                                );
+                                                            }}
+                                                            type="button"
+                                                        >
+                                                            ↑
+                                                        </button>
+                                                        <button
+                                                            aria-label="Mover para baixo"
+                                                            className="size-10 border border-[#1d1d1b] disabled:opacity-30"
+                                                            disabled={
+                                                                index ===
+                                                                data.links
+                                                                    .length -
+                                                                    1
+                                                            }
+                                                            onClick={() => {
+                                                                const links = [
+                                                                    ...data.links,
+                                                                ];
+                                                                [
+                                                                    links[
+                                                                        index
+                                                                    ],
+                                                                    links[
+                                                                        index +
+                                                                            1
+                                                                    ],
+                                                                ] = [
+                                                                    links[
+                                                                        index +
+                                                                            1
+                                                                    ],
+                                                                    links[
+                                                                        index
+                                                                    ],
+                                                                ];
+                                                                setData(
+                                                                    'links',
+                                                                    links,
+                                                                );
+                                                            }}
+                                                            type="button"
+                                                        >
+                                                            ↓
+                                                        </button>
+                                                        <button
+                                                            aria-label="Remover link"
+                                                            className="size-10 border border-[#d01600] font-bold text-[#d01600]"
+                                                            onClick={() =>
+                                                                setData(
+                                                                    'links',
+                                                                    data.links.filter(
+                                                                        (
+                                                                            _,
+                                                                            item,
+                                                                        ) =>
+                                                                            item !==
+                                                                            index,
+                                                                    ),
+                                                                )
+                                                            }
+                                                            type="button"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                    <label className="flex min-h-10 items-center gap-2 text-sm">
+                                                        <input
+                                                            checked={
+                                                                link.is_public
+                                                            }
+                                                            onChange={(event) =>
+                                                                updateLink(
+                                                                    index,
+                                                                    'is_public',
+                                                                    event.target
+                                                                        .checked,
+                                                                )
+                                                            }
+                                                            type="checkbox"
+                                                        />
+                                                        Exibir no perfil público
+                                                    </label>
+                                                    <InputError
+                                                        className=""
+                                                        message={
+                                                            errors[
+                                                                `links.${index}.url`
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </fieldset>
+                                </div>
                             </section>
                         )}
                         {editing && (

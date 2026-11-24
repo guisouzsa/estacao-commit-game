@@ -22,8 +22,6 @@ class RecommendedPlayers
 {
     public const INITIAL = 5;
 
-    public const MORE = 10;
-
     /** Quantos ids o sorteio considera (evita ordenar a tabela inteira nem carregar fotos à toa). */
     private const POOL = 120;
 
@@ -44,19 +42,6 @@ class RecommendedPlayers
         $this->remember($others->pluck('id')->all());
 
         return $gui ? $others->prepend($gui)->values() : $others;
-    }
-
-    /**
-     * Mais jogadores para "Ver mais", sem repetir os já exibidos.
-     *
-     * @param  list<string>  $shownUsernames  nomes de usuário que já estão na tela
-     * @return Collection<int, User>
-     */
-    public function more(?Authenticatable $actor, array $shownUsernames): Collection
-    {
-        $gui = $this->gui($actor);
-
-        return $this->pick($actor, self::MORE, $gui ? [$gui->id] : [], array_map('strtolower', $shownUsernames));
     }
 
     /** @return array<string, mixed> */

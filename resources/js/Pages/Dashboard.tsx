@@ -28,10 +28,19 @@ type Notice = {
 };
 
 const TITLE_LABEL: Record<string, string> = {
-    explorer: 'Explorador', builder: 'Montador', collaborator: 'Colaborador', 'coffee-developer': 'Dev Cafeteiro',
-    'git-master': 'Mestre do Git', 'docker-captain': 'Capitão Docker', 'bug-hunter': 'Caçador de Bugs',
-    'code-guardian': 'Guardião do Código', 'api-architect': 'Arquiteto de APIs', 'container-tamer': 'Domador de Containers',
-    'terminal-wizard': 'Mago do Terminal', 'open-source-hero': 'Herói Open Source', 'full-stack-alchemist': 'Alquimista Full Stack',
+    explorer: 'Explorador',
+    builder: 'Montador',
+    collaborator: 'Colaborador',
+    'coffee-developer': 'Dev Cafeteiro',
+    'git-master': 'Mestre do Git',
+    'docker-captain': 'Capitão Docker',
+    'bug-hunter': 'Caçador de Bugs',
+    'code-guardian': 'Guardião do Código',
+    'api-architect': 'Arquiteto de APIs',
+    'container-tamer': 'Domador de Containers',
+    'terminal-wizard': 'Mago do Terminal',
+    'open-source-hero': 'Herói Open Source',
+    'full-stack-alchemist': 'Alquimista Full Stack',
 };
 const titleLabel = (key: string) => TITLE_LABEL[key] ?? key;
 
@@ -40,42 +49,19 @@ export default function Dashboard({
     notices = [],
     inviteUrl,
     recommendedPlayers = [],
-    moreRecommendedPlayers,
     botPreviews = [],
 }: {
     rooms: Room[];
     notices?: Notice[];
     inviteUrl?: string;
     recommendedPlayers: PlayerSummary[];
-    moreRecommendedPlayers?: PlayerSummary[];
     botPreviews: BotPreview[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const channel = auth.channel;
-    const [invite, setInvite] = useState('');
     const [createOpen, setCreateOpen] = useState(false);
-    const [joining, setJoining] = useState(false);
     const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
     const [deleting, setDeleting] = useState(false);
-    const [expanded, setExpanded] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
-
-    // Lista de recomendados: os 5 iniciais (gui primeiro) e, sob demanda, mais jogadores. A lista
-    // extra só é pedida ao servidor quando a pessoa clica, sem repetir quem já está na tela.
-    const visibleRecommended = expanded
-        ? [...recommendedPlayers, ...(moreRecommendedPlayers ?? [])]
-        : recommendedPlayers;
-    const showMoreRecommended = () => {
-        if (moreRecommendedPlayers) return setExpanded(true);
-        setLoadingMore(true);
-        router.reload({
-            only: ['moreRecommendedPlayers'],
-            data: { shown: recommendedPlayers.map((player) => player.username) },
-            onSuccess: () => setExpanded(true),
-            onFinish: () => setLoadingMore(false),
-        });
-    };
-
     // A Dashboard NÃO usa WebSocket: no Render Free o Apache atende só 2 requisições ao mesmo tempo
     // e cada WebSocket aberto ocupa uma delas por inteiro (uma pessoa parada aqui travaria o site
     // para os outros). Os avisos chegam por consulta leve a cada 30 s, só com a aba visível, e
@@ -283,22 +269,34 @@ export default function Dashboard({
                                 página.
                             </p>
                             <ul className="mt-4 grid gap-2 sm:max-w-xl">
-                                {visibleRecommended.map((player, index) => (
+                                {recommendedPlayers.map((player, index) => (
                                     <li key={player.username}>
                                         <Link
                                             className="group flex items-center gap-3 border-2 border-[#1d1d1b] bg-white p-2.5 shadow-[3px_3px_0_#1d1d1b] transition hover:-translate-y-0.5 hover:bg-[#b4da33]"
-                                            href={route('profile.public', player.username)}
+                                            href={route(
+                                                'profile.public',
+                                                player.username,
+                                            )}
                                         >
-                                            <PlayerAvatar profile={player} size="sm" />
+                                            <PlayerAvatar
+                                                profile={player}
+                                                size="sm"
+                                            />
                                             <span className="min-w-0 flex-1">
-                                                <strong className="block truncate">@{player.username}</strong>
+                                                <strong className="block truncate">
+                                                    @{player.username}
+                                                </strong>
                                                 {player.profile_title ? (
                                                     <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">
-                                                        {titleLabel(player.profile_title)}
+                                                        {titleLabel(
+                                                            player.profile_title,
+                                                        )}
                                                     </span>
                                                 ) : null}
                                             </span>
-                                            {index === 0 && player.username.toLowerCase() === 'gui' ? (
+                                            {index === 0 &&
+                                            player.username.toLowerCase() ===
+                                                'gui' ? (
                                                 <span className="shrink-0 border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase group-hover:bg-white">
                                                     Criador
                                                 </span>
@@ -307,19 +305,13 @@ export default function Dashboard({
                                     </li>
                                 ))}
                             </ul>
-                            {!expanded && (
-                                <button
-                                    className="mt-3 inline-flex min-h-11 items-center gap-2 border-2 border-[#1d1d1b] bg-white px-4 font-mono text-xs font-black uppercase shadow-[3px_3px_0_#464498] transition enabled:hover:-translate-y-0.5 disabled:opacity-60"
-                                    disabled={loadingMore}
-                                    onClick={showMoreRecommended}
-                                    type="button"
-                                >
-                                    {loadingMore ? (
-                                        <span aria-hidden="true" className="size-3.5 animate-spin rounded-full border-2 border-[#464498] border-t-transparent" />
-                                    ) : null}
-                                    {loadingMore ? 'Carregando…' : 'Ver mais jogadores recomendados'}
-                                </button>
-                            )}
+                            <Link
+                                className="mt-3 inline-flex min-h-11 items-center gap-2 border-2 border-[#1d1d1b] bg-[#464498] px-4 font-mono text-xs font-black uppercase text-white shadow-[3px_3px_0_#f481c6] transition hover:-translate-y-0.5 hover:bg-[#343273]"
+                                href={route('players.recommended')}
+                            >
+                                Ver mais recomendados
+                                <span aria-hidden="true">→</span>
+                            </Link>
                         </article>
                     </section>
                 </div>

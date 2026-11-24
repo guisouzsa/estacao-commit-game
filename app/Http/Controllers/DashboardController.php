@@ -13,7 +13,6 @@ use App\Support\Bots;
 use App\Support\PlayerPresenter;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -68,11 +67,6 @@ class DashboardController extends Controller
             // Gui sempre primeiro; os demais por sorteio sem repetição e com rodízio entre
             // recarregamentos (ver RecommendedPlayers).
             'recommendedPlayers' => $recommended->initial($actor)->map(fn (User $user) => RecommendedPlayers::present($user))->values(),
-            // "Ver mais jogadores recomendados": só calculado quando a pessoa pede (reload parcial),
-            // sem repetir quem já está na tela.
-            'moreRecommendedPlayers' => Inertia::optional(fn () => $recommended
-                ->more($actor, array_slice(array_filter((array) request()->input('shown', []), 'is_string'), 0, 40))
-                ->map(fn (User $user) => RecommendedPlayers::present($user))->values()),
         ]);
     }
 

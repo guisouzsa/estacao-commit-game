@@ -11,9 +11,12 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlayerSearchController;
 use App\Http\Controllers\ProfileAppearanceController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PublicProfileController;
 use App\Http\Controllers\ProfileImageController;
+use App\Http\Controllers\PublicProfileController;
 use App\Http\Controllers\RankingController;
+use App\Http\Controllers\RealtimeCallbackController;
+use App\Http\Controllers\RealtimeTokenController;
+use App\Http\Controllers\RecommendedPlayerController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -29,12 +32,13 @@ Route::get('/jogar', [GuestPlayController::class, 'create'])->name('guest.create
 Route::get('/jogar/nome', [GuestPlayController::class, 'availability'])->middleware('throttle:30,1')->name('guest.name');
 Route::post('/jogar', [GuestPlayController::class, 'store'])->middleware('throttle:6,1')->name('guest.store');
 Route::post('/jogar/sair', [GuestPlayController::class, 'destroy'])->middleware('auth:visitor')->name('guest.leave');
-Route::post('/realtime/callback', \App\Http\Controllers\RealtimeCallbackController::class)->middleware('throttle:120,1')->name('realtime.callback');
+Route::post('/realtime/callback', RealtimeCallbackController::class)->middleware('throttle:120,1')->name('realtime.callback');
 Route::get('/convites/{token}', [GameRoomController::class, 'open'])->where('token', '[A-Za-z2-9]{5}')->middleware('throttle:30,1')->name('invites.open');
 
 // Quem joga: conta permanente (guard web) OU visitante (guard visitor).
 Route::middleware('auth:web,visitor')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/jogadores/recomendados', RecommendedPlayerController::class)->name('players.recommended');
     Route::post('/salas', [GameRoomController::class, 'store'])->middleware('throttle:10,1')->name('rooms.store');
     Route::get('/salas/{room}', [GameRoomController::class, 'show'])->whereUuid('room')->name('rooms.show');
     Route::post('/salas/{room}/convite', [GameRoomController::class, 'invite'])->whereUuid('room')->middleware('throttle:10,1')->name('rooms.invite');
@@ -45,7 +49,7 @@ Route::middleware('auth:web,visitor')->group(function () {
     Route::get('/salas/{room}/partida', [GameMatchController::class, 'show'])->whereUuid('room')->name('games.show');
     Route::post('/salas/{room}/partida/acoes', [GameMatchController::class, 'action'])->whereUuid('room')->middleware('throttle:60,1')->name('games.action');
     Route::post('/salas/{room}/partida/bots', [GameMatchController::class, 'botStep'])->whereUuid('room')->middleware('throttle:120,1')->name('games.bots');
-    Route::post('/realtime/token', \App\Http\Controllers\RealtimeTokenController::class)->middleware('throttle:30,1')->name('realtime.token');
+    Route::post('/realtime/token', RealtimeTokenController::class)->middleware('throttle:30,1')->name('realtime.token');
     Route::post('/convites/{token}', [GameRoomController::class, 'join'])->where('token', '[A-Za-z2-9]{5}')->middleware('throttle:10,1')->name('rooms.join');
 });
 

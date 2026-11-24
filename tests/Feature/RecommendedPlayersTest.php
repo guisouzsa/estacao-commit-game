@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Follow;
+use App\Models\GuestProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** Jogadores recomendados: gui primeiro, sorteio sem repetição, rodízio e "ver mais". */
+/** Jogadores recomendados: prévia rotativa na Dashboard e lista completa em página própria. */
 class RecommendedPlayersTest extends TestCase
 {
     use RefreshDatabase;
@@ -99,40 +101,45 @@ class RecommendedPlayersTest extends TestCase
         $this->assertNotContains('gui', $names->all());
     }
 
-    public function test_see_more_returns_new_players_without_repeating_the_ones_on_screen(): void
+    public function test_recommended_players_have_their_own_paginated_page(): void
     {
         User::factory()->create(['username' => 'gui']);
         User::factory()->count(25)->create();
         $viewer = User::factory()->create();
 
-        $shown = $this->names($viewer)->all();
-
-        $response = $this->actingAs($viewer)->withHeaders([
-            'X-Inertia' => 'true', 'X-Inertia-Partial-Component' => 'Dashboard', 'X-Inertia-Partial-Data' => 'moreRecommendedPlayers',
-            'X-Inertia-Version' => \Inertia\Inertia::getVersion(),
-        ])->get(route('dashboard', ['shown' => $shown]));
-        $more = collect($response->json('props.moreRecommendedPlayers'))->pluck('username');
-
-        $this->assertCount(10, $more);
-        $this->assertEmpty($more->intersect($shown)->all(), 'não repete quem já está na tela');
-        $this->assertNotContains('gui', $more->all());
-        $this->assertSame($more->unique()->count(), $more->count());
+        $this->actingAs($viewer)->get(route('players.recommended'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Players/Recommended')
+                ->has('people.data', 20)
+                ->where('people.data.0.username', 'gui')
+                ->where('people.current_page', 1)
+                ->where('people.last_page', 2)
+                ->where('people.total', 26));
     }
 
-    public function test_the_extra_list_is_not_computed_on_a_normal_page_load(): void
+    public function test_recommended_page_excludes_the_viewer_and_marks_followed_people(): void
     {
-        User::factory()->count(12)->create();
         $viewer = User::factory()->create();
+        $followed = User::factory()->create(['username' => 'ana']);
+        Follow::query()->create([
+            'follower_id' => $viewer->id,
+            'followed_id' => $followed->id,
+        ]);
 
-        $this->actingAs($viewer)->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
-            ->has('recommendedPlayers')->missing('moreRecommendedPlayers'));
+        $response = $this->actingAs($viewer)->get(route('players.recommended'));
+        $people = collect($response->original->getData()['page']['props']['people']['data']);
+
+        $this->assertNotContains($viewer->username, $people->pluck('username')->all());
+        $this->assertTrue($people->firstWhere('username', 'ana')['is_following']);
+        $this->assertTrue($people->firstWhere('username', 'ana')['can_follow']);
     }
 
     public function test_visitors_also_get_recommendations(): void
     {
         User::factory()->create(['username' => 'gui']);
         User::factory()->count(6)->create();
-        $guest = \App\Models\GuestProfile::create([
+        $guest = GuestProfile::create([
             'display_name' => 'Visita', 'name_key' => 'visita', 'avatar_style' => 'pixel', 'avatar_seed' => 'abc123xyz',
             'token_hash' => hash('sha256', 'x'), 'last_seen_at' => now(), 'expires_at' => now()->addHours(6),
         ]);
@@ -142,5 +149,20 @@ class RecommendedPlayersTest extends TestCase
         $names = collect($response->original->getData()['page']['props']['recommendedPlayers'])->pluck('username');
         $this->assertSame('gui', $names[0]);
         $this->assertCount(5, $names);
+    }
+
+    public function test_visitors_can_open_the_recommended_page_without_follow_actions(): void
+    {
+        User::factory()->count(3)->create();
+        $guest = GuestProfile::create([
+            'display_name' => 'Visita', 'name_key' => 'visita', 'avatar_style' => 'pixel', 'avatar_seed' => 'abc123xyz',
+            'token_hash' => hash('sha256', 'x'), 'last_seen_at' => now(), 'expires_at' => now()->addHours(6),
+        ]);
+
+        $response = $this->actingAs($guest, 'visitor')->get(route('players.recommended'));
+        $people = collect($response->original->getData()['page']['props']['people']['data']);
+
+        $response->assertOk()->assertInertia(fn (Assert $page) => $page->component('Players/Recommended'));
+        $this->assertTrue($people->every(fn (array $person) => $person['can_follow'] === false));
     }
 }

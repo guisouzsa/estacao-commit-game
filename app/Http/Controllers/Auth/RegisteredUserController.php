@@ -76,6 +76,13 @@ class RegisteredUserController extends Controller
             'username.unique' => 'Este nome de usuário já está sendo utilizado. Escolha outro.',
         ]);
 
+        // Verificação ligada: nada é criado ainda. Os dados esperam na sessão até o código ser confirmado.
+        if (EmailVerificationCode::enabled()) {
+            app(EmailVerificationCode::class)->start($request, $validated['username'], $validated['email'], $validated['password']);
+
+            return redirect()->route('verification.code');
+        }
+
         try {
             $user = User::create([
                 'username' => strtolower($validated['username']),
@@ -106,12 +113,6 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         Auth::login($user);
-
-        if (EmailVerificationCode::enabled()) {
-            app(EmailVerificationCode::class)->issue($user);
-
-            return redirect()->route('verification.code');
-        }
 
         return redirect(route('dashboard', absolute: false));
     }

@@ -12,6 +12,10 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    Route::get('verificar-email', [EmailCodeController::class, 'show'])->name('verification.code');
+    Route::post('verificar-email', [EmailCodeController::class, 'store'])->middleware('throttle:10,1')->name('verification.verify');
+    Route::post('verificar-email/reenviar', [EmailCodeController::class, 'resend'])->middleware('throttle:5,1')->name('verification.resend');
+
     Route::get('auth/google', [GoogleAuthController::class, 'redirect'])
         ->name('google.redirect');
 
@@ -54,10 +58,6 @@ Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])
     ->name('google.callback');
 
 Route::middleware('auth')->group(function () {
-    Route::get('verificar-email', [EmailCodeController::class, 'show'])->name('verification.code');
-    Route::post('verificar-email', [EmailCodeController::class, 'store'])->middleware('throttle:10,1')->name('verification.verify');
-    Route::post('verificar-email/reenviar', [EmailCodeController::class, 'resend'])->middleware('throttle:5,1')->name('verification.resend');
-
     Route::post('profile/google/link', [GoogleAuthController::class, 'link'])
         ->name('google.link');
 

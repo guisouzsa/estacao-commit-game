@@ -17,11 +17,19 @@ class EmailCodeMail extends Mailable
 
     public function content(): Content
     {
-        $html = '<div style="font-family:Arial,sans-serif;max-width:420px">'
-            .'<h2>Estação Commit</h2><p>Use este código para confirmar seu e-mail:</p>'
-            .'<p style="font-size:32px;font-weight:bold;letter-spacing:6px">'.e($this->code).'</p>'
-            .'<p>Ele vale por '.$this->minutes.' minutos. Se não foi você, ignore esta mensagem.</p></div>';
+        $base = rtrim((string) config('app.url'), '/');
 
-        return new Content(htmlString: $html);
+        return new Content(
+            view: 'emails.code',
+            text: 'emails.code-text',
+            with: [
+                'code' => $this->code,
+                'minutes' => $this->minutes,
+                // Clientes de e-mail não carregam WebP/SVG de forma confiável: PNG com URL absoluta.
+                'logo' => $base.'/images/estacao-commit/mascots/foguete-gato.png',
+                'url' => $base,
+                'host' => parse_url($base, PHP_URL_HOST) ?: $base,
+            ],
+        );
     }
 }

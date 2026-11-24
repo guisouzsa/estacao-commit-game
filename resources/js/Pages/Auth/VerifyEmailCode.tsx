@@ -74,8 +74,8 @@ export default function VerifyEmailCode({
                 >
                     {wait > 0 ? `Reenviar código em ${wait}s` : 'Reenviar código'}
                 </button>
-                <Link href={route('logout')} method="post" as="button" className="text-ink/55 hover:underline">
-                    Sair
+                <Link href={route('register')} className="text-ink/55 hover:underline">
+                    Usar outro e-mail
                 </Link>
             </div>
         </GuestLayout>

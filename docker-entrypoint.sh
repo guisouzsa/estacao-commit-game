@@ -29,6 +29,15 @@ mkdir -p \
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R ug+rwX storage bootstrap/cache
 
+# Configuração, eventos e views compilados UMA vez no boot: sem isso, cada requisição lê e
+# interpreta dezenas de arquivos de configuração (a CPU do plano gratuito é pouca).
+# Nunca derruba a inicialização: se falhar, o app segue sem cache, como antes.
+# (route:cache não é usado porque routes/web.php tem rotas com closure.)
+php artisan config:cache || echo "config:cache falhou; seguindo sem cache." >&2
+php artisan event:cache || echo "event:cache falhou; seguindo sem cache." >&2
+php artisan view:cache || echo "view:cache falhou; seguindo sem cache." >&2
+chown -R www-data:www-data storage bootstrap/cache
+
 if [ ! -L public/storage ]; then
     php artisan storage:link
 fi

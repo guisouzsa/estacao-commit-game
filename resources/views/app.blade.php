@@ -12,7 +12,13 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
+        {{-- Fontes: o CSS delas NÃO bloqueia mais a renderização (antes um @import no CSS principal
+             encadeava mais um download antes de qualquer pintura). Com display=swap o texto aparece
+             na fonte do sistema e troca quando a fonte chega. --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap"></noscript>
         <!-- Scripts -->
         @routes
         @viteReactRefresh

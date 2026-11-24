@@ -94,8 +94,12 @@ return [
             // Prepares emulados: o pooler do Neon (PgBouncer) aborta transações quando o PDO
             // nativo envia DEALLOCATE (25P02). Booleanos são tratados em
             // App\Database\PooledPostgresConnection (1/0 seria recusado em colunas boolean).
+            // DB_PERSISTENT=true reaproveita a conexão com o Neon entre requisições do mesmo
+            // processo Apache (evita TCP + TLS + autenticação a cada página). Desligado por
+            // padrão: ligue no Render e meça antes de manter.
             'options' => extension_loaded('pdo_pgsql') ? [
                 PDO::ATTR_EMULATE_PREPARES => true,
+                PDO::ATTR_PERSISTENT => (bool) env('DB_PERSISTENT', false),
             ] : [],
         ],
 

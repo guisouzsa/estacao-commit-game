@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Rules\EmailDomainAcceptsMail;
 use App\Rules\PlayerNameAllowed;
+use App\Services\EmailVerificationCode;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -105,6 +106,12 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         Auth::login($user);
+
+        if (EmailVerificationCode::enabled()) {
+            app(EmailVerificationCode::class)->issue($user);
+
+            return redirect()->route('verification.code');
+        }
 
         return redirect(route('dashboard', absolute: false));
     }

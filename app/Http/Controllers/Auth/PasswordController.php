@@ -20,9 +20,13 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
+        // forceFill: remember_token não é preenchível em massa de propósito.
+        $request->user()->forceFill([
             'password' => Hash::make($validated['password']),
-        ]);
+            'remember_token' => \Illuminate\Support\Str::random(60), // cookies "lembrar-me" antigos morrem
+        ])->save();
+        // Sessões abertas em outros aparelhos (e cookies "lembrar-me") deixam de valer.
+        \Illuminate\Support\Facades\Auth::logoutOtherDevices($validated['password']);
 
         return back();
     }

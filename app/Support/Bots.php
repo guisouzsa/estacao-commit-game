@@ -20,6 +20,26 @@ class Bots
     }
 
     /**
+     * Sorteio com RODÍZIO: bots que acabaram de aparecer para esta pessoa só voltam depois dos que ainda
+     * não apareceram. Sem repetição dentro da lista e sem depender da ordem do catálogo (que é embaralhada).
+     *
+     * @return list<string> chaves dos bots
+     */
+    public static function pickRotating(int $count, array $exclude = []): array
+    {
+        $recent = (array) session('bots.recent', []);
+        $available = array_values(array_diff(array_keys(self::all()), $exclude));
+        shuffle($available);
+        $fresh = array_values(array_diff($available, $recent));
+        $stale = array_values(array_filter($recent, fn ($key) => in_array($key, $available, true)));
+        $chosen = array_slice([...$fresh, ...$stale], 0, max(0, $count));
+
+        session(['bots.recent' => array_slice([...array_values(array_diff($recent, $chosen)), ...$chosen], -20)]);
+
+        return $chosen;
+    }
+
+    /**
      * Sorteia bots distintos (nomes nunca se repetem na mesma sala).
      *
      * @param  list<string>  $exclude  chaves que não podem ser sorteadas

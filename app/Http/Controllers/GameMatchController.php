@@ -185,6 +185,13 @@ class GameMatchController extends Controller
             return $played;
         }, 3);
 
+        // Partida no Durable Object: o bot joga lá (um passo por pedido), como o motor PHP aqui.
+        if ($remote) {
+            app(CloudflareMatchGateway::class)->botStep($room->id, (int) $validated['version']);
+
+            return back();
+        }
+
         if ($played) {
             app(RoomStateBroadcaster::class)->publish($room->id, 'game_updated');
         }

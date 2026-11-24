@@ -62,6 +62,9 @@ class RealtimeCallbackController extends Controller
             if (! $room) {
                 return;
             }
+            // O vencedor precisa ser um participante DESTA sala (nunca um id de outra partida).
+            $winner = $event['winner_participant_id'] ?? null;
+            abort_unless($winner === null || $room->participants()->whereKey($winner)->exists(), 422);
             $match->forceFill([
                 'status' => 'finished',
                 'winner_participant_id' => $event['winner_participant_id'] ?? null,

@@ -104,6 +104,9 @@ class PlayerPresenter
             'avatar_style' => $bot['style'] ?? 'robot',
             'avatar_seed' => $botKey,
             'profile_frame' => 'terminal',
+            'profile_title' => $bot['title'] ?? null,
+            'primary_badge' => $bot['badge'] ?? null,
+            'matches_won' => null, // bots não têm vitórias nem ranking
         ];
     }
 

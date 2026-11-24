@@ -9,6 +9,8 @@ export type PlayerSummary = {
     avatar?: string | null;
     profile_frame?: string | null;
     profile_title?: string | null;
+    /** Bot do catálogo (sem perfil público, sem seguir). */
+    is_bot?: boolean;
 };
 
 export default function PlayerSearch() {

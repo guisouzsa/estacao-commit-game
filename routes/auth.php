@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\EmailCodeController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\GoogleUsernameController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -53,6 +54,10 @@ Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])
     ->name('google.callback');
 
 Route::middleware('auth')->group(function () {
+    Route::get('verificar-email', [EmailCodeController::class, 'show'])->name('verification.code');
+    Route::post('verificar-email', [EmailCodeController::class, 'store'])->middleware('throttle:10,1')->name('verification.verify');
+    Route::post('verificar-email/reenviar', [EmailCodeController::class, 'resend'])->middleware('throttle:5,1')->name('verification.resend');
+
     Route::post('profile/google/link', [GoogleAuthController::class, 'link'])
         ->name('google.link');
 

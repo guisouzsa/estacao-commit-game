@@ -36,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
         // Guard "visitor": quem é o visitante vem sempre do cookie HttpOnly.
         Auth::viaRequest('visitor-token', fn (Request $request) => app(GuestIdentity::class)->resolve($request));
 
+        // Envio de e-mail por API (Brevo): `MAIL_MAILER=brevo` + BREVO_API_KEY.
+        \Illuminate\Support\Facades\Mail::extend('brevo', fn () => new \App\Mail\BrevoTransport((string) config('services.brevo.key')));
+
         Gate::define('manage-developer-badges', static function (User $user): bool {
             return $user->email_verified_at !== null
                 && in_array(strtolower($user->email), config('profiles.admin_emails'), true);

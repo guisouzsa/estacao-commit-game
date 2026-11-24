@@ -56,8 +56,7 @@ class DashboardController extends Controller
             'rooms' => $rooms,
             // Identidades reais do catálogo usadas apenas na prévia. A criação
             // continua sorteando e validando bots exclusivamente no servidor.
-            'botPreviews' => collect(array_keys(Bots::all()))
-                ->take((int) config('bots.max_per_room'))
+            'botPreviews' => collect(Bots::pickRotating((int) config('bots.max_per_room')))
                 ->map(fn (string $key) => PlayerPresenter::bot($key))
                 ->values(),
             // Avisos persistidos (ex.: sala excluída). Ao serem entregues viram
@@ -66,8 +65,27 @@ class DashboardController extends Controller
             'inviteUrl' => session('invite_url'),
             // Gui sempre primeiro; os demais por sorteio sem repetição e com rodízio entre
             // recarregamentos (ver RecommendedPlayers).
-            'recommendedPlayers' => $recommended->initial($actor)->map(fn (User $user) => RecommendedPlayers::present($user))->values(),
+            'recommendedPlayers' => $this->recommendedWithBotFill($recommended->initial($actor)),
         ]);
+    }
+
+    /**
+     * Pessoas de verdade primeiro. Só quando faltam jogadores para completar a lista, entram bots do catálogo
+     * (sorteados com rodízio, sem repetir), SEMPRE marcados como bot, sem perfil público, sem seguir e sem ranking:
+     * não se passam por pessoas reais e nunca contam como seguidores nem vitórias.
+     *
+     * @param  \Illuminate\Support\Collection<int, User>  $users
+     * @return list<array<string, mixed>>
+     */
+    private function recommendedWithBotFill($users): array
+    {
+        $list = $users->map(fn (User $user) => RecommendedPlayers::present($user))->values()->all();
+        $missing = RecommendedPlayers::INITIAL - count($list);
+        foreach ($missing > 0 ? Bots::pickRotating($missing) : [] as $key) {
+            $list[] = [...\Illuminate\Support\Arr::except(PlayerPresenter::bot($key), ['key']), 'is_bot' => true];
+        }
+
+        return $list;
     }
 
     /** @return list<array{id: string, reason: string, message: string}> */

@@ -84,10 +84,13 @@ class RecommendedPlayersTest extends TestCase
         $viewer = User::factory()->create();
         User::factory()->count(2)->create();
 
-        $names = $this->names($viewer);
+        $props = $this->actingAs($viewer)->get(route('dashboard'))->original->getData()['page']['props']['recommendedPlayers'];
+        $real = collect($props)->reject(fn ($p) => ! empty($p['is_bot']))->pluck('username');
 
-        $this->assertCount(2, $names);
-        $this->assertSame($names->unique()->count(), $names->count());
+        // Poucas pessoas reais: aparecem todas, sem duplicar; o resto é completado por bots sinalizados.
+        $this->assertCount(2, $real);
+        $this->assertSame($real->unique()->count(), $real->count());
+        $this->assertCount(5, $props);
     }
 
     public function test_when_the_viewer_is_gui_the_list_has_five_others(): void

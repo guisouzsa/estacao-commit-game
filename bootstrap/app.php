@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
         // Código de suporte em toda requisição (logs e página de erro).
         $middleware->prepend(\App\Http\Middleware\AssignRequestId::class);
@@ -28,6 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
             : route('login'));
 
         $middleware->web(append: [
+            // Trocar a senha derruba as OUTRAS sessões e o "lembrar-me" antigo (o hash da senha fica na sessão).
+            \App\Http\Middleware\AuthenticateAccountSession::class,
+            \App\Http\Middleware\RequireEmailCode::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);

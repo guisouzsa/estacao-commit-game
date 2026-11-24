@@ -23,8 +23,8 @@ O **Estação Commit** transforma conceitos de Git em uma corrida estratégica p
 
 O repositório reúne a aplicação web, o motor de partidas, o sistema social, os perfis públicos, o ranking e duas opções de infraestrutura em tempo real:
 
-- Laravel Reverb, integrado ao contêiner principal;
-- Cloudflare Workers + Durable Objects, disponível como alternativa escalável.
+- Laravel Reverb, integrado e iniciado no contêiner principal;
+- Cloudflare Workers + Durable Objects, implementado como alternativa opcional de infraestrutura.
 
 ## Principais funcionalidades
 

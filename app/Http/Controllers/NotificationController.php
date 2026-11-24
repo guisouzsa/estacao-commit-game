@@ -25,8 +25,9 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        // Paginado: a central nunca busca tudo de uma vez.
-        $page = $user->notifications()
+        // Paginado: a central nunca busca tudo de uma vez. A lista vem DEPOIS da casca da página
+        // (esqueleto no meio tempo); só o contador (barato) vai na primeira resposta.
+        $build = fn () => $user->notifications()
             ->whereIn('type', self::TYPES)
             ->latest()
             ->paginate(self::PER_PAGE)
@@ -40,7 +41,7 @@ class NotificationController extends Controller
             ]);
 
         return Inertia::render('Notifications/Index', [
-            'notifications' => $page,
+            'notifications' => config('ui.defer_lists') ? Inertia::defer($build) : $build(),
             'unread' => $user->unreadNotifications()->whereIn('type', self::TYPES)->count(),
         ]);
     }

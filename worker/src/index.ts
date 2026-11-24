@@ -74,7 +74,7 @@ export default {
     }
 
     // Laravel -> partida: /match/<sala>/(start|act|view) (assinado; mesmo esquema do /notify)
-    const m = url.pathname.match(/^\/match\/([0-9a-fA-F-]{36})\/(start|act|view)$/);
+    const m = url.pathname.match(/^\/match\/([0-9a-fA-F-]{36})\/(start|act|view|bots)$/);
     if (m) {
       const [, roomId, op] = m;
       const body = request.method === 'POST' ? await request.text() : '';

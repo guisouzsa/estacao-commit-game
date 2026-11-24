@@ -2,7 +2,8 @@ import PaginationNav from '@/Components/PaginationNav';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import type { PlayerProfile } from '@/Components/PlayerProfileCard';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import ListSkeleton from '@/Components/ListSkeleton';
+import { Deferred, Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
 type Person = PlayerProfile & { is_following: boolean; is_me: boolean };
@@ -28,7 +29,7 @@ export default function Connections({
 }: {
     profile: { username: string };
     kind: 'followers' | 'following';
-    people: Page;
+    people?: Page;
     counts: { followers: number; following: number };
 }) {
     const [busy, setBusy] = useState<string | null>(null);
@@ -98,7 +99,8 @@ export default function Connections({
                         </nav>
                     </header>
 
-                    {people.data.length ? (
+                    <Deferred data="people" fallback={<ListSkeleton label="Carregando pessoas" />}>
+                    {people && people.data.length ? (
                         <ul className="mt-4 border-[3px] border-[#1d1d1b] bg-white shadow-[4px_4px_0_#1d1d1b]">
                             {people.data.map((person) => (
                                 <li
@@ -138,7 +140,8 @@ export default function Connections({
                         </p>
                     )}
 
-                    <PaginationNav page={people} />
+                    {people ? <PaginationNav page={people} /> : null}
+                    </Deferred>
                 </div>
             </main>
         </AuthenticatedLayout>

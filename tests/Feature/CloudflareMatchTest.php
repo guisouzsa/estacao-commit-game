@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\GameMatch;
 use App\Models\GameRoom;
 use App\Models\User;
+use App\Services\CloudflareMatchGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -19,7 +20,7 @@ class CloudflareMatchTest extends TestCase
     private function enable(): void
     {
         config([
-            'realtime.driver' => 'cloudflare', 'realtime.game_engine' => 'cloudflare',
+            'realtime.driver' => 'cloudflare', 'realtime.game_engine' => 'cloudflare', 'realtime.engine_parity_ack' => CloudflareMatchGateway::PARITY_VERSION,
             'realtime.worker_url' => 'https://worker.example',
             'realtime.token_secret' => 'tok', 'realtime.notify_secret' => 'notify', 'realtime.callback_secret' => 'callback',
         ]);
@@ -206,5 +207,48 @@ class CloudflareMatchTest extends TestCase
         $this->assertSame('bot', $idle->kind);
         $this->assertSame('commitzilla', $idle->bot_key);
         $this->assertNull($idle->user_id);
+    }
+
+    public function test_the_cloudflare_engine_stays_off_without_the_parity_release(): void
+    {
+        $this->enable();
+        config(['realtime.engine_parity_ack' => null]);
+        $this->assertFalse(CloudflareMatchGateway::enabled());
+
+        config(['realtime.engine_parity_ack' => 'versao-antiga']);
+        $this->assertFalse(CloudflareMatchGateway::enabled());
+
+        config(['realtime.engine_parity_ack' => CloudflareMatchGateway::PARITY_VERSION]);
+        $this->assertTrue(CloudflareMatchGateway::enabled());
+    }
+
+    public function test_the_release_version_matches_the_parity_fixture(): void
+    {
+        $fixture = json_decode(file_get_contents(base_path('tests/parity/scenarios.json')), true);
+
+        $this->assertSame($fixture['parity_version'], CloudflareMatchGateway::PARITY_VERSION);
+    }
+
+    public function test_bot_steps_of_a_cloudflare_match_are_forwarded_to_the_durable_object(): void
+    {
+        $this->enable();
+        [$room, $users] = $this->humanRoom();
+        GameMatch::create(['room_id' => $room->id, 'status' => 'active', 'current_seat' => 1, 'turn_number' => 1, 'version' => 1, 'state' => ['engine' => 'cloudflare']]);
+        Http::fake(['worker.example/*' => Http::response(['played' => true, 'version' => 6])]);
+
+        $this->actingAs($users[0])->post(route('games.bots', $room), ['version' => 5])->assertRedirect();
+
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), "/match/{$room->id}/bots") && $r->data()['version'] === 5);
+        $this->actingAs(User::factory()->create())->post(route('games.bots', $room), ['version' => 5])->assertNotFound();
+    }
+
+    public function test_a_worker_failure_on_a_bot_step_never_breaks_the_table(): void
+    {
+        $this->enable();
+        [$room, $users] = $this->humanRoom();
+        GameMatch::create(['room_id' => $room->id, 'status' => 'active', 'current_seat' => 1, 'turn_number' => 1, 'version' => 1, 'state' => ['engine' => 'cloudflare']]);
+        Http::fake(['worker.example/*' => Http::response('boom', 500)]);
+
+        $this->actingAs($users[0])->post(route('games.bots', $room), ['version' => 1])->assertRedirect();
     }
 }

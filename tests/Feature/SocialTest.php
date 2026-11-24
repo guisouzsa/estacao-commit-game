@@ -20,6 +20,12 @@ class SocialTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['ui.defer_lists' => false]); // estes testes verificam as listas na primeira resposta
+    }
+
     private const INERTIA = ['X-Inertia' => 'true', 'X-Requested-With' => 'XMLHttpRequest'];
 
     private function follow(User $who, User $target)

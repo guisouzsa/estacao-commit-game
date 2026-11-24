@@ -89,7 +89,9 @@ class FollowController extends Controller
                 ->where('follows.follower_id', $profile->id);
         }
 
-        // Paginado: nunca carrega a lista inteira.
+        // Paginado: nunca carrega a lista inteira. A lista vem DEPOIS da casca da página (com esqueleto);
+        // título, abas e contagens vão na primeira resposta.
+        $build = function () use ($query, $viewerId) {
         $page = $query->orderByDesc('follows.created_at')->paginate(self::PER_PAGE)->withQueryString();
 
         // Uma única consulta diz quem desta página o visitante já segue (sem N+1).
@@ -105,10 +107,13 @@ class FollowController extends Controller
             'is_me' => (string) $user->id === $viewerId,
         ]);
 
+        return $page;
+        };
+
         return Inertia::render('Profile/Connections', [
             'profile' => ['username' => $profile->username],
             'kind' => $kind,
-            'people' => $page,
+            'people' => config('ui.defer_lists') ? Inertia::defer($build) : $build(),
             'counts' => [
                 'followers' => Follow::query()->where('followed_id', $profile->id)->count(),
                 'following' => Follow::query()->where('follower_id', $profile->id)->count(),

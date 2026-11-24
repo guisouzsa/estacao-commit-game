@@ -1,7 +1,8 @@
 import PaginationNav from '@/Components/PaginationNav';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import ListSkeleton from '@/Components/ListSkeleton';
+import { Deferred, Head, Link, router } from '@inertiajs/react';
 
 type Item = {
     id: string;
@@ -42,7 +43,7 @@ export default function Index({
     notifications,
     unread,
 }: {
-    notifications: Page;
+    notifications?: Page;
     unread: number;
 }) {
     return (
@@ -76,7 +77,8 @@ export default function Index({
                         </button>
                     </header>
 
-                    {notifications.data.length ? (
+                    <Deferred data="notifications" fallback={<ListSkeleton label="Carregando notificações" />}>
+                    {notifications && notifications.data.length ? (
                         <ul className="mt-4 border-[3px] border-[#1d1d1b] bg-white shadow-[4px_4px_0_#1d1d1b]">
                             {notifications.data.map((item) => (
                                 <li
@@ -133,7 +135,8 @@ export default function Index({
                         </p>
                     )}
 
-                    <PaginationNav page={notifications} />
+                    {notifications ? <PaginationNav page={notifications} /> : null}
+                    </Deferred>
                 </div>
             </main>
         </AuthenticatedLayout>

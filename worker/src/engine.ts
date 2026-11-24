@@ -143,29 +143,41 @@ export function act(m: MatchState, participantId: number, action: string, payloa
   Object.assign(m, draft);
 }
 
-/** Bots jogam enquanto for a vez de um bot (mesmo limite de 12 jogadas do PHP). */
-export function runBots(m: MatchState, participants: Participant[], rng: Rng = cryptoRng, now = new Date()): void {
-  for (let guard = 0; guard < 12 && m.status === 'active'; guard++) {
-    const bot = participants.find((p) => p.seat === m.current_seat && p.kind === 'bot');
-    if (!bot) return;
+/**
+ * Joga UMA vez pelo bot da vez (se a vez é de um bot). Retorna true se jogou.
+ * Espelha GameEngine::botStep do PHP: cada jogador, bots inclusive, joga a sua vez sozinho; nenhum
+ * bot joga junto com outro nem em cadeia. Quem dá o ritmo é o cliente (um passo por pedido).
+ */
+export function botStep(m: MatchState, participants: Participant[], rng: Rng = cryptoRng, now = new Date()): boolean {
+  if (m.status !== 'active') return false;
+  const bot = participants.find((p) => p.seat === m.current_seat && p.kind === 'bot');
+  if (!bot) return false;
 
-    const player = m.players[String(bot.id)];
-    let action: ActionName = 'exchange';
-    let payload: ActionPayload = { card: player.hand[0] ?? '' };
+  const player = m.players[String(bot.id)];
+  let action: ActionName = 'exchange';
+  let payload: ActionPayload = { card: player.hand[0] ?? '' };
 
-    if ((player.pending_discard ?? 0) > 0) {
-      action = 'discard_excess';
-    } else {
-      const required: string | undefined = REQUIRED[player.step];
-      if (required?.startsWith('block_')) {
-        action = 'play_block';
-        payload = {};
-      } else if (required !== undefined && player.hand.includes(required)) {
-        action = 'play_card';
-        payload = { card: required };
-      }
+  if ((player.pending_discard ?? 0) > 0) {
+    action = 'discard_excess';
+  } else {
+    const required: string | undefined = REQUIRED[player.step];
+    if (required?.startsWith('block_')) {
+      action = 'play_block';
+      payload = {};
+    } else if (required !== undefined && player.hand.includes(required)) {
+      action = 'play_card';
+      payload = { card: required };
     }
-    act(m, bot.id, action, payload, rng, now);
+  }
+  act(m, bot.id, action, payload, rng, now);
+
+  return true;
+}
+
+/** Roda os bots em sequência (mesmo limite de 12 do PHP). Só para rotinas internas (substituição por inatividade). */
+export function runBots(m: MatchState, participants: Participant[], rng: Rng = cryptoRng, now = new Date()): void {
+  for (let guard = 0; guard < 12 && botStep(m, participants, rng, now); guard++) {
+    // uma jogada por volta
   }
 }
 

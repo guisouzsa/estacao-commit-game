@@ -28,7 +28,7 @@ beforeAll(async () => {
 });
 afterAll(() => server.close());
 
-async function call(room: string, op: 'start' | 'act' | 'view', body?: unknown, query = '', secret = NOTIFY_SECRET) {
+async function call(room: string, op: 'start' | 'act' | 'view' | 'bots', body?: unknown, query = '', secret = NOTIFY_SECRET) {
   const raw = body === undefined ? '' : JSON.stringify(body);
   const ts = String(now());
   const nonce = uuid().replace(/-/g, '');
@@ -136,7 +136,13 @@ describe('partida no Durable Object', () => {
       const v = (await view(room, 10)).json;
       if (v.game.status === 'finished') break;
       const me = v.participants.find((p: any) => p.id === 10);
-      if (v.game.current_seat !== me.seat) throw new Error('mesa parou fora da vez do humano');
+      if (v.game.current_seat !== me.seat) {
+        // Vez de um bot: um passo por pedido (como o cliente faz com o PHP), só com a versão atual.
+        const step = await call(room, 'bots', { version: v.game.version });
+        expect(step.status).toBe(200);
+        expect(step.json.played).toBe(true);
+        continue;
+      }
       let action = 'exchange';
       let card: string | undefined = v.hand[0];
       if (me.pending_discard > 0) action = 'discard_excess';
@@ -177,4 +183,29 @@ describe('partida no Durable Object', () => {
     expect(v.participants.find((p: any) => p.id === current.id).kind).toBe('bot');
     expect(v.game.history.some((h: any) => h.notify && h.message.includes('assumiu'))).toBe(true);
   }, 30_000);
+
+  it('bots: criar a partida não joga por eles; cada /bots dá UM passo e só com a versão atual', async () => {
+    const room = uuid();
+    await call(room, 'start', startBody(room, {}, ['user', 'bot', 'bot', 'bot']));
+    const v0 = (await view(room, 10)).json;
+    expect(v0.game.version).toBe(1); // nenhum bot jogou na criação
+
+    if (v0.game.current_seat === 1) {
+      expect((await call(room, 'bots', { version: 1 })).json.played).toBe(false); // vez do humano
+      const me = v0.participants.find((p: any) => p.id === 10);
+      await act(room, 10, 1, 'exchange', { card: v0.hand[0] }); // humano joga; agora vez de um bot
+    }
+    const v1 = (await view(room, 10)).json;
+    const before = v1.game.version;
+    expect((await call(room, 'bots', { version: before - 1 })).json.played).toBe(false); // versão velha: ignorado
+    const step = await call(room, 'bots', { version: before });
+    expect(step.json).toMatchObject({ played: true, version: before + 1 }); // exatamente um passo
+    expect((await view(room, 10)).json.game.version).toBe(before + 1);
+    // dois pedidos simultâneos com a mesma versão: só um passo acontece
+    const v2 = (await view(room, 10)).json;
+    if (v2.game.current_seat !== 1) {
+      const both = await Promise.all([call(room, 'bots', { version: v2.game.version }), call(room, 'bots', { version: v2.game.version })]);
+      expect(both.filter((r) => r.json.played).length).toBe(1);
+    }
+  });
 });

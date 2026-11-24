@@ -29,5 +29,9 @@ return [
     // (Durable Object). Partidas já em andamento continuam no motor em que nasceram.
     'game_engine' => env('GAME_ENGINE', 'laravel'),
 
+    // Trava de segurança: o motor da Cloudflare só liga se este valor for igual a
+    // CloudflareMatchGateway::PARITY_VERSION (paridade comprovada e liberada por uma pessoa).
+    'engine_parity_ack' => env('GAME_ENGINE_PARITY_ACK'),
+
     'token_ttl_seconds' => 60,
 ];

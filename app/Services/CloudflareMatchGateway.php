@@ -17,11 +17,22 @@ class CloudflareMatchGateway
 {
     public const ENGINE = 'cloudflare';
 
+    /**
+     * Versão da paridade comprovada entre o motor PHP e o do Worker (tests/parity/scenarios.json).
+     * O motor da Cloudflare só liga com GAME_ENGINE=cloudflare E GAME_ENGINE_PARITY_ACK igual a este valor:
+     * quem libera é uma pessoa, depois de ver os testes de paridade passando. Mudou uma regra? Regere a
+     * fixture, rode os dois lados e suba esta versão (e o "parity_version" do JSON): a liberação antiga
+     * deixa de valer sozinha.
+     */
+    public const PARITY_VERSION = '2026-11-25-1';
+
     public function __construct(private readonly CloudflareRealtime $realtime) {}
 
     public static function enabled(): bool
     {
-        return config('realtime.game_engine') === self::ENGINE && CloudflareRealtime::enabled();
+        return config('realtime.game_engine') === self::ENGINE
+            && config('realtime.engine_parity_ack') === self::PARITY_VERSION
+            && CloudflareRealtime::enabled();
     }
 
     /** Cria a partida no Durable Object (idempotente: repetir devolve a mesma). */
@@ -60,6 +71,16 @@ class CloudflareMatchGateway
             'card' => $validated['card'] ?? null,
             'target_id' => isset($validated['target_id']) ? (int) $validated['target_id'] : null,
         ]);
+    }
+
+    /** Um passo de bot no Durable Object (só joga se a versão enviada for a atual). Falha de rede não derruba a mesa. */
+    public function botStep(string $roomId, int $version): bool
+    {
+        try {
+            return (bool) $this->send('POST', $roomId, 'bots', ['version' => $version])->throw()->json('played');
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function send(string $method, string $roomId, string $op, ?array $payload, string $query = ''): Response

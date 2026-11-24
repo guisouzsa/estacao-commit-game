@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { hmacHex, sha256Hex } from './auth';
 import {
-  ACTIONS, REQUIRED, RuleError, act, createMatch, replaceWithBot, runBots,
+  ACTIONS, REQUIRED, RuleError, act, botStep, createMatch, replaceWithBot, runBots,
   type ActionPayload, type MatchState, type Participant,
 } from './engine';
 
@@ -45,6 +45,7 @@ export class MatchRoom extends DurableObject<MatchEnv> {
       if (url.pathname === '/start' && request.method === 'POST') return await this.start(await request.json());
       if (url.pathname === '/view') return this.view(Number(url.searchParams.get('participant')));
       if (url.pathname === '/act' && request.method === 'POST') return await this.handleAct(await request.json());
+      if (url.pathname === '/bots' && request.method === 'POST') return await this.handleBotStep(await request.json());
     } catch (e) {
       if (e instanceof RuleError) return Response.json({ errors: { [e.field]: e.message } }, { status: 422 });
       throw e;
@@ -58,7 +59,7 @@ export class MatchRoom extends DurableObject<MatchEnv> {
     const participants = body.participants.map((p) => ({ id: p.id, seat: p.seat, kind: p.kind, bot_key: p.bot_key ?? null }));
     const match = createMatch(participants);
     const now = Date.now();
-    runBots(match, participants);
+    // Como no PHP: criar a partida NÃO joga pelos bots; cada bot joga a sua vez por pedido (/bots).
     this.ctx.storage.transactionSync(() => {
       this.put('config', { room_id: body.room_id, turn_timeout_seconds: body.turn_timeout_seconds, bot_pool: body.bot_pool ?? [], names: body.names ?? {} } satisfies Config);
       this.put('participants', participants);
@@ -118,7 +119,7 @@ export class MatchRoom extends DurableObject<MatchEnv> {
     const wasActive = m.status === 'active';
     const payload: ActionPayload = { card: body.card, target_id: body.target_id };
     act(m, body.participant_id, body.action, payload);
-    runBots(m, participants);
+    // Os bots NÃO jogam junto com a jogada humana: o cliente pede um passo por vez (/bots).
 
     this.ctx.storage.transactionSync(() => {
       this.put('match', m);
@@ -128,6 +129,26 @@ export class MatchRoom extends DurableObject<MatchEnv> {
     });
     await this.afterChange('game_updated');
     return Response.json({ version: m.version, status: m.status });
+  }
+
+  // ---------------------------------------------------------------- passo de bot
+  /** Um passo de bot, só se o cliente viu a versão atual (vários clientes pedindo juntos: só um passo acontece). */
+  private async handleBotStep(body: { version: number }) {
+    const m = this.get<MatchState>('match');
+    const participants = this.get<Participant[]>('participants');
+    if (!m || !participants) return Response.json({ error: 'no_match' }, { status: 404 });
+    if (Number(body.version) !== m.version) return Response.json({ played: false, version: m.version });
+
+    const wasActive = m.status === 'active';
+    if (!botStep(m, participants)) return Response.json({ played: false, version: m.version });
+
+    this.ctx.storage.transactionSync(() => {
+      this.put('match', m);
+      this.put('last_move', Date.now());
+      if (wasActive && m.status === 'finished') this.enqueueFinished(m);
+    });
+    await this.afterChange('game_updated');
+    return Response.json({ played: true, version: m.version, status: m.status });
   }
 
   // ---------------------------------------------------------------- alarme

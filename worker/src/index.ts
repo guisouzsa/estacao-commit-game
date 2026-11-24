@@ -1,5 +1,6 @@
 import { verifyConnectionToken, verifyNotifySignature } from './auth';
 import { ChannelHub } from './channel';
+import { checkOrigin, gatePage, safePath } from './gate';
 import { MatchRoom } from './match';
 
 export { ChannelHub, MatchRoom };
@@ -12,6 +13,7 @@ export interface Env {
   REALTIME_TOKEN_SECRET: string;
   REALTIME_NOTIFY_SECRET: string;
   ALLOWED_ORIGINS: string;
+  APP_ORIGIN: string;
 }
 
 const CHANNEL_RE = /^(rooms\.[0-9a-fA-F-]{36}|App\.Models\.(User|GuestProfile)\.[0-9a-zA-Z-]{1,40})$/;
@@ -24,6 +26,16 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/health') return Response.json({ ok: true });
+
+    // Portão de espera (jogo dormindo no Render): tela própria + consulta de prontidão.
+    if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/acordar')) {
+      return new Response(gatePage(env.APP_ORIGIN, safePath(url.searchParams.get('to'))), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY' },
+      });
+    }
+    if (request.method === 'GET' && url.pathname === '/acordar/status') {
+      return Response.json(await checkOrigin(env.APP_ORIGIN), { headers: { 'Cache-Control': 'no-store' } });
+    }
 
     // Navegador → WebSocket: /ws/<canal>?token=<emitido pelo Laravel>
     if (url.pathname.startsWith('/ws/')) {

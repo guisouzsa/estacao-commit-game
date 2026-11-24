@@ -1,15 +1,31 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex"><title>O jogo demorou demais para responder — Estação Commit</title>
+<meta name="robots" content="noindex"><title>Demorou mais do que o esperado — Estação Commit</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:#1d1d1b;color:#1d1d1b;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 main{width:100%;max-width:36rem;border:3px solid #000;background:#f3f1ec;padding:28px;box-shadow:8px 8px 0 #464498}
-.brand{font-weight:900}.brand span{color:#464498}.code{margin:28px 0 0;font:700 12px ui-monospace,Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;color:#464498}
+.brand{font-weight:900;letter-spacing:.02em}.brand span{color:#464498}.code{margin:28px 0 0;font:700 12px ui-monospace,Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;color:#464498}
 h1{margin:8px 0 0;font-size:clamp(1.6rem,5vw,2.2rem);line-height:1.15}p{line-height:1.7;color:#5b5953}
-a,button{display:inline-flex;min-height:48px;align-items:center;justify-content:center;margin:8px 8px 0 0;padding:0 20px;border:2px solid #1d1d1b;background:#b4da33;color:#1d1d1b;font:900 13px ui-monospace,Consolas,monospace;text-transform:uppercase;text-decoration:none;box-shadow:4px 4px 0 #1d1d1b;cursor:pointer}
+.steps{margin:18px 0 0;padding:0;list-style:none;font:600 13px ui-monospace,Consolas,monospace;color:#5b5953}.steps li{padding:3px 0}.steps li:before{content:"$ ";color:#464498}
+.bar{margin-top:18px;height:10px;border:2px solid #1d1d1b;background:#fff;overflow:hidden}.bar i{display:block;height:100%;width:35%;background:#b4da33;animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+.auto{margin-top:14px;font:700 12px ui-monospace,Consolas,monospace;color:#464498;min-height:1.4em}
+a,button{display:inline-flex;min-height:48px;align-items:center;justify-content:center;margin:12px 8px 0 0;padding:0 20px;border:2px solid #1d1d1b;background:#b4da33;color:#1d1d1b;font:900 13px ui-monospace,Consolas,monospace;text-transform:uppercase;text-decoration:none;box-shadow:4px 4px 0 #1d1d1b;cursor:pointer}
 a.alt{background:#fff;box-shadow:4px 4px 0 #b4da33}
+@media (prefers-reduced-motion:reduce){.bar i{animation:none;width:100%}}
 </style></head><body><main>
 <div class="brand">ESTAÇÃO <span>COMMIT</span></div>
-<p class="code">Erro 504</p><h1>O jogo demorou demais para responder</h1><p>Tente novamente em instantes.</p>
-<button type="button" onclick="location.reload()">Tentar de novo</button><a class="alt" href="/">Voltar ao início</a>
-</main></body></html>
+<p class="code">Erro 504</p><h1>Demorou mais do que o esperado</h1><p>O jogo está ocupado ou acabou de voltar. Vamos tentar de novo sozinhos em instantes.</p>
+<ul class="steps" aria-hidden="true"><li>aguardando resposta do servidor…</li><li>tentando novamente…</li></ul><div class="bar" role="status" aria-label="Tentando de novo"><i></i></div><p class="auto" id="auto" aria-live="polite"></p>
+<button type="button" id="now">Tentar de novo</button><a class="alt" href="/">Voltar ao início</a>
+</main><script>
+(function(){
+var KEY='ec-retry',MAX=14,WAIT=10,t=WAIT,box=document.getElementById('auto'),btn=document.getElementById('now');
+var n=+(sessionStorage.getItem(KEY)||0);
+function go(){sessionStorage.setItem(KEY,String(n+1));location.reload()}
+if(btn)btn.onclick=function(){go()};
+if(n>=MAX){box.textContent='Ainda não deu certo. Toque em "Tentar de novo" ou volte daqui a pouco.';sessionStorage.removeItem(KEY);return}
+box.textContent='Tentativa '+(n+1)+' de '+MAX+' · nova tentativa em '+t+'s';
+var iv=setInterval(function(){t--;if(t<=0){clearInterval(iv);go();return}box.textContent='Tentativa '+(n+1)+' de '+MAX+' · nova tentativa em '+t+'s'},1000);
+})();
+</script></body></html>

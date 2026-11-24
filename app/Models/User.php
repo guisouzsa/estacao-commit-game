@@ -20,6 +20,17 @@ class User extends Authenticatable
 
     protected $keyType = 'string';
 
+    /**
+     * "Líder" (criador do projeto): decidido SÓ no servidor. Vale para a conta cujo e-mail está em
+     * PROFILE_ADMIN_EMAILS e já foi confirmado (código ou Google). Não existe coluna nem campo de formulário
+     * que conceda isso, então ninguém consegue se atribuir a identificação pelo front ou por uma API.
+     */
+    public function isLeader(): bool
+    {
+        return $this->email_verified_at !== null
+            && in_array(strtolower((string) $this->email), config('profiles.admin_emails'), true);
+    }
+
     protected static function booted(): void
     {
         static::creating(function (User $user): void {

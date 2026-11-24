@@ -13,11 +13,11 @@ class GameMatch extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['room_id', 'status', 'current_seat', 'turn_number', 'version', 'state', 'winner_participant_id', 'finished_at'];
+    protected $fillable = ['room_id', 'status', 'current_seat', 'turn_number', 'version', 'state', 'winner_participant_id', 'finished_at', 'turn_started_at'];
 
     protected function casts(): array
     {
-        return ['state' => 'array', 'finished_at' => 'datetime'];
+        return ['state' => 'array', 'finished_at' => 'datetime', 'turn_started_at' => 'datetime'];
     }
 
     protected static function booted(): void

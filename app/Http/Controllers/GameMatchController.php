@@ -78,11 +78,10 @@ class GameMatchController extends Controller
         // Jogador da vez sumiu? Um bot assume (ver GameInactivityService) e avisa a mesa. A
         // verificação barata (em memória) vem primeiro: a transação com trava só abre quando a
         // partida realmente está parada além do prazo.
-        $timeout = (int) config('game.turn_timeout_seconds');
+        $deadline = GameInactivityService::deadline($match);
         if (
-            $timeout > 0
-            && $match->status === 'active'
-            && $match->updated_at->lte(now()->subSeconds($timeout))
+            $deadline
+            && $deadline->isPast()
             && app(GameInactivityService::class)->sweep($room)
         ) {
             app(RoomStateBroadcaster::class)->publish($room->id, 'game_updated');
@@ -251,6 +250,8 @@ class GameMatchController extends Controller
                 'winner_participant_id' => $game['winner_participant_id'],
                 'deck_count' => $game['deck_count'], 'discard_count' => $game['discard_count'],
                 'turn_seconds_left' => $game['turn_seconds_left'],
+                'turn_limit_seconds' => (int) config('game.turn_timeout_seconds'),
+                'bot_delay_ms' => (int) config('game.bot_delay_ms'),
                 'cleanup_at' => app(FinishedRoomCleanup::class)->deadline($room)?->toIso8601String(),
                 'winner_wins' => $this->winnerWins($room, $game['winner_participant_id']),
                 'history' => $game['history'],
@@ -287,10 +288,11 @@ class GameMatchController extends Controller
         return $user ? (int) ($user->matches_won ?? 0) : null;
     }
 
+    /** Segundos restantes da vez, calculados pelo servidor (nunca negativo, nunca acima do limite). */
     private function turnSecondsLeft(GameRoom $room, GameMatch $match): ?int
     {
-        $timeout = (int) config('game.turn_timeout_seconds');
-        if ($timeout <= 0 || $match->status !== 'active') {
+        $deadline = GameInactivityService::deadline($match);
+        if (! $deadline) {
             return null;
         }
 
@@ -299,7 +301,7 @@ class GameMatchController extends Controller
             return null;
         }
 
-        return max(0, $timeout - (int) $match->updated_at->diffInSeconds(now(), true));
+        return max(0, min((int) config('game.turn_timeout_seconds'), (int) ceil(now()->diffInSeconds($deadline, false))));
     }
 
     private function present(GameRoom $room, GameMatch $match, int $viewerId): array
@@ -330,6 +332,8 @@ class GameMatchController extends Controller
                 // Tempo que o jogador da vez ainda tem antes de um bot assumir (ver GameInactivityService).
                 // Só faz sentido para jogadores humanos em partida ativa.
                 'turn_seconds_left' => $this->turnSecondsLeft($room, $match),
+                'turn_limit_seconds' => (int) config('game.turn_timeout_seconds'),
+                'bot_delay_ms' => (int) config('game.bot_delay_ms'),
                 'cleanup_at' => app(FinishedRoomCleanup::class)->deadline($room)?->toIso8601String(),
                 'winner_wins' => $this->winnerWins($room, $match->winner_participant_id),
                 'history' => array_reverse(array_slice($state['history'], -12)),

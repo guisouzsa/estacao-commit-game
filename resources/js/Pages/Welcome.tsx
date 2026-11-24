@@ -21,8 +21,8 @@ function Brand() {
 export default function Welcome({ auth }: PageProps) {
     const [menuOpen, setMenuOpen] = useState(false);
     // "Jogar agora" não exige conta: o visitante escolhe nome e avatar.
-    const playHref = auth.user ? route('dashboard') : route('guest.create');
-    const signupHref = auth.user ? route('dashboard') : route('register');
+    const playHref = auth.user ? `${route('dashboard')}#criar-sala` : route('guest.create');
+    const signupHref = auth.user ? playHref : route('register');
 
     const moveDeck = (event: PointerEvent<HTMLDivElement>) => {
         const rect = event.currentTarget.getBoundingClientRect();
@@ -44,11 +44,11 @@ export default function Welcome({ auth }: PageProps) {
                     <div className="hidden items-center gap-3 lg:flex">
                         {!auth.user && <Link href={route('register')} className="btn-primary">Criar conta</Link>}
                         {!auth.user && <Link href={route('login')} className="btn-ghost">Entrar</Link>}
-                        <Link href={playHref} className="btn-primary">{auth.user ? 'Ir ao painel' : 'Jogar agora'}</Link>
+                        <Link href={playHref} className="btn-primary">{auth.user ? 'Jogar' : 'Jogar agora'}</Link>
                     </div>
                     <button onClick={() => setMenuOpen(!menuOpen)} className="grid size-11 place-items-center border-2 border-white/30 lg:hidden" aria-label="Abrir menu" aria-expanded={menuOpen}>{menuOpen ? '×' : '☰'}</button>
                 </div>
-                {menuOpen && <nav className="border-t border-white/10 bg-[#1d1d1b] px-5 py-5 lg:hidden"><div className="grid gap-4 font-bold"><a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a><a href="#jogo" onClick={() => setMenuOpen(false)}>O jogo</a><a href="#aprender" onClick={() => setMenuOpen(false)}>Aprenda jogando</a><div className="mt-2 flex flex-col gap-3 sm:flex-row">{!auth.user && <Link href={route('register')} className="flex min-h-12 items-center justify-center border-2 border-[#1d1d1b] bg-[#f481c6] px-5 font-mono text-xs font-black uppercase text-[#1d1d1b] shadow-[4px_4px_0_#b4da33] transition hover:-translate-y-0.5">Criar conta</Link>}{!auth.user && <Link href={route('login')} className="btn-ghost justify-center">Entrar</Link>}<Link href={playHref} className="flex min-h-12 items-center justify-center border-2 border-white/50 bg-[#464498] px-5 font-mono text-xs font-black uppercase text-white shadow-[4px_4px_0_#f481c6] transition hover:-translate-y-0.5 hover:bg-[#5553ad]">{auth.user ? 'Ir ao painel' : 'Jogar agora'}</Link></div></div></nav>}
+                {menuOpen && <nav className="border-t border-white/10 bg-[#1d1d1b] px-5 py-5 lg:hidden"><div className="grid gap-4 font-bold"><a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a><a href="#jogo" onClick={() => setMenuOpen(false)}>O jogo</a><a href="#aprender" onClick={() => setMenuOpen(false)}>Aprenda jogando</a><div className="mt-2 flex flex-col gap-3 sm:flex-row">{!auth.user && <Link href={route('register')} className="flex min-h-12 items-center justify-center border-2 border-[#1d1d1b] bg-[#f481c6] px-5 font-mono text-xs font-black uppercase text-[#1d1d1b] shadow-[4px_4px_0_#b4da33] transition hover:-translate-y-0.5">Criar conta</Link>}{!auth.user && <Link href={route('login')} className="btn-ghost justify-center">Entrar</Link>}<Link href={playHref} className="flex min-h-12 items-center justify-center border-2 border-white/50 bg-[#464498] px-5 font-mono text-xs font-black uppercase text-white shadow-[4px_4px_0_#f481c6] transition hover:-translate-y-0.5 hover:bg-[#5553ad]">{auth.user ? 'Jogar' : 'Jogar agora'}</Link></div></div></nav>}
             </header>
 
             <section id="inicio" className="relative mx-auto grid min-h-[min(720px,100dvh)] w-full max-w-[1500px] items-center gap-8 px-5 pb-12 pt-24 lg:grid-cols-[.88fr_1.12fr] lg:px-8">
@@ -56,7 +56,7 @@ export default function Welcome({ auth }: PageProps) {
                     <div className="eyebrow">Jogo educacional de Git & GitHub</div>
                     <h1 className="mt-7 max-w-3xl font-display text-5xl font-black leading-[.95] tracking-[-.055em] sm:text-7xl">Jogue suas cartas. <span className="text-pink">Complete a contribuição.</span></h1>
                     <p className="mt-7 max-w-xl text-lg leading-8 text-white/70">Treine comandos, monte o código de um foguete e percorra o fluxo de colaboração. Uma experiência de mesa para aprender Git fazendo escolhas.</p>
-                    <div className="mt-9 flex flex-col gap-4 sm:flex-row"><Link href={playHref} className="btn-primary justify-center px-7 py-4">{auth.user ? 'Ir ao painel' : 'Jogar agora'}</Link><a href="#como-funciona" className="btn-ghost justify-center px-7 py-4">Conhecer a jornada</a></div>
+                    <div className="mt-9 flex flex-col gap-4 sm:flex-row"><Link href={playHref} className="btn-primary justify-center px-7 py-4">{auth.user ? 'Jogar' : 'Jogar agora'}</Link><a href="#como-funciona" className="btn-ghost justify-center px-7 py-4">Conhecer a jornada</a></div>
                     <p className="mt-9 border-l-4 border-pink pl-4 font-mono text-sm text-lime/80">$ git checkout -b sua-missao</p>
                 </div>
                 <div className="hero-deck" onPointerMove={moveDeck} onPointerLeave={e => { e.currentTarget.style.setProperty('--deck-x', '0px'); e.currentTarget.style.setProperty('--deck-y', '0px'); }} aria-label="Cartas oficiais do Estação Commit">
@@ -97,7 +97,7 @@ export default function Welcome({ auth }: PageProps) {
                 </div>
             </section>
 
-            <section className="px-5 py-16 sm:py-20 lg:px-8"><div className="mx-auto max-w-5xl border-[3px] border-[#1d1d1b] bg-lime p-8 text-center text-ink shadow-[12px_12px_0_#f481c6] sm:p-12"><p className="font-mono text-sm font-bold uppercase tracking-[.2em]">Pronto para a missão?</p><h2 className="mt-5 font-display text-4xl font-black tracking-tight sm:text-6xl">Prepare sua branch.<br />A próxima contribuição começa aqui.</h2><div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row"><Link href={signupHref} className="btn-dark justify-center">Criar conta</Link><HowToPlayButton variant="landing" /><Link href={route('login')} className="btn-light justify-center">Entrar na plataforma</Link></div></div></section>
+            <section className="px-5 py-16 sm:py-20 lg:px-8"><div className="mx-auto max-w-5xl border-[3px] border-[#1d1d1b] bg-lime p-8 text-center text-ink shadow-[12px_12px_0_#f481c6] sm:p-12"><p className="font-mono text-sm font-bold uppercase tracking-[.2em]">Pronto para a missão?</p><h2 className="mt-5 font-display text-4xl font-black tracking-tight sm:text-6xl">Prepare sua branch.<br />A próxima contribuição começa aqui.</h2><div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row"><Link href={signupHref} className="btn-dark justify-center">{auth.user ? 'Jogar' : 'Criar conta'}</Link><HowToPlayButton variant="landing" /><Link href={route('login')} className="btn-light justify-center">Entrar na plataforma</Link></div></div></section>
             <footer className="border-t border-white/10"><div className="mx-auto flex w-full max-w-[1500px] flex-col gap-5 px-5 py-10 sm:flex-row sm:items-center sm:justify-between lg:px-8"><Brand /><p className="text-sm text-white/45">Jogo educacional de tabuleiro e cartas sobre Git e GitHub.</p></div></footer>
         </main>
     </>;

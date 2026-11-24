@@ -253,7 +253,7 @@ class GameMatchTest extends TestCase
         return [$room, $users];
     }
 
-    public function test_a_bot_takes_over_a_human_who_stays_idle_on_their_turn(): void
+    public function test_a_bot_takes_over_a_human_after_three_consecutive_timeouts(): void
     {
         [$room, $users] = $this->humanRoom();
         $this->actingAs($users[0])->post(route('games.start', $room));
@@ -261,9 +261,10 @@ class GameMatchTest extends TestCase
         $match->forceFill(['current_seat' => 2])->save();
         $idle = $room->participants()->where('user_id', $users[1]->id)->firstOrFail();
 
-        // Antes do prazo nada muda.
+        // Antes do prazo nada muda; com dois timeouts já acumulados, o terceiro remove o jogador.
         $this->actingAs($users[0])->get(route('games.show', $room))->assertOk();
         $this->assertSame('user', $idle->fresh()->kind);
+        $idle->forceFill(['timeout_streak' => 2])->save();
 
         $this->travel(config('game.turn_timeout_seconds') + 5)->seconds();
         $this->actingAs($users[0])->get(route('games.show', $room))->assertOk();
@@ -287,6 +288,7 @@ class GameMatchTest extends TestCase
         [$room, $users] = $this->humanRoom();
         $this->actingAs($users[0])->post(route('games.start', $room));
         GameMatch::firstOrFail()->forceFill(['current_seat' => 2])->save();
+        $room->participants()->where('user_id', $users[1]->id)->update(['timeout_streak' => 2]);
 
         $this->travel(config('game.turn_timeout_seconds') + 5)->seconds();
 
@@ -300,6 +302,7 @@ class GameMatchTest extends TestCase
         [$room, $users] = $this->humanRoom();
         $this->actingAs($users[0])->post(route('games.start', $room));
         GameMatch::firstOrFail()->forceFill(['current_seat' => 1])->save();
+        $room->participants()->where('seat', 1)->update(['timeout_streak' => 2]);
         $this->travel(config('game.turn_timeout_seconds') + 5)->seconds();
 
         // Quem está na vez é o jogador 1: só ele poderia ser substituído, e ele é substituído.
@@ -336,9 +339,9 @@ class GameMatchTest extends TestCase
         $this->actingAs($users[0])->get(route('games.show', $room))->assertInertia(fn (Assert $page) => $page
             ->where('game.turn_seconds_left', config('game.turn_timeout_seconds')));
 
-        $this->travel(30)->seconds();
+        $this->travel(10)->seconds();
         $this->actingAs($users[0])->get(route('games.show', $room))->assertInertia(fn (Assert $page) => $page
-            ->where('game.turn_seconds_left', config('game.turn_timeout_seconds') - 30));
+            ->where('game.turn_seconds_left', config('game.turn_timeout_seconds') - 10));
     }
 
     public function test_exchanging_a_card_counts_as_the_turn_and_passes_it_on(): void

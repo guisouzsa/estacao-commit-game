@@ -9,7 +9,7 @@ Este documento é o guia de **manutenção** do Estação Commit. Ele responde a
 > **Regra de ouro:** este arquivo guarda só **nomes** e exemplos fictícios. Valores reais (senhas, chaves, tokens) ficam
 > apenas no painel de cada serviço, nunca no repositório, em issues, em prints ou em conversas.
 
-Voltar ao [README](../README.md).
+Voltar ao [README](../README.md). Fluxos de autenticação, regras do multiplayer, quedas de serviço e investigação: [`ARQUITETURA-E-OPERACAO.md`](ARQUITETURA-E-OPERACAO.md).
 
 ---
 
@@ -140,7 +140,9 @@ Legenda da coluna **Segredo**: 🔒 = nunca em chat, commit ou print. Um valor �
 
 | Variável | Segredo | Exemplo / padrão | Para quê |
 | --- | :-: | --- | --- |
-| `MAIL_MAILER` | | `brevo` em produção; `log` local | `log` só grava a mensagem em `storage/logs` |
+| `MAIL_MAILER` | | `brevo` ou `resilient` em produção; `log` local | `resilient` tenta Brevo e, se ele cair, o Resend (ver `ARQUITETURA-E-OPERACAO.md`) |
+| `RESEND_API_KEY` | 🔒 | | provedor alternativo (opcional; sem domínio verificado só envia ao dono da conta) |
+| `MAIL_HTTP_TIMEOUT` | | `8` | segundos esperando a API de e-mail |
 | `BREVO_API_KEY` | 🔒 | chave restrita a "E-mails transacionais" | envia pela API HTTPS |
 | `MAIL_FROM_ADDRESS` | | `estacaocommit@gmail.com` | **tem que ser um remetente verificado no Brevo** |
 | `MAIL_FROM_NAME` | | `Estação Commit` | nome do remetente |
@@ -153,7 +155,7 @@ Legenda da coluna **Segredo**: 🔒 = nunca em chat, commit ou print. Um valor �
 Como funciona: com `EMAIL_VERIFICATION=true`, o cadastro guarda os dados na sessão, envia o código e **só cria a conta depois
 que o código é confirmado**. O login continua sendo só e-mail e senha. O e-mail de recuperação de senha usa o mesmo mailer.
 
-Variáveis de outros provedores (`RESEND_API_KEY`, `POSTMARK_API_KEY`, `MAIL_HOST`/`MAIL_PORT` de SMTP, `AWS_*` do SES) existem
+Variáveis de outros provedores (`POSTMARK_API_KEY`, `MAIL_HOST`/`MAIL_PORT` de SMTP, `AWS_*` do SES) existem
 no `config/` mas **não são usadas** hoje. Ver 5.3 para trocar de provedor.
 
 ### 3.5 Login com Google
@@ -176,7 +178,9 @@ O botão "Continuar com Google" só aparece quando as três estão preenchidas.
 
 | Variável | Padrão | Para quê |
 | --- | --- | --- |
-| `GAME_TURN_TIMEOUT_SECONDS` | `120` | tempo de cada vez antes de passar a jogada |
+| `GAME_TURN_TIMEOUT_SECONDS` | `25` | duração da vez de um humano (menos de 30 s); passou, a vez é pulada |
+| `GAME_MAX_CONSECUTIVE_TIMEOUTS` | `3` | timeouts seguidos até o jogador sair da sala |
+| `GAME_BOT_DELAY_MS` | `700` | pausa do bot antes de jogar |
 | `FINISHED_ROOM_TTL_MINUTES` | `2` | quanto tempo a sala encerrada fica visível antes da limpeza |
 | `GUEST_TTL_HOURS` | `6` | validade da conta temporária (visitante) |
 | `UI_DEFER_LISTS` | `true` | listas de notificações/seguidores carregam depois, com esqueleto |
@@ -320,7 +324,7 @@ Sessões ficam no banco, então **todo mundo será deslogado** na troca.
 
 Hoje o envio usa a classe [`BrevoTransport`](../app/Mail/BrevoTransport.php) (API HTTPS). Para trocar:
 
-- **Outro serviço por API (Resend, Postmark, Mailgun, SES):** o Laravel já traz transportes prontos. Defina `MAIL_MAILER=resend` (ou `postmark`, `ses`) e a chave do serviço (`RESEND_API_KEY`, `POSTMARK_API_KEY`...). Os templates não mudam.
+- **Outro serviço por API (Resend, Postmark, Mailgun, SES):** o projeto já inclui o Resend (`MAIL_MAILER=resend-http` + `RESEND_API_KEY`, ou `resilient` para usar os dois em sequência). Postmark e SES exigem os pacotes do Laravel para esses transportes. Os templates não mudam.
 - **SMTP:** funciona fora do Render Free (que bloqueia as portas SMTP). Use `MAIL_MAILER=smtp` com `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`.
 - Em qualquer caso, **`MAIL_FROM_ADDRESS` precisa ser um remetente aprovado no novo serviço**.
 - Para melhorar a entrega (menos spam), use um **domínio próprio** e configure SPF, DKIM e DMARC no provedor. Endereços Gmail como remetente têm entrega pior.

@@ -1,4 +1,5 @@
 import AvatarPicker from '@/Components/AvatarPicker';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import InputError from '@/Components/InputError';
 import OptionPicker from '@/Components/OptionPicker';
 import PlayerProfileCard, {
@@ -225,8 +226,23 @@ export default function Edit({
         setEditing(false);
     };
 
+    // Trocar o identificador libera o antigo: pede confirmação SÓ ao clicar em Salvar (nunca ao digitar).
+    const [confirmRename, setConfirmRename] = useState(false);
+    const renaming = data.username !== user.username;
+
     const submit = (event: FormEvent) => {
         event.preventDefault();
+        if (processing) return;
+        if (renaming) {
+            setConfirmRename(true);
+
+            return;
+        }
+        save();
+    };
+
+    const save = () => {
+        setConfirmRename(false);
         post(route('profile.appearance.update'), {
             forceFormData: true,
             preserveScroll: true,
@@ -446,15 +462,15 @@ export default function Edit({
                                             />
                                         </label>
                                         <InputError message={errors.username} />
-                                        {data.username !== user.username && (
-                                            <div className="border-l-4 border-[#d01600] bg-[#fff2ef] px-3 py-2 text-sm leading-6 text-[#6e160d]">
-                                                <strong>Atenção:</strong> ao
-                                                alterar seu identificador, o
-                                                atual será liberado. Se outra
-                                                pessoa o registrar, você poderá
-                                                perdê-lo definitivamente.
-                                            </div>
-                                        )}
+                                        <div
+                                            className={`border-l-4 px-3 py-2 text-sm leading-6 ${renaming ? 'border-[#d01600] bg-[#fff2ef] text-[#6e160d]' : 'border-[#1d1d1b]/30 bg-white/60 text-[#5b5953]'}`}
+                                        >
+                                            <strong>Atenção:</strong> ao
+                                            alterar seu identificador, o atual
+                                            será liberado. Se outra pessoa o
+                                            registrar, você poderá perdê-lo
+                                            definitivamente.
+                                        </div>
 
                                         <label className="block text-sm font-bold">
                                             Biografia
@@ -1159,6 +1175,21 @@ export default function Edit({
                             </div>
                         )}
                     </form>
+
+                    <ConfirmDialog
+                        show={confirmRename}
+                        title="Alterar seu identificador?"
+                        eyebrow="Atenção"
+                        confirmLabel="Sim, alterar"
+                        busyLabel="Salvando..."
+                        busy={processing}
+                        onConfirm={save}
+                        onClose={() => setConfirmRename(false)}
+                    >
+                        O identificador atual (<strong>@{user.username}</strong>) será liberado e você passará a ser{' '}
+                        <strong>@{data.username}</strong>. Se outra pessoa registrar o antigo, você poderá perdê-lo
+                        definitivamente. Deseja continuar?
+                    </ConfirmDialog>
 
                     {!editing && (
                         <section className="mt-10 border-t-[3px] border-[#1d1d1b] pt-7">

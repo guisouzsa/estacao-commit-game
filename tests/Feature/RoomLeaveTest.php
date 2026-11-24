@@ -108,6 +108,7 @@ class RoomLeaveTest extends TestCase
     {
         [$room, $users] = $this->room(1, started: true);
         GameMatch::firstOrFail()->forceFill(['current_seat' => 1])->save();
+        $room->participants()->where('seat', 1)->update(['timeout_streak' => 2]); // o terceiro timeout seguido remove
 
         $this->travel(config('game.turn_timeout_seconds') + 5)->seconds();
         $this->actingAs($users[0])->get(route('games.show', $room))->assertRedirect(route('dashboard'));

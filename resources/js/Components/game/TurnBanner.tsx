@@ -20,7 +20,7 @@ export default function TurnBanner({
     secondsLeft: number | null;
     hint: string;
 }) {
-    const urgent = isTurn && typeof secondsLeft === 'number' && secondsLeft <= 20;
+    const urgent = isTurn && typeof secondsLeft === 'number' && secondsLeft <= 8;
 
     return (
         <div

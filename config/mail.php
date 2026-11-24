@@ -16,6 +16,9 @@ return [
 
     'default' => env('MAIL_MAILER', 'log'),
 
+    // Tempo máximo (segundos) esperando a API de e-mail, para um provedor lento não travar o cadastro.
+    'http_timeout' => (int) env('MAIL_HTTP_TIMEOUT', 8),
+
     /*
     |--------------------------------------------------------------------------
     | Mailer Configurations
@@ -67,6 +70,21 @@ return [
 
         'brevo' => [
             'transport' => 'brevo',
+        ],
+
+        'resend-http' => [
+            'transport' => 'resend-http',
+        ],
+
+        // MAIL_MAILER=resilient: tenta o Brevo e, se ele estiver FORA DO AR (rede, 5xx, 429), o Resend.
+        // Só entram os provedores com chave configurada. Erros permanentes (chave, remetente, endereço)
+        // não repetem nem trocam de provedor.
+        'resilient' => [
+            'transport' => 'failover',
+            'mailers' => array_values(array_filter([
+                filled(env('BREVO_API_KEY')) ? 'brevo' : null,
+                filled(env('RESEND_API_KEY')) ? 'resend-http' : null,
+            ])) ?: ['log'],
         ],
 
         'sendmail' => [

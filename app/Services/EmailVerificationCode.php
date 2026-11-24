@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Mail\EmailCodeMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 /**
  * Cadastro em duas etapas: os dados ficam SÓ na sessão do navegador até o código ser confirmado.
@@ -46,7 +48,11 @@ class EmailVerificationCode
     /** Segundos até poder reenviar (0 = já pode). */
     public function cooldown(array $pending): int
     {
-        return max(0, (int) config('verification.resend_cooldown_seconds') - (now()->getTimestamp() - (int) ($pending['sent_at'] ?? 0)));
+        // Se o envio falhou, o intervalo para tentar de novo é curto (a pessoa não ficou com código nenhum).
+        $wait = (int) config('verification.resend_cooldown_seconds');
+        $wait = ($pending['sent_ok'] ?? true) ? $wait : min($wait, 10);
+
+        return max(0, $wait - (now()->getTimestamp() - (int) ($pending['sent_at'] ?? 0)));
     }
 
     /** Gera um código novo e envia. Falha de envio não derruba o chamador (retorna false). */
@@ -68,15 +74,19 @@ class EmailVerificationCode
             'attempts' => 0,
         ]);
 
+        $sent = true;
         try {
             Mail::to($pending['email'])->send(new EmailCodeMail($code, $minutes));
         } catch (\Throwable $e) {
-            report($e);
-
-            return false;
+            // Falha (provedor fora do ar, chave inválida...): não finge que enviou. O cadastro espera na sessão
+            // e a pessoa pode pedir o reenvio. A causa fica no log (sem o conteúdo do e-mail).
+            Log::error('verification.send_failed', ['error' => class_basename($e), 'message' => Str::limit($e->getMessage(), 160)]);
+            $sent = false;
         }
 
-        return true;
+        $request->session()->put(self::KEY, [...$request->session()->get(self::KEY), 'sent_ok' => $sent]);
+
+        return $sent;
     }
 
     /** @return 'ok'|'invalid'|'expired'|'locked'|'none' */

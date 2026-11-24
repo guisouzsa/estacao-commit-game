@@ -2,6 +2,8 @@ import PlayerAvatar from '@/Components/PlayerAvatar';
 import { PATH_LENGTH } from '@/lib/gameGeometry';
 import { memo } from 'react';
 
+const RING_RADIUS = 19.5;
+
 export type PanelPlayer = {
     id: number;
     username: string;
@@ -31,7 +33,11 @@ export default memo(function PlayerPanel({
     secondsLeft?: number | null;
     className?: string;
 }) {
-    const urgent = typeof secondsLeft === 'number' && secondsLeft <= 20;
+    const urgent = typeof secondsLeft === 'number' && secondsLeft <= 8;
+    // Progresso REAL: etapas já cumpridas do percurso (vem do servidor), nunca calculado no front.
+    const progress = Math.min(1, Math.max(0, player.step / PATH_LENGTH));
+    const circumference = 2 * Math.PI * RING_RADIUS;
+    const ringColor = player.blocked ? '#d01600' : active ? '#f481c6' : '#b4da33';
 
     return (
         <div
@@ -44,7 +50,31 @@ export default memo(function PlayerPanel({
             key={player.blocked ? 'blocked' : 'free'}
         >
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap">
-                <PlayerAvatar profile={player.profile} size="xs" />
+                <div
+                    aria-label={`Progresso de ${player.username}: ${player.step} de ${PATH_LENGTH} etapas`}
+                    aria-valuemax={PATH_LENGTH}
+                    aria-valuemin={0}
+                    aria-valuenow={player.step}
+                    className="relative grid size-11 shrink-0 place-items-center sm:size-12"
+                    role="progressbar"
+                >
+                    <svg aria-hidden="true" className="absolute inset-0 size-full -rotate-90" viewBox="0 0 44 44">
+                        <circle cx="22" cy="22" fill="none" r={RING_RADIUS} stroke="rgba(255,255,255,.15)" strokeWidth="3" />
+                        <circle
+                            className="transition-[stroke-dashoffset,stroke] duration-500 motion-reduce:transition-none"
+                            cx="22"
+                            cy="22"
+                            fill="none"
+                            r={RING_RADIUS}
+                            stroke={ringColor}
+                            strokeDasharray={circumference}
+                            strokeDashoffset={circumference * (1 - progress)}
+                            strokeLinecap="round"
+                            strokeWidth="3"
+                        />
+                    </svg>
+                    <PlayerAvatar profile={player.profile} size="xs" />
+                </div>
                 <div className="order-3 w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
                     <strong className="block truncate text-[11px] leading-4 sm:text-xs">
                         {you ? 'Você' : `@${player.username}`}
@@ -74,22 +104,6 @@ export default memo(function PlayerPanel({
                 >
                     🂠 {player.hand_count}
                 </span>
-            </div>
-
-            <div
-                aria-label={`Progresso de ${player.username}`}
-                aria-valuemax={PATH_LENGTH}
-                aria-valuemin={0}
-                aria-valuenow={player.step}
-                className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/10"
-                role="progressbar"
-            >
-                <div
-                    className="h-full bg-[#b4da33] transition-[width] duration-300 motion-reduce:transition-none"
-                    style={{
-                        width: `${Math.round((player.step / PATH_LENGTH) * 100)}%`,
-                    }}
-                />
             </div>
 
             {active && typeof secondsLeft === 'number' && (

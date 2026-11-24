@@ -159,6 +159,13 @@ export default function RoomCreationModal({
                                 </ModeCard>
                             </div>
 
+                            {mode !== null && (
+                                <RoomComposition
+                                    seats={seats}
+                                    friendSlots={humanVacancies}
+                                />
+                            )}
+
                             {mode === 'bots' && (
                                 <fieldset
                                     ref={botsPicker}
@@ -194,8 +201,8 @@ export default function RoomCreationModal({
                                         aria-live="polite"
                                     >
                                         {bots === 3
-                                            ? 'A mesa ficará completa: você e três bots.'
-                                            : `${3 - bots} ${3 - bots === 1 ? 'vaga continuará' : 'vagas continuarão'} disponível para amigos.`}
+                                            ? 'Mesa completa: você e três bots, sem vagas para amigos.'
+                                            : `Você + ${bots} ${bots === 1 ? 'bot' : 'bots'}: sobram ${3 - bots} ${3 - bots === 1 ? 'vaga' : 'vagas'} para amigos.`}
                                     </p>
                                 </fieldset>
                             )}
@@ -315,6 +322,53 @@ function ModeCard({
                 {label}
             </span>
         </button>
+    );
+}
+
+/** Composição da mesa em tempo real: quem está sentado e quantas vagas ficam para amigos. */
+function RoomComposition({ seats, friendSlots }: { seats: PreviewSeat[]; friendSlots: number }) {
+    return (
+        <section
+            aria-label="Composição da sua sala"
+            className="mt-5 border-[3px] border-[#1d1d1b] bg-white p-3 motion-safe:animate-[fade-in_.2s_ease-out]"
+        >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                <h3 className="font-mono text-xs font-black uppercase tracking-[.12em] text-[#464498]">Sua sala</h3>
+                <p className="text-sm font-bold" aria-live="polite">
+                    {friendSlots === 0
+                        ? 'Nenhuma vaga para amigos'
+                        : `${friendSlots} ${friendSlots === 1 ? 'vaga' : 'vagas'} para ${friendSlots === 1 ? 'amigo' : 'amigos'}`}
+                </p>
+            </div>
+            <ol className="mt-3 grid grid-cols-4 gap-2" aria-label="Quatro lugares da mesa">
+                {seats.map((seat, index) => {
+                    const botNumber = seats.slice(0, index + 1).filter((s) => s.type === 'bot').length;
+                    const label = seat.type === 'host' ? 'Você' : seat.type === 'bot' ? `Bot ${botNumber}` : 'Vaga para amigo';
+                    const tone =
+                        seat.type === 'host'
+                            ? 'border-[#1d1d1b] bg-[#b4da33]'
+                            : seat.type === 'bot'
+                              ? 'border-[#1d1d1b] bg-[#464498] text-white'
+                              : 'border-dashed border-[#1d1d1b]/50 bg-[#f3f1ec] text-[#5b5953]';
+
+                    return (
+                        <li
+                            key={`${seat.type}-${index}`}
+                            className={`flex min-h-[5.5rem] flex-col items-center justify-center gap-1 border-[3px] p-1 text-center transition motion-reduce:transition-none ${tone}`}
+                        >
+                            {seat.type === 'friend' ? (
+                                <span aria-hidden="true" className="grid size-8 place-items-center rounded-full border-2 border-dashed border-[#1d1d1b]/50 font-mono text-lg">
+                                    +
+                                </span>
+                            ) : (
+                                <PlayerAvatar profile={seat.profile} size="xs" />
+                            )}
+                            <span className="font-mono text-[10px] font-black uppercase leading-tight">{label}</span>
+                        </li>
+                    );
+                })}
+            </ol>
+        </section>
     );
 }
 

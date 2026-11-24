@@ -54,6 +54,10 @@ export default function Register({
                     >
                         G <span>Continuar com Google</span>
                     </a>
+                    <p className="mt-3 text-xs leading-5 text-ink/55">
+                        Já tem conta com este e-mail? O Google entra direto nela. Não conseguiu? Use{' '}
+                        <Link href={route('login')} className="font-bold text-purple-700 hover:underline">e-mail e senha</Link>.
+                    </p>
                     <Divider text="ou cadastre-se com e-mail" />
                 </>
             )}

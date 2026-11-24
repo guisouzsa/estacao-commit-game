@@ -1,6 +1,6 @@
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import type { PanelPlayer } from '@/Components/game/PlayerPanel';
-import { INDICATOR_POSITION, PHASE_ENDS, phasesDone, type Side } from '@/lib/gameGeometry';
+import { INDICATOR_POSITION, PATH_LENGTH, type Side } from '@/lib/gameGeometry';
 import { memo } from 'react';
 
 /**
@@ -8,6 +8,8 @@ import { memo } from 'react';
  * de cartas e marcações de progresso. Substitui os painéis grandes do topo. Clicar abre a prévia do perfil.
  * `data-panel` é o ponto de partida das cartas em voo dos outros jogadores.
  */
+const RING_RADIUS = 46;
+
 export default memo(function BoardIndicator({
     player,
     side,
@@ -22,7 +24,10 @@ export default memo(function BoardIndicator({
     onSelect: (id: number, element: HTMLElement) => void;
 }) {
     const position = INDICATOR_POSITION[side];
-    const done = phasesDone(player.step);
+    // Progresso REAL: etapas já cumpridas do percurso (estado do servidor), nunca inventado no front.
+    const progress = Math.min(1, Math.max(0, player.step / PATH_LENGTH));
+    const circumference = 2 * Math.PI * RING_RADIUS;
+    const ringColor = player.blocked ? '#d01600' : active ? '#f481c6' : '#b4da33';
 
     return (
         <button
@@ -35,10 +40,28 @@ export default memo(function BoardIndicator({
             type="button"
         >
             <span
-                className={`block aspect-square rounded-full ${active ? 'turn-glow' : ''} ${player.blocked ? 'impact ring-2 ring-[#d01600]' : ''}`}
+                className={`relative block aspect-square rounded-full bg-[#1d1d1b]/70 ${active ? 'turn-glow' : ''} ${player.blocked ? 'impact' : ''}`}
                 key={player.blocked ? 'blocked' : 'free'}
             >
-                <PlayerAvatar profile={player.profile} size="xs" className="!size-full" />
+                {/* Anel de progresso: o arco cresce a cada etapa cumprida; rosa = jogando agora; vermelho = Merge Conflict. */}
+                <svg aria-hidden="true" className="absolute inset-0 size-full -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" fill="none" r={RING_RADIUS} stroke="rgba(255,255,255,.22)" strokeWidth="6" />
+                    <circle
+                        className="transition-[stroke-dashoffset,stroke] duration-500 motion-reduce:transition-none"
+                        cx="50"
+                        cy="50"
+                        fill="none"
+                        r={RING_RADIUS}
+                        stroke={ringColor}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference * (1 - progress)}
+                        strokeLinecap="round"
+                        strokeWidth="6"
+                    />
+                </svg>
+                <span className="absolute inset-[9%] block overflow-hidden rounded-full">
+                    <PlayerAvatar profile={player.profile} size="xs" className="!size-full" />
+                </span>
             </span>
 
             {/* Cartas na mão (discreto, no canto). */}
@@ -51,18 +74,6 @@ export default memo(function BoardIndicator({
                 {player.hand_count}
             </span>
 
-            {/* Progresso: 6 bolinhas (Treinamento, 4 ciclos, Envio). Sem barra. */}
-            <span
-                aria-hidden="true"
-                className="absolute -bottom-1 left-1/2 flex -translate-x-1/2 gap-[2px] rounded-full border border-[#1d1d1b] bg-[#1d1d1b] px-[3px] py-[2px]"
-            >
-                {PHASE_ENDS.map((end, index) => (
-                    <span
-                        className={`size-[5px] rounded-full ${index < done ? 'bg-[#b4da33]' : 'bg-white/25'}`}
-                        key={end}
-                    />
-                ))}
-            </span>
         </button>
     );
 });

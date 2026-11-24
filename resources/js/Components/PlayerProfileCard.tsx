@@ -20,6 +20,8 @@ export interface PlayerProfile {
     primary_badge?: string | null;
     profile_title?: string | null;
     developer_badge?: string | null;
+    /** Criador do projeto; decidido pelo servidor. */
+    is_leader?: boolean;
     created_at?: string | null;
     links?: ProfileLink[];
     badges?: ProfileBadge[];
@@ -209,6 +211,12 @@ export default function PlayerProfileCard({
                         className="flex flex-wrap items-center gap-2"
                         aria-label="Selos do perfil"
                     >
+                        {profile.is_leader && (
+                            <span className="inline-flex items-center gap-1.5 border-2 border-[#1d1d1b] bg-[#f481c6] px-2.5 py-1 font-mono text-[11px] font-black uppercase text-[#1d1d1b] shadow-[2px_2px_0_#1d1d1b]">
+                                <span aria-hidden="true">★</span>
+                                Líder
+                            </span>
+                        )}
                         {profile.primary_badge && (
                             <span className="inline-flex items-center gap-1.5 border-2 border-[#1d1d1b] bg-[#b4da33] px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-[#1d1d1b] shadow-[2px_2px_0_#1d1d1b]">
                                 <span aria-hidden="true">✦</span>

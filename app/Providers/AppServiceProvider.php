@@ -37,7 +37,8 @@ class AppServiceProvider extends ServiceProvider
         Auth::viaRequest('visitor-token', fn (Request $request) => app(GuestIdentity::class)->resolve($request));
 
         // Envio de e-mail por API (Brevo): `MAIL_MAILER=brevo` + BREVO_API_KEY.
-        \Illuminate\Support\Facades\Mail::extend('brevo', fn () => new \App\Mail\BrevoTransport((string) config('services.brevo.key')));
+        \Illuminate\Support\Facades\Mail::extend('brevo', fn () => new \App\Mail\BrevoTransport((string) config('services.brevo.key'), (int) config('mail.http_timeout')));
+        \Illuminate\Support\Facades\Mail::extend('resend-http', fn () => new \App\Mail\ResendHttpTransport((string) config('services.resend.key'), (int) config('mail.http_timeout')));
 
         // E-mail de recuperação de senha com a mesma identidade visual do código de cadastro.
         \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(function (object $notifiable, string $token) {

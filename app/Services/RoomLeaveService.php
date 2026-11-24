@@ -124,6 +124,19 @@ class RoomLeaveService
         return false;
     }
 
+    /**
+     * O anfitrião saiu ou foi removido: o comando vai para o humano que entrou logo depois dele
+     * (ordem de entrada), nunca para um bot. Sem humanos, não há o que transferir.
+     * Chamar dentro da transação que já travou a sala.
+     */
+    public function transferHostFrom(GameRoom $room): void
+    {
+        $next = $room->participants()->where('kind', '!=', 'bot')->orderBy('joined_at')->orderBy('id')->first();
+        if ($next) {
+            $this->transferHost($room, $next);
+        }
+    }
+
     private function transferHost(GameRoom $room, RoomParticipant $next): void
     {
         // Exatamente UMA das colunas de anfitrião fica preenchida (restrição do banco).

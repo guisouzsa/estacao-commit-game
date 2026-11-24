@@ -72,6 +72,7 @@ class PlayerPresenter
             'profile_title' => $user->profile_title,
             'primary_badge' => $user->primary_badge,
             'matches_won' => (int) ($user->matches_won ?? 0),
+            'is_leader' => $user->isLeader(),
         ];
     }
 

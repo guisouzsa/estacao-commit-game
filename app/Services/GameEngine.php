@@ -63,6 +63,7 @@ class GameEngine
             'current_seat' => $firstSeat,
             'turn_number' => 1,
             'version' => 1,
+            'turn_started_at' => now(),
             'state' => [
                 'deck' => $deck,
                 'discard' => [],
@@ -81,6 +82,14 @@ class GameEngine
         }
         if ((int) $match->current_seat !== (int) $participant->seat) {
             throw ValidationException::withMessages(['turn' => 'É a vez de outro jogador.']);
+        }
+
+        // O prazo da vez é decidido pelo servidor: humano que joga depois do tempo (com folga curta para a
+        // rede) não joga mais; a vez dele é pulada pelo GameInactivityService e conta como timeout.
+        $timeout = (int) config('game.turn_timeout_seconds');
+        if (! $participant->isBot() && $timeout > 0 && $match->turn_started_at
+            && $match->turn_started_at->copy()->addSeconds($timeout + 3)->isPast()) {
+            throw ValidationException::withMessages(['turn' => 'Seu tempo acabou. A vez passou para o próximo jogador.']);
         }
 
         $state = $match->state;
@@ -102,6 +111,12 @@ class GameEngine
         $match->version++;
         $match->save();
         $this->record($match, $participant, $action, $payload, $actionUuid);
+
+        // Jogada válida: a sequência de timeouts do humano recomeça do zero.
+        if (! $participant->isBot() && (int) $participant->timeout_streak > 0) {
+            RoomParticipant::query()->whereKey($participant->id)->update(['timeout_streak' => 0]);
+            $participant->timeout_streak = 0;
+        }
     }
 
     /**
@@ -289,6 +304,14 @@ class GameEngine
         }
     }
 
+    /** Passa a vez ao próximo jogador sem jogada (usado no timeout). Persistir fica com quem chama. */
+    public function skipTurn(GameMatch $match): void
+    {
+        $state = $match->state;
+        $this->advance($match, $state);
+        $match->state = $state;
+    }
+
     private function advance(GameMatch $match, array &$state): void
     {
         for ($i = 0; $i < GameRoom::MAX_PARTICIPANTS; $i++) {
@@ -307,6 +330,8 @@ class GameEngine
 
                 continue;
             }
+
+            $match->turn_started_at = now(); // relógio da nova vez (autoridade do servidor)
 
             return;
         }

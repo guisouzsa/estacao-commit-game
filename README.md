@@ -32,6 +32,9 @@ Jogo de tabuleiro multiplayer para aprender e praticar o fluxo de trabalho com G
 11. [Segurança](#segurança)
 12. [Contribuição](#contribuição)
 
+> **Fluxos e operação:** autenticação, multiplayer (tempo de jogada, timeouts, anfitrião) e o que fazer quando um serviço cai estão em
+> [`docs/ARQUITETURA-E-OPERACAO.md`](docs/ARQUITETURA-E-OPERACAO.md).
+>
 > **Documentação de manutenção:** tecnologias, **todas as variáveis de ambiente** e o passo a passo para trocar de
 > hospedagem, banco, e-mail ou Google estão em [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md).
 

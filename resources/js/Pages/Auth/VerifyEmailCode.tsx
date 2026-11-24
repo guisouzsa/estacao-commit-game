@@ -6,10 +6,12 @@ import { FormEventHandler, useEffect, useState } from 'react';
 export default function VerifyEmailCode({
     maskedEmail,
     cooldown,
+    sent,
     status,
 }: {
     maskedEmail: string;
     cooldown: number;
+    sent: boolean;
     status?: string;
 }) {
     const { data, setData, post, processing, errors } = useForm({ code: '' });
@@ -34,9 +36,15 @@ export default function VerifyEmailCode({
 
             <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">Verificação de e-mail</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight">Digite o código.</h1>
-            <p className="mt-3 text-ink/55">
-                Enviamos um código de 6 números para <strong>{maskedEmail}</strong>. Ele vale por poucos minutos.
-            </p>
+            {sent ? (
+                <p className="mt-3 text-ink/55">
+                    Enviamos um código de 6 números para <strong>{maskedEmail}</strong>. Ele vale por poucos minutos.
+                </p>
+            ) : (
+                <p className="mt-3 border-l-4 border-[#d01600] bg-white p-3 text-sm font-semibold text-ink shadow-[3px_3px_0_#d01600]">
+                    Não conseguimos enviar o código para <strong>{maskedEmail}</strong> agora. Use <em>Reenviar código</em> em instantes. Seus dados continuam guardados.
+                </p>
+            )}
 
             {status && (
                 <div className="mt-5 border-l-4 border-lime bg-white p-3 text-sm font-semibold shadow-[3px_3px_0_#b4da33]">

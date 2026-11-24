@@ -31,6 +31,7 @@ class EmailCodeController extends Controller
         return Inertia::render('Auth/VerifyEmailCode', [
             'maskedEmail' => substr($local, 0, 2).str_repeat('•', max(1, strlen($local) - 2)).'@'.$domain,
             'cooldown' => $this->codes->cooldown($pending),
+            'sent' => (bool) ($pending['sent_ok'] ?? false),
             'status' => session('status'),
         ]);
     }

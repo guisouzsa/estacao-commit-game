@@ -1,6 +1,6 @@
 {
   "_comment": "Cenários de PARIDADE entre o motor PHP (GameEngine) e o do Worker (worker/src/engine.ts). 'expected' é gerado pelo PHP (PARITY_UPDATE=1 php artisan test --filter=EngineParityTest); os dois motores precisam produzir exatamente isto. Jogadores indexados pelo assento (1 a 4).",
-  "parity_version": "2026-11-25-1",
+  "parity_version": "2026-11-26-2",
   "scenarios": [
     {
       "name": "login-e-validacoes",

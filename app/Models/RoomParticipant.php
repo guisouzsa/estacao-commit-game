@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class RoomParticipant extends Model
 {
-    protected $fillable = ['room_id','user_id','guest_id','kind','bot_key','is_host','seat','joined_at'];
+    protected $fillable = ['room_id','user_id','guest_id','kind','bot_key','is_host','seat','joined_at','timeout_streak'];
     protected function casts(): array { return ['joined_at'=>'datetime','is_host'=>'boolean']; }
 
     protected static function booted(): void

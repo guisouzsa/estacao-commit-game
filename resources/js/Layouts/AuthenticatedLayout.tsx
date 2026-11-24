@@ -6,9 +6,6 @@ import PlayerSearch from '@/Components/PlayerSearch';
 import { Link, router, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState } from 'react';
 
-const navItem =
-    'inline-flex min-h-10 items-center border-b-[3px] px-2 font-mono text-[11px] font-bold uppercase tracking-wide transition sm:px-3';
-
 export default function Authenticated({
     header,
     children,
@@ -56,52 +53,7 @@ export default function Authenticated({
                         </Link>
                     )}
 
-                    <nav
-                        aria-label="Navegação principal"
-                        className="order-2 hidden shrink-0 items-center gap-1 md:flex"
-                    >
-                        <Link
-                            aria-current={dashboard ? 'page' : undefined}
-                            className={`${navItem} ${dashboard ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75 hover:border-[#f481c6] hover:text-white'}`}
-                            href={route('dashboard')}
-                        >
-                            Início
-                        </Link>
-                        <Link
-                            className={`${navItem} border-transparent text-white/75 hover:border-[#f481c6] hover:text-white`}
-                            href={`${route('dashboard')}#criar-sala`}
-                        >
-                            Criar sala
-                        </Link>
-                        <Link
-                            className={`${navItem} border-transparent text-white/75 hover:border-[#f481c6] hover:text-white`}
-                            href={`${route('dashboard')}#entrar-convite`}
-                        >
-                            Convite
-                        </Link>
-                        {!isGuest && (
-                            <Link
-                                aria-current={ranking ? 'page' : undefined}
-                                className={`${navItem} gap-1.5 ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75 hover:border-[#f481c6] hover:text-white'}`}
-                                href={route('rankings')}
-                            >
-                                <svg
-                                    aria-hidden="true"
-                                    className="size-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="1.8"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4" />
-                                    <path d="M9 8h6" />
-                                </svg>
-                                Rankings
-                            </Link>
-                        )}
-                    </nav>
+                    {/* Desktop e celular usam os mesmos atalhos compactos (Inicial, Rankings, busca, avisos e perfil), sem a faixa de links de texto. */}
 
                     {!isGuest && (
                         <div
@@ -120,7 +72,7 @@ export default function Authenticated({
                             />
                             <Link
                                 aria-current={dashboard ? 'page' : undefined}
-                                className={`inline-flex min-h-11 items-center gap-1.5 border-2 px-3 font-mono text-xs font-black uppercase transition focus:outline-none focus:ring-2 focus:ring-[#b4da33] max-md:order-4 md:hidden ${dashboard ? 'border-[#b4da33] text-[#b4da33]' : 'border-white/25 hover:border-[#b4da33]'}`}
+                                className={`inline-flex min-h-11 items-center gap-1.5 border-2 px-3 font-mono text-xs font-black uppercase transition focus:outline-none focus:ring-2 focus:ring-[#b4da33] max-md:order-4 md:order-2 ${dashboard ? 'border-[#b4da33] text-[#b4da33]' : 'border-white/25 hover:border-[#b4da33]'}`}
                                 href={route('dashboard')}
                             >
                                 <svg
@@ -146,7 +98,7 @@ export default function Authenticated({
                             <Link
                                 aria-current={ranking ? 'page' : undefined}
                                 aria-label="Rankings"
-                                className={`grid size-11 place-items-center border-2 transition focus:outline-none focus:ring-2 focus:ring-[#b4da33] max-md:order-5 md:hidden ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-white/25 hover:border-[#b4da33]'}`}
+                                className={`grid size-11 place-items-center border-2 transition focus:outline-none focus:ring-2 focus:ring-[#b4da33] max-md:order-5 md:order-2 ${ranking ? 'border-[#b4da33] text-[#b4da33]' : 'border-white/25 hover:border-[#b4da33]'}`}
                                 href={route('rankings')}
                             >
                                 <svg

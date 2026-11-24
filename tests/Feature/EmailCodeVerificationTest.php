@@ -173,6 +173,69 @@ class EmailCodeVerificationTest extends TestCase
         $this->get('/reset-password/'.$token.'?email=pessoa@gmail.com')->assertOk();
     }
 
+    private function useResilientMailer(): void
+    {
+        config([
+            'mail.default' => 'resilient',
+            'mail.mailers.resilient.mailers' => ['brevo', 'resend-http'],
+            'services.brevo.key' => 'chave-brevo',
+            'services.resend.key' => 'chave-resend',
+            'mail.from.address' => 'remetente@gmail.com',
+        ]);
+    }
+
+    public function test_when_brevo_is_down_the_alternative_provider_sends_the_email(): void
+    {
+        $this->useResilientMailer();
+        Http::fake([
+            'api.brevo.com/*' => Http::response(['message' => 'down'], 503),
+            'api.resend.com/*' => Http::response(['id' => 'abc'], 200),
+        ]);
+
+        Mail::to('alguem@gmail.com')->send(new EmailCodeMail('123456', 10));
+
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'api.brevo.com'));
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'api.resend.com') && $r['to'] === ['alguem@gmail.com']);
+    }
+
+    public function test_a_permanent_brevo_error_does_not_fall_back_or_retry(): void
+    {
+        $this->useResilientMailer();
+        Http::fake([
+            'api.brevo.com/*' => Http::response(['message' => 'sender not verified'], 400),
+            'api.resend.com/*' => Http::response(['id' => 'abc'], 200),
+        ]);
+
+        try {
+            Mail::to('alguem@gmail.com')->send(new EmailCodeMail('123456', 10));
+            $this->fail('um erro permanente deveria subir');
+        } catch (\RuntimeException) {
+            // esperado
+        }
+
+        Http::assertSentCount(1); // uma tentativa só, nenhum provedor alternativo
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'api.resend.com'));
+    }
+
+    public function test_when_every_provider_fails_the_page_is_honest_and_resend_works_later(): void
+    {
+        config(['verification.enabled' => true]);
+        $this->useResilientMailer();
+        $up = new \stdClass;
+        $up->on = false;
+        Http::fake(fn ($req) => $up->on && str_contains($req->url(), 'brevo') ? Http::response(['messageId' => 'x'], 201) : Http::response([], 500));
+
+        $this->register()->assertRedirect(route('verification.code'));
+        $this->assertSame(0, User::count());
+        $this->get(route('verification.code'))->assertInertia(fn ($page) => $page->where('sent', false));
+
+        $up->on = true;
+        $this->travel(11)->seconds();
+        Mail::purge(); // em produção cada requisição começa com os provedores "vivos"
+        $this->post(route('verification.resend'))->assertSessionDoesntHaveErrors();
+        $this->get(route('verification.code'))->assertInertia(fn ($page) => $page->where('sent', true));
+    }
+
     public function test_the_email_is_branded_escaped_and_has_a_text_version(): void
     {
         config(['app.url' => 'https://estacaocommit.onrender.com']);

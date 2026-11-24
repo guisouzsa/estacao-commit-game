@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileAppearanceUpdateRequest;
 use App\Support\ProfileImageOptimizer;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProfileAppearanceController extends Controller
 {
@@ -48,15 +50,24 @@ class ProfileAppearanceController extends Controller
         $user->primary_badge = $validated['primary_badge'];
         $user->profile_title = $validated['profile_title'] ?? null;
         $user->achievement_badge_id = $validated['achievement_badge_id'] ?? null;
-        DB::transaction(function () use ($user, $validated): void {
-            $user->save();
-            if (array_key_exists('links', $validated)) {
-                $user->profileLinks()->delete();
-                foreach ($validated['links'] as $order => $link) {
-                    $user->profileLinks()->create([...$link, 'sort_order' => $order]);
+        try {
+            DB::transaction(function () use ($user, $validated): void {
+                $user->save();
+                if (array_key_exists('links', $validated)) {
+                    $user->profileLinks()->delete();
+                    foreach ($validated['links'] as $order => $link) {
+                        $user->profileLinks()->create([...$link, 'sort_order' => $order]);
+                    }
                 }
+            });
+        } catch (QueryException $exception) {
+            // Duas pessoas pegando o mesmo identificador ao mesmo tempo: o índice único do banco decide.
+            if (str_contains(strtolower($exception->getMessage()), 'users_username_lower_unique')) {
+                throw ValidationException::withMessages(['username' => 'Este nome de usuário já está sendo utilizado. Escolha outro.']);
             }
-        });
+
+            throw $exception;
+        }
 
         return back()->with('status', 'A aparência do perfil foi atualizada.');
     }

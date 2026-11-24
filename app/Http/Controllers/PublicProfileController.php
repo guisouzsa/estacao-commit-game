@@ -48,6 +48,7 @@ class PublicProfileController extends Controller
                 'profile_background' => $user->profile_background,
                 'primary_badge' => $user->primary_badge ?? 'terminal',
                 'profile_title' => $user->profile_title ?? 'explorer',
+                'is_leader' => $user->isLeader(),
                 'developer_badge' => $user->developer_badge
                     ? config('profiles.developer_badges.'.$user->developer_badge)
                     : null,

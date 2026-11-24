@@ -32,6 +32,7 @@ type Player = {
     profile_background?: string | null;
     profile_title?: string | null;
     primary_badge?: string | null;
+    is_leader?: boolean;
     matches_won?: number | null;
 };
 type Participant = {
@@ -63,6 +64,8 @@ type Game = {
     deck_count: number;
     discard_count: number;
     turn_seconds_left?: number | null;
+    turn_limit_seconds?: number;
+    bot_delay_ms?: number;
     /** Quando a sala concluída será excluída (2 min depois da vitória). */
     cleanup_at?: string | null;
     /** Vitórias do vencedor no ranking geral (só contas). */
@@ -353,6 +356,7 @@ export default function Show({
     // O servidor só joga pelo bot quando alguém pede um passo (com a versão que viu). Aqui, se a vez
     // é de um bot, esperamos um instante (para dar para ver a jogada) e pedimos UM passo. Quando o
     // estado novo chega, se for a vez de outro bot, repetimos. Nenhum bot joga junto com outro.
+    const botDelay = Math.max(150, game.bot_delay_ms ?? 700);
     const botTurn =
         game.status === 'active' && currentPlayer?.player.is_bot === true;
     useEffect(() => {
@@ -370,10 +374,10 @@ export default function Show({
                     },
                 );
             },
-            reduced ? 600 : 1300,
+            reduced ? Math.min(400, botDelay) : botDelay,
         );
         return () => window.clearTimeout(timer);
-    }, [botTurn, game.version, room.id, reduced]);
+    }, [botTurn, game.version, room.id, reduced, botDelay]);
 
     // ---------- Cartas em voo ----------
     const [flights, setFlights] = useState<Flight[]>([]);
@@ -576,9 +580,12 @@ export default function Show({
     const secondsLeft =
         clock.base === null
             ? null
-            : Math.max(
-                  0,
-                  clock.base - Math.floor((Date.now() - clock.at) / 1000),
+            : Math.min(
+                  game.turn_limit_seconds ?? 30,
+                  Math.max(
+                      0,
+                      clock.base - Math.floor((Date.now() - clock.at) / 1000),
+                  ),
               );
 
     // ---------- Histórico compacto ----------
@@ -749,7 +756,7 @@ export default function Show({
 
                 <section className="mx-auto w-full max-w-[1280px] px-2 py-2 max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-1.5 max-lg:py-1 sm:px-4">
                     {/* Prioridade visual: 1) tabuleiro e cartas, 2) quem joga agora, 3) indicadores. */}
-                    <div className="relative z-20 shrink-0 lg:pt-10">
+                    <div className="relative z-20 shrink-0 lg:pt-2">
                         <TurnBanner
                             current={
                                 currentPlayer
@@ -775,7 +782,7 @@ export default function Show({
                         />
                     </div>
 
-                    <div className="mx-auto w-full max-lg:min-h-0 max-lg:flex-1 max-lg:[container-type:size] lg:mt-1 lg:w-[max(18rem,min(calc(100vw_-_21rem),calc(100dvh_-_19rem),58rem))]">
+                    <div className="mx-auto w-full max-lg:min-h-0 max-lg:flex-1 max-lg:[container-type:size] lg:mt-1 lg:w-[max(18rem,min(calc(100vw_-_21rem),calc(100dvh_-_23rem),58rem))]">
                         {/* Celular: o tabuleiro ocupa o MAIOR quadrado que cabe no espaço livre (sem rolagem). */}
                         <div className="max-lg:grid max-lg:size-full max-lg:place-items-center">
                             <div className="w-full max-lg:w-[min(100cqw,100cqh)]">
@@ -791,10 +798,10 @@ export default function Show({
                         </div>
                     </div>
 
-                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_#0006] max-lg:mt-0 max-lg:shrink-0 sm:p-3 lg:mt-1 lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3">
+                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_#0006] max-lg:mt-0 max-lg:shrink-0 sm:p-3 [@media(min-width:1024px)_and_(max-height:1100px)]:sm:p-2 lg:mt-1 lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3">
                         <div className="relative min-w-0">
                             <div
-                                className="flex min-h-[9.5rem] items-end gap-0 overflow-x-auto px-1 pb-2 pt-7 [scrollbar-width:none] sm:gap-2 sm:[scrollbar-width:thin] max-sm:[&>*+*]:-ml-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto"
+                                className="flex min-h-[9.5rem] items-end gap-0 overflow-x-auto px-1 pb-2 pt-7 [@media(min-width:1024px)_and_(max-height:1100px)]:min-h-[7.25rem] [@media(min-width:1024px)_and_(max-height:1100px)]:pt-4 [scrollbar-width:none] sm:gap-2 sm:[scrollbar-width:thin] max-sm:[&>*+*]:-ml-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto"
                                 onScroll={measureHand}
                                 ref={handRef}
                             >

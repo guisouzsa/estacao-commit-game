@@ -613,6 +613,23 @@ export default function Show({
                         <span className="font-mono text-[10px] uppercase text-white/65">
                             Turno {game.turn_number}
                         </span>
+                        {/* Quem está jogando agora (sempre visível, também no celular). */}
+                        {game.status === 'active' && currentPlayer && (
+                            <span
+                                aria-live="polite"
+                                className="inline-flex min-w-0 max-w-[11rem] items-center gap-1.5 rounded-full border border-[#b4da33]/60 bg-[#b4da33]/15 px-2.5 py-1 font-mono text-[10px] font-black uppercase text-[#b4da33] sm:max-w-xs"
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className="size-2 shrink-0 animate-pulse rounded-full bg-[#b4da33] motion-reduce:animate-none"
+                                />
+                                <span className="truncate">
+                                    {isTurn
+                                        ? 'Você está jogando'
+                                        : `@${currentPlayer.player.username} está jogando`}
+                                </span>
+                            </span>
+                        )}
                     </div>
                     <div className="relative flex items-center gap-2 text-[10px] uppercase">
                         <span

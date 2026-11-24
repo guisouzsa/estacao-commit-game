@@ -174,7 +174,7 @@ export default function Show({
                 ['clear_credentials', 'merge_conflict'].includes(card),
         );
     const turnHint = canPlayNow
-        ? 'Sua vez — escolha uma carta'
+        ? 'Você tem cartas para jogar!'
         : 'Sem jogada? Troque uma carta — conta como sua vez';
     const isPlayable = (card: string) =>
         isTurn &&
@@ -247,6 +247,72 @@ export default function Show({
             );
     }, [game.history]);
 
+    // ---------- Bloco novo: sai do baralho e vai para a mão ----------
+    // Ao jogar um Bloco de Código, o seguinte é entregue na hora (regra). A carta nova VOA do baralho
+    // até o lugar do Bloco na mão; até chegar, o Bloco da mão fica invisível (sem "surgir do nada").
+    const viewerBlocks = blocksPlayed(viewer);
+    const previousBlocks = useRef<number | null>(null);
+    const [blockIncoming, setBlockIncoming] = useState(false);
+    useEffect(() => {
+        const before = previousBlocks.current;
+        previousBlocks.current = viewerBlocks;
+        if (
+            before === null ||
+            viewerBlocks <= before ||
+            viewerBlocks >= 4 ||
+            reduced
+        )
+            return;
+        setBlockIncoming(true);
+        const safety = window.setTimeout(() => setBlockIncoming(false), 1800);
+        const frame = requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+                const from = rectOf('[data-pile="deck"]');
+                const to = rectOf('[data-hand-key="block"]');
+                if (!from || !to) return setBlockIncoming(false);
+                launch({
+                    card: `block_${viewerBlocks + 1}`,
+                    from,
+                    to,
+                    rotate: 0,
+                    hold: false,
+                    onLand: () => setBlockIncoming(false),
+                });
+            }),
+        );
+        return () => {
+            cancelAnimationFrame(frame);
+            window.clearTimeout(safety);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewerBlocks]);
+
+    // ---------- Vez dos bots: UMA jogada por vez, no ritmo da mesa ----------
+    // O servidor só joga pelo bot quando alguém pede um passo (com a versão que viu). Aqui, se a vez
+    // é de um bot, esperamos um instante (para dar para ver a jogada) e pedimos UM passo. Quando o
+    // estado novo chega, se for a vez de outro bot, repetimos. Nenhum bot joga junto com outro.
+    const botTurn =
+        game.status === 'active' && currentPlayer?.player.is_bot === true;
+    useEffect(() => {
+        if (!botTurn) return;
+        const timer = window.setTimeout(
+            () => {
+                if (busyRef.current) return;
+                router.post(
+                    route('games.bots', room.id),
+                    { version: game.version },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        only: PARTIAL,
+                    },
+                );
+            },
+            reduced ? 600 : 1300,
+        );
+        return () => window.clearTimeout(timer);
+    }, [botTurn, game.version, room.id, reduced]);
+
     // ---------- Cartas em voo ----------
     const [flights, setFlights] = useState<Flight[]>([]);
     const [freshSlot, setFreshSlot] = useState<string | null>(null);
@@ -256,6 +322,7 @@ export default function Show({
         setFlights((current) => {
             const done = current.find((flight) => flight.id === id);
             if (done?.slotKey) setFreshSlot(done.slotKey);
+            done?.onLand?.();
             return current.filter((flight) => flight.id !== id);
         });
     }, []);
@@ -697,16 +764,22 @@ export default function Show({
                                 ref={handRef}
                             >
                                 {holdsBlock(viewer) && (
-                                    <GameCard
-                                        card={`block_${blocksPlayed(viewer) + 1}`}
-                                        dataKey="block"
-                                        onClick={
-                                            isTurn && !busy && blockRequired
-                                                ? () => send('play_block')
-                                                : undefined
+                                    <div
+                                        className={
+                                            blockIncoming ? 'invisible' : ''
                                         }
-                                        playable={isTurn && blockRequired}
-                                    />
+                                    >
+                                        <GameCard
+                                            card={`block_${blocksPlayed(viewer) + 1}`}
+                                            dataKey="block"
+                                            onClick={
+                                                isTurn && !busy && blockRequired
+                                                    ? () => send('play_block')
+                                                    : undefined
+                                            }
+                                            playable={isTurn && blockRequired}
+                                        />
+                                    </div>
                                 )}
                                 <AnimatePresence
                                     initial={false}

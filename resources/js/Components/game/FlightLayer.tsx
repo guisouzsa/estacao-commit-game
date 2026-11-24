@@ -14,6 +14,8 @@ export type Flight = {
     small?: boolean;
     /** Espaço do tabuleiro (`jogador:passo`) que fica vazio até a carta chegar. */
     slotKey?: string;
+    /** Chamado quando a carta chega ao destino (ex.: mostrar a carta real da mão). */
+    onLand?: () => void;
 };
 
 const FROM_W = 96; // largura base da carta em voo

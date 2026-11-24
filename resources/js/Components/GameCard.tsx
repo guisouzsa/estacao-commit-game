@@ -19,7 +19,11 @@ const CARD_META: Record<
         tone: '#f481c6',
     },
     git_push: { label: 'git push', image: 'git-push.png', tone: '#d01600' },
-    pull_request: { label: 'Pull Request', tone: '#b4da33' },
+    pull_request: {
+        label: 'Pull Request',
+        image: 'pull-request.png',
+        tone: '#464498',
+    },
     clear_credentials: {
         label: 'Limpar Credenciais',
         image: 'limpar-credenciais.png',
@@ -96,9 +100,10 @@ export default function GameCard({
             initial={reduced ? false : { opacity: 0, y: -90, scale: 0.7 }}
             animate={{
                 opacity: 1,
-                y: selected ? -16 : 0,
-                scale: selected ? 1.2 : 1,
-                zIndex: selected ? 30 : 0,
+                // Carta que PODE ser jogada fica maior que as demais; a selecionada, maior ainda.
+                y: selected ? -16 : playable ? -8 : 0,
+                scale: selected ? 1.2 : playable ? 1.1 : 1,
+                zIndex: selected ? 30 : playable ? 5 : 0,
             }}
             whileHover={
                 !reduced && onClick

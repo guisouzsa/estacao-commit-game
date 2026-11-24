@@ -42,12 +42,13 @@ export default function Welcome({ auth }: PageProps) {
                         <a href="#inicio">Início</a><a href="#como-funciona">Como funciona</a><a href="#jogo">O jogo</a><a href="#aprender">Aprenda jogando</a>
                     </nav>
                     <div className="hidden items-center gap-3 lg:flex">
+                        {!auth.user && <Link href={route('register')} className="btn-primary">Criar conta</Link>}
                         {!auth.user && <Link href={route('login')} className="btn-ghost">Entrar</Link>}
                         <Link href={playHref} className="btn-primary">{auth.user ? 'Ir ao painel' : 'Jogar agora'}</Link>
                     </div>
                     <button onClick={() => setMenuOpen(!menuOpen)} className="grid size-11 place-items-center border-2 border-white/30 lg:hidden" aria-label="Abrir menu" aria-expanded={menuOpen}>{menuOpen ? '×' : '☰'}</button>
                 </div>
-                {menuOpen && <nav className="border-t border-white/10 bg-[#1d1d1b] px-5 py-5 lg:hidden"><div className="grid gap-4 font-bold"><a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a><a href="#jogo" onClick={() => setMenuOpen(false)}>O jogo</a><a href="#aprender" onClick={() => setMenuOpen(false)}>Aprenda jogando</a><div className="mt-2 flex gap-3"><Link href={route('login')} className="btn-ghost">Entrar</Link><Link href={playHref} className="btn-primary">Jogar agora</Link></div></div></nav>}
+                {menuOpen && <nav className="border-t border-white/10 bg-[#1d1d1b] px-5 py-5 lg:hidden"><div className="grid gap-4 font-bold"><a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a><a href="#jogo" onClick={() => setMenuOpen(false)}>O jogo</a><a href="#aprender" onClick={() => setMenuOpen(false)}>Aprenda jogando</a><div className="mt-2 flex flex-col gap-3 sm:flex-row">{!auth.user && <Link href={route('register')} className="btn-primary justify-center">Criar conta</Link>}{!auth.user && <Link href={route('login')} className="btn-ghost justify-center">Entrar</Link>}<Link href={playHref} className="btn-primary justify-center">{auth.user ? 'Ir ao painel' : 'Jogar agora'}</Link></div></div></nav>}
             </header>
 
             <section id="inicio" className="relative mx-auto grid min-h-[min(720px,100dvh)] w-full max-w-[1500px] items-center gap-8 px-5 pb-12 pt-24 lg:grid-cols-[.88fr_1.12fr] lg:px-8">

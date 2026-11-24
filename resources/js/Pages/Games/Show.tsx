@@ -1,20 +1,22 @@
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import FlightLayer, { type Flight } from '@/Components/game/FlightLayer';
 import GameBoard from '@/Components/game/GameBoard';
-import VictoryScreen from '@/Components/game/VictoryScreen';
 import GameLog, { type LogActor } from '@/Components/game/GameLog';
 import type { PanelPlayer } from '@/Components/game/PlayerPanel';
-import PlayerPreview, { type PreviewPlayer } from '@/Components/game/PlayerPreview';
-import TurnBanner from '@/Components/game/TurnBanner';
+import PlayerPreview, {
+    type PreviewPlayer,
+} from '@/Components/game/PlayerPreview';
 import TargetPicker from '@/Components/game/TargetPicker';
+import TurnBanner from '@/Components/game/TurnBanner';
+import VictoryScreen from '@/Components/game/VictoryScreen';
 import GameCard, { cardLabel } from '@/Components/GameCard';
 import MissionTutorial from '@/Components/MissionTutorial';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { AREAS, sideOf, type Side } from '@/lib/gameGeometry';
+import { AREAS, sideOf } from '@/lib/gameGeometry';
 import { startRoomSync } from '@/lib/roomSync';
-import { claimTutorial } from '@/lib/tutorialOnce';
 import { toast } from '@/lib/toast';
-import { Head, Link, router } from '@inertiajs/react';
+import { claimTutorial } from '@/lib/tutorialOnce';
+import { Head, router } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -108,7 +110,10 @@ export default function Show({
     participants: Participant[];
     hand: string[];
     requiredCard?: string | null;
-    profileLabels?: { titles: Record<string, string>; badges: Record<string, string> };
+    profileLabels?: {
+        titles: Record<string, string>;
+        badges: Record<string, string>;
+    };
 }) {
     const [selected, setSelected] = useState<number | null>(null);
     const [target, setTarget] = useState('');
@@ -124,10 +129,17 @@ export default function Show({
     const staleDuringAction = useRef(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
     // Prévia de perfil: só guarda QUEM e ONDE (a posição vem do indicador clicado); os dados são os da partida.
-    const [preview, setPreview] = useState<{ id: number; anchor: DOMRect } | null>(null);
+    const [preview, setPreview] = useState<{
+        id: number;
+        anchor: DOMRect;
+    } | null>(null);
     const closePreview = useCallback(() => setPreview(null), []);
     const selectPlayer = useCallback((id: number, element: HTMLElement) => {
-        setPreview((current) => (current?.id === id ? null : { id, anchor: element.getBoundingClientRect() }));
+        setPreview((current) =>
+            current?.id === id
+                ? null
+                : { id, anchor: element.getBoundingClientRect() },
+        );
     }, []);
     const [leaving, setLeaving] = useState(false);
     const [tutorial, setTutorial] = useState(false);
@@ -137,7 +149,12 @@ export default function Show({
     useEffect(() => {
         // Só nas primeiras rodadas: quem entra (ou volta de outro aparelho) numa partida já em andamento
         // não é interrompido por um tutorial; o botão "Como jogar" continua disponível.
-        if (game.status === 'active' && game.turn_number <= 6 && claimTutorial(game.id)) setTutorial(true);
+        if (
+            game.status === 'active' &&
+            game.turn_number <= 6 &&
+            claimTutorial(game.id)
+        )
+            setTutorial(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [game.id]);
     // Indica (sombra + seta) quando a mão tem mais cartas fora da tela; só ela rola, a mesa não.
@@ -592,13 +609,6 @@ export default function Show({
     );
 
     // ---------- Mesa ----------
-    const bySide = (side: Side) =>
-        participants.find(
-            (participant) => sideOf(participant.seat, viewer.seat) === side,
-        );
-    const left = bySide(1);
-    const top = bySide(2);
-    const right = bySide(3);
     const boardPlayers = participants.map((participant) => ({
         id: participant.id,
         side: sideOf(participant.seat, viewer.seat),
@@ -635,10 +645,13 @@ export default function Show({
     const indicators = participants.map((participant) => ({
         player: toPanel(participant),
         side: sideOf(participant.seat, viewer.seat),
-        active: game.status === 'active' && game.current_seat === participant.seat,
+        active:
+            game.status === 'active' && game.current_seat === participant.seat,
         you: participant.is_viewer,
     }));
-    const previewTarget = preview ? participants.find((p) => p.id === preview.id) : undefined;
+    const previewTarget = preview
+        ? participants.find((p) => p.id === preview.id)
+        : undefined;
     const bannerHint =
         game.status !== 'active'
             ? ''
@@ -672,7 +685,7 @@ export default function Show({
                         </span>
                         <button
                             aria-expanded={historyOpen}
-                            className="relative min-h-11 border border-white/25 px-3 font-mono font-bold hover:border-[#b4da33] sm:min-h-9 lg:hidden"
+                            className="relative min-h-11 border-2 border-[#464498] bg-[#464498] px-3 font-mono font-bold text-white shadow-[2px_2px_0_#f481c6] hover:bg-[#5553ad] sm:min-h-9 lg:hidden"
                             onClick={() => setHistoryOpen((value) => !value)}
                             type="button"
                         >
@@ -684,16 +697,16 @@ export default function Show({
                             )}
                         </button>
                         <button
-                            aria-label="Como jogar"
-                            className="min-h-11 border border-white/25 px-3 font-mono font-bold hover:border-[#b4da33] sm:min-h-9"
+                            aria-label="Aprenda a jogar"
+                            className="min-h-11 border-2 border-[#b4da33] bg-[#b4da33] px-3 font-mono font-black text-[#1d1d1b] shadow-[2px_2px_0_#464498] hover:bg-white sm:min-h-9"
                             onClick={() => setTutorial(true)}
-                            title="Como jogar"
+                            title="Aprenda a jogar"
                             type="button"
                         >
-                            ?
+                            Aprenda
                         </button>
                         <button
-                            className="min-h-11 border border-white/25 px-3 font-mono font-bold hover:border-[#f481c6] sm:min-h-9"
+                            className="min-h-11 border-2 border-[#f481c6] bg-[#f481c6] px-3 font-mono font-black text-[#1d1d1b] shadow-[2px_2px_0_#d01600] hover:bg-white sm:min-h-9"
                             onClick={() => setLeaveOpen(true)}
                             type="button"
                         >
@@ -740,15 +753,24 @@ export default function Show({
                         <TurnBanner
                             current={
                                 currentPlayer
-                                    ? { username: currentPlayer.player.username, profile: currentPlayer.player }
+                                    ? {
+                                          username:
+                                              currentPlayer.player.username,
+                                          profile: currentPlayer.player,
+                                      }
                                     : winner
-                                      ? { username: winner.player.username, profile: winner.player }
+                                      ? {
+                                            username: winner.player.username,
+                                            profile: winner.player,
+                                        }
                                       : null
                             }
                             finished={game.status !== 'active'}
                             hint={bannerHint}
                             isTurn={isTurn}
-                            secondsLeft={game.status === 'active' ? secondsLeft : null}
+                            secondsLeft={
+                                game.status === 'active' ? secondsLeft : null
+                            }
                             turnNumber={game.turn_number}
                         />
                     </div>

@@ -23,7 +23,7 @@ export default function HowToPlayButton({
     const style =
         variant === 'landing'
             ? 'btn-primary justify-center'
-            : 'flex min-h-12 items-center justify-center border-2 border-[#1d1d1b] bg-[#b4da33] px-4 text-center font-mono text-xs font-black uppercase shadow-[4px_4px_0_#464498] transition hover:-translate-y-0.5';
+            : 'flex min-h-12 w-full items-center justify-center border-2 border-[#1d1d1b] bg-[#b4da33] px-4 text-center font-mono text-xs font-black uppercase shadow-[4px_4px_0_#464498] transition hover:-translate-y-0.5';
 
     return (
         <>
@@ -32,7 +32,7 @@ export default function HowToPlayButton({
                 onClick={() => setOpen(true)}
                 type="button"
             >
-                Como jogar
+                Aprenda a jogar
             </button>
             {open && (
                 <Suspense fallback={null}>

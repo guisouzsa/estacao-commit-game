@@ -52,7 +52,7 @@ export default function Authenticated({
                             className="order-1 inline-flex min-h-11 items-center border-2 border-[#1d1d1b] bg-[#b4da33] px-4 font-mono text-xs font-black uppercase text-[#1d1d1b] shadow-[3px_3px_0_#f481c6] md:hidden"
                             href={route('dashboard')}
                         >
-                            Início
+                            Inicial
                         </Link>
                     )}
 
@@ -65,7 +65,7 @@ export default function Authenticated({
                             className={`${navItem} ${dashboard ? 'border-[#b4da33] text-[#b4da33]' : 'border-transparent text-white/75 hover:border-[#f481c6] hover:text-white'}`}
                             href={route('dashboard')}
                         >
-                            Jogar
+                            Início
                         </Link>
                         <Link
                             className={`${navItem} border-transparent text-white/75 hover:border-[#f481c6] hover:text-white`}
@@ -111,7 +111,7 @@ export default function Authenticated({
                         </div>
                     )}
 
-                    {/* Conta no celular: linha 1 = logo + Sair; linha 2 = Jogar, Rankings, Busca, Avisos e, por último, o Perfil. */}
+                    {/* Conta no celular: linha 1 = logo + Sair; linha 2 = Inicial, Rankings, Busca, Avisos e, por último, o Perfil. */}
                     {!isGuest && (
                         <>
                             <div
@@ -131,7 +131,7 @@ export default function Authenticated({
                                 >
                                     <path d="M8 5v14l11-7z" />
                                 </svg>
-                                Jogar
+                                Inicial
                             </Link>
                         </>
                     )}

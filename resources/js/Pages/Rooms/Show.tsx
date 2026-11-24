@@ -255,7 +255,7 @@ export default function Show({
                             onClick={() => setTutorial(true)}
                             type="button"
                         >
-                            <span aria-hidden="true">?</span> Como jogar
+                            Aprenda a jogar
                         </button>
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#1d1d1b]/15 pb-3">
                             <div className="flex flex-wrap items-center gap-2">

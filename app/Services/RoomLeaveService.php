@@ -119,7 +119,6 @@ class RoomLeaveService
             $match->state = $state;
             $match->version++;
             $match->save();
-            $this->engine->runBots($match->refresh(), $room);
         }
 
         return false;

@@ -71,8 +71,6 @@ class GameEngine
             ],
         ]);
 
-        $this->runBots($match, $room);
-
         return $match->fresh();
     }
 
@@ -106,34 +104,50 @@ class GameEngine
         $this->record($match, $participant, $action, $payload, $actionUuid);
     }
 
+    /**
+     * Joga UMA vez pelo bot da vez (se a vez é de um bot). Retorna true se jogou.
+     * Cada jogador, bots inclusive, joga a sua vez sozinho: nenhum bot joga junto com outro nem
+     * em cadeia. Quem dá o ritmo é o cliente (ver GameMatchController::botStep), uma jogada por vez.
+     */
+    public function botStep(GameMatch $match, GameRoom $room): bool
+    {
+        if ($match->status !== 'active') {
+            return false;
+        }
+        $bot = $room->participants()->where('seat', $match->current_seat)->where('kind', 'bot')->first();
+        if (! $bot) {
+            return false;
+        }
+
+        $state = $match->state;
+        $player = $state['players'][(string) $bot->id];
+        $action = 'exchange';
+        $payload = ['card' => $player['hand'][0] ?? ''];
+
+        if (($player['pending_discard'] ?? 0) > 0) {
+            $action = 'discard_excess';
+        } else {
+            $required = self::REQUIRED[$player['step']] ?? null;
+            if (str_starts_with((string) $required, 'block_')) {
+                $action = 'play_block';
+                $payload = [];
+            } elseif ($required !== null && in_array($required, $player['hand'], true)) {
+                $action = 'play_card';
+                $payload = ['card' => $required];
+            }
+        }
+
+        $this->act($match, $bot, $action, $payload, (string) Str::uuid());
+        $match->refresh();
+
+        return true;
+    }
+
+    /** Roda todos os bots em sequência (uso em testes e rotinas internas; a partida real usa botStep). */
     public function runBots(GameMatch $match, GameRoom $room): void
     {
-        for ($guard = 0; $guard < 12 && $match->status === 'active'; $guard++) {
-            $bot = $room->participants()->where('seat', $match->current_seat)->where('kind', 'bot')->first();
-            if (! $bot) {
-                return;
-            }
-
-            $state = $match->state;
-            $player = $state['players'][(string) $bot->id];
-            $action = 'exchange';
-            $payload = ['card' => $player['hand'][0] ?? ''];
-
-            if (($player['pending_discard'] ?? 0) > 0) {
-                $action = 'discard_excess';
-            } else {
-                $required = self::REQUIRED[$player['step']] ?? null;
-                if (str_starts_with((string) $required, 'block_')) {
-                    $action = 'play_block';
-                    $payload = [];
-                } elseif ($required !== null && in_array($required, $player['hand'], true)) {
-                    $action = 'play_card';
-                    $payload = ['card' => $required];
-                }
-            }
-
-            $this->act($match, $bot, $action, $payload, (string) Str::uuid());
-            $match->refresh();
+        for ($guard = 0; $guard < 12 && $this->botStep($match, $room); $guard++) {
+            // uma jogada por volta
         }
     }
 

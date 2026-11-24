@@ -44,6 +44,7 @@ Route::middleware('auth:web,visitor')->group(function () {
     Route::post('/salas/{room}/partida', [GameMatchController::class, 'start'])->whereUuid('room')->middleware('throttle:10,1')->name('games.start');
     Route::get('/salas/{room}/partida', [GameMatchController::class, 'show'])->whereUuid('room')->name('games.show');
     Route::post('/salas/{room}/partida/acoes', [GameMatchController::class, 'action'])->whereUuid('room')->middleware('throttle:60,1')->name('games.action');
+    Route::post('/salas/{room}/partida/bots', [GameMatchController::class, 'botStep'])->whereUuid('room')->middleware('throttle:120,1')->name('games.bots');
     Route::post('/realtime/token', \App\Http\Controllers\RealtimeTokenController::class)->middleware('throttle:30,1')->name('realtime.token');
     Route::post('/convites/{token}', [GameRoomController::class, 'join'])->where('token', '[A-Za-z2-9]{5}')->middleware('throttle:10,1')->name('rooms.join');
 });

@@ -100,14 +100,48 @@ class GameMatchController extends Controller
             $wasActive = $match->status === 'active';
             $engine->act($match, $participant, $validated['action'], $validated, $validated['action_uuid']);
             $match->refresh();
-            $engine->runBots($match, $room);
-            $match->refresh();
             if ($wasActive && $match->status === 'finished') {
                 $this->recordStatistics($room, $match);
             }
         }, 3);
 
         app(RoomStateBroadcaster::class)->publish($room->id, 'game_updated');
+
+        return back();
+    }
+
+    /**
+     * Um passo de bot: joga UMA vez se a vez é de um bot e o cliente viu a versão atual.
+     * Vários clientes podem pedir ao mesmo tempo; só um passo acontece (os demais são ignorados
+     * pela versão). Sem filas nem timers no servidor.
+     */
+    public function botStep(Request $request, GameRoom $room, GameEngine $engine): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_unless($room->hasParticipant($actor), 404);
+        $validated = $request->validate(['version' => ['required', 'integer', 'min:1']]);
+
+        if ($this->isRemote($room)) {
+            return back(); // no Durable Object os bots jogam lá dentro
+        }
+
+        $played = DB::transaction(function () use ($room, $engine, $validated): bool {
+            $match = GameMatch::query()->where('room_id', $room->id)->lockForUpdate()->first();
+            if (! $match || (int) $validated['version'] !== (int) $match->version) {
+                return false;
+            }
+            $wasActive = $match->status === 'active';
+            $played = $engine->botStep($match, $room);
+            if ($played && $wasActive && $match->status === 'finished') {
+                $this->recordStatistics($room, $match);
+            }
+
+            return $played;
+        }, 3);
+
+        if ($played) {
+            app(RoomStateBroadcaster::class)->publish($room->id, 'game_updated');
+        }
 
         return back();
     }

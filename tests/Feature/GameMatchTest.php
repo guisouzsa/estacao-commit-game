@@ -273,7 +273,10 @@ class GameMatchTest extends TestCase
         $this->assertNull($idle->user_id);
         $this->assertNotNull($idle->bot_key);
         $match->refresh();
-        // O bot jogou a vez dele com o mesmo motor; a mão do lugar foi preservada (4 cartas ou mais).
+        // O bot ocupou o lugar (mesma mão) e joga na vez dele, no passo de bot, não em cadeia.
+        $this->assertSame(2, $match->current_seat);
+        $this->actingAs($users[0])->post(route('games.bots', $room), ['version' => $match->version])->assertRedirect();
+        $match->refresh();
         $this->assertNotSame(2, $match->current_seat);
         $this->assertNotEmpty($match->state['players'][(string) $idle->id]['hand']);
         $this->assertTrue(collect($match->state['history'])->contains(fn ($item) => ($item['notify'] ?? false) && str_contains($item['message'], 'assumiu')));
@@ -356,6 +359,55 @@ class GameMatchTest extends TestCase
         $this->assertSame(1, $match->state['discard'] === [] ? 0 : count(array_keys($match->state['discard'], 'git_push')));
         $this->assertNotSame($me->seat, $match->current_seat, 'a vez passou ao próximo jogador');
         $this->assertSame(0, $match->state['players'][(string) $me->id]['step'], 'trocar não avança o percurso');
+    }
+
+    public function test_bots_play_one_move_at_a_time_never_in_a_chain_after_a_human_move(): void
+    {
+        [$room, $host] = $this->botRoom();
+        $this->actingAs($host)->post(route('games.start', $room));
+        $match = GameMatch::firstOrFail();
+        $me = $room->participants()->where('user_id', $host->id)->firstOrFail();
+        $state = $match->state;
+        $state['players'][(string) $me->id]['hand'] = ['git_login', 'git_add', 'git_add', 'git_pull'];
+        $match->forceFill(['state' => $state, 'current_seat' => 1])->save();
+
+        // Depois da minha jogada a vez passa ao bot 2 e NENHUM bot joga sozinho.
+        $this->actingAs($host)->post(route('games.action', $room), $this->action($match, 'play_card', ['card' => 'git_login']))->assertSessionHasNoErrors();
+        $match->refresh();
+        $this->assertSame(2, $match->current_seat);
+        $this->assertSame(0, $match->state['players'][(string) $room->participants()->where('seat', 2)->value('id')]['step']);
+
+        // Cada passo de bot joga UMA vez e passa a vez ao seguinte.
+        foreach ([3, 4, 1] as $expectedSeat) {
+            $this->actingAs($host)->post(route('games.bots', $room), ['version' => $match->fresh()->version])->assertRedirect();
+            $this->assertSame($expectedSeat, $match->fresh()->current_seat);
+        }
+    }
+
+    public function test_a_bot_step_with_a_stale_version_or_on_a_humans_turn_does_nothing(): void
+    {
+        [$room, $host] = $this->botRoom();
+        $this->actingAs($host)->post(route('games.start', $room));
+        $match = GameMatch::firstOrFail();
+        $match->forceFill(['current_seat' => 1])->save();
+        $version = $match->fresh()->version;
+
+        // Vez de um humano: nada acontece.
+        $this->actingAs($host)->post(route('games.bots', $room), ['version' => $version])->assertRedirect();
+        $this->assertSame($version, $match->fresh()->version);
+
+        // Vez de um bot, mas com a versão velha (outro cliente já deu o passo): ignorado.
+        $match->forceFill(['current_seat' => 2])->save();
+        $this->actingAs($host)->post(route('games.bots', $room), ['version' => $version + 5])->assertRedirect();
+        $this->assertSame($version, $match->fresh()->version);
+    }
+
+    public function test_a_match_does_not_play_for_a_bot_at_the_start(): void
+    {
+        [$room, $host] = $this->botRoom();
+        $this->actingAs($host)->post(route('games.start', $room));
+
+        $this->assertSame(1, GameMatch::firstOrFail()->version, 'ninguém jogou ainda, nem o bot sorteado');
     }
 
     private function botRoom(): array

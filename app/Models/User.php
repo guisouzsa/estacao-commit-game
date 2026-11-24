@@ -39,6 +39,7 @@ class User extends Authenticatable
         'avatar',
         'profile_cover',
         'profile_frame',
+        'profile_background',
         'primary_badge',
         'profile_title',
         'achievement_badge_id',

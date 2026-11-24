@@ -24,6 +24,7 @@ class ProfileController extends Controller
             'googleLinked' => filled($request->user()->google_id),
             'appearanceOptions' => [
                 'frames' => config('profiles.frames'),
+                'backgrounds' => config('profiles.backgrounds'),
                 'badges' => config('profiles.badges'),
                 'titles' => config('profiles.titles'),
             ],

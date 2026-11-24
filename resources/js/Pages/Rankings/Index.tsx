@@ -1,6 +1,6 @@
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
 type Entry = {
@@ -26,6 +26,15 @@ type RankingPeriod = {
     end: string;
     previousStart: string;
     previousEnd: string;
+    /** Semana ISO (só no semanal). */
+    number?: number;
+    /** Chave do mês, AAAA-MM (só no mensal). */
+    key?: string;
+    isCurrent?: boolean;
+    /** Chave do período anterior/seguinte (data da segunda-feira, ou AAAA-MM). Nula se não houver. */
+    previous?: string | null;
+    next?: string | null;
+    available?: string[];
 };
 
 type RankingPeriods = {
@@ -90,6 +99,28 @@ export default function Index({
     viewerId: string;
 }) {
     const [periodType, setPeriodType] = useState<Scope>('weekly');
+    const [busy, setBusy] = useState(false);
+
+    // Troca de período: só os rankings são pedidos de novo (sem recarregar a página nem
+    // abrir tela de espera); o resto da página fica como está.
+    const goTo = (scope: Scope, key?: string | null) => {
+        if (!key || scope === 'overall') return;
+        router.get(
+            route('rankings'),
+            {
+                week: scope === 'weekly' ? key : periods.weekly.start,
+                month: scope === 'monthly' ? key : periods.monthly.key,
+            },
+            {
+                only: ['periods', 'rankings'],
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+                onStart: () => setBusy(true),
+                onFinish: () => setBusy(false),
+            },
+        );
+    };
     const selectedPeriod = periods[periodType === 'overall' ? 'monthly' : periodType];
     const entries = rankings[periodType];
     const podium = entries.slice(0, 3);
@@ -184,17 +215,79 @@ export default function Index({
                                 </button>
                             </div>
                         </div>
-                        <p
-                            aria-live="polite"
-                            className="mt-3 font-mono text-xs font-bold uppercase tracking-wide text-[#68665f]"
-                        >
-                            Período:{' '}
-                            <span className="text-[#464498]">
-                                {periodType === 'overall'
-                                    ? 'todas as partidas'
-                                    : formatPeriod(selectedPeriod, periodType)}
-                            </span>
-                        </p>
+                        {periodType === 'overall' ? (
+                            <p
+                                aria-live="polite"
+                                className="mt-3 font-mono text-xs font-bold uppercase tracking-wide text-[#68665f]"
+                            >
+                                Período:{' '}
+                                <span className="text-[#464498]">
+                                    todas as partidas, desde o começo
+                                </span>
+                            </p>
+                        ) : (
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <button
+                                    aria-label="Período anterior"
+                                    className="grid size-10 place-items-center border-2 border-[#1d1d1b] bg-white font-mono text-sm font-black shadow-[2px_2px_0_#1d1d1b] transition enabled:hover:bg-[#b4da33] disabled:cursor-not-allowed disabled:opacity-35"
+                                    disabled={!selectedPeriod.previous}
+                                    onClick={() => goTo(periodType, selectedPeriod.previous)}
+                                    type="button"
+                                >
+                                    ‹
+                                </button>
+                                <p
+                                    aria-live="polite"
+                                    className="min-w-0 flex-1 font-mono text-xs font-bold uppercase tracking-wide text-[#68665f] sm:flex-none"
+                                >
+                                    {periodType === 'weekly' && selectedPeriod.number ? (
+                                        <span className="text-[#1d1d1b]">
+                                            Semana {selectedPeriod.number} —{' '}
+                                        </span>
+                                    ) : null}
+                                    <span className="text-[#464498]">
+                                        {formatPeriod(selectedPeriod, periodType)}
+                                    </span>
+                                    {selectedPeriod.isCurrent ? (
+                                        <span className="ml-2 border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 text-[10px] text-[#1d1d1b]">
+                                            atual
+                                        </span>
+                                    ) : null}
+                                </p>
+                                <button
+                                    aria-label="Próximo período"
+                                    className="grid size-10 place-items-center border-2 border-[#1d1d1b] bg-white font-mono text-sm font-black shadow-[2px_2px_0_#1d1d1b] transition enabled:hover:bg-[#b4da33] disabled:cursor-not-allowed disabled:opacity-35"
+                                    disabled={!selectedPeriod.next}
+                                    onClick={() => goTo(periodType, selectedPeriod.next)}
+                                    type="button"
+                                >
+                                    ›
+                                </button>
+                                {periodType === 'monthly' && (selectedPeriod.available?.length ?? 0) > 1 ? (
+                                    <select
+                                        aria-label="Escolher mês"
+                                        className="min-h-10 border-2 border-[#1d1d1b] bg-white px-2 font-mono text-xs font-bold"
+                                        onChange={(event) => goTo('monthly', event.target.value)}
+                                        value={selectedPeriod.key}
+                                    >
+                                        {selectedPeriod.available?.map((key) => (
+                                            <option key={key} value={key}>
+                                                {formatPeriod(
+                                                    { ...selectedPeriod, start: `${key}-01` },
+                                                    'monthly',
+                                                )}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : null}
+                                {busy ? (
+                                    <span
+                                        aria-hidden="true"
+                                        className="size-4 animate-spin rounded-full border-2 border-[#464498] border-t-transparent"
+                                    />
+                                ) : null}
+                            </div>
+                        )}
                     </section>
 
                     <section

@@ -13,7 +13,7 @@
 return [
 
     // Um perfil de visitante expira após este tempo SEM atividade (janela deslizante).
-    'guest_ttl_hours' => (int) env('GUEST_TTL_HOURS', 24),
+    'guest_ttl_hours' => (int) env('GUEST_TTL_HOURS', 6),
 
     // Cookie que guarda o token do visitante (HttpOnly; o valor nunca vai para o JavaScript).
     'guest_cookie' => 'ec_visitor',

@@ -32,7 +32,7 @@ export default function GoogleUsername({
             </p>
             <p className="mt-1 font-mono text-xs text-purple-700">{email}</p>
 
-            <form onSubmit={submit} className="mt-8 space-y-6">
+            <form noValidate onSubmit={submit} className="mt-8 space-y-6">
                 <div>
                     <label className="auth-label" htmlFor="username">Username único</label>
                     <input

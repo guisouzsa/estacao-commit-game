@@ -6,6 +6,7 @@ use App\Models\GameRoom;
 use App\Models\RoomParticipant;
 use App\Models\User;
 use App\Notifications\RoomDeleted;
+use App\Services\FinishedRoomCleanup;
 use App\Services\RoomExpirationService;
 use App\Support\Bots;
 use App\Support\PlayerPresenter;
@@ -27,9 +28,13 @@ class DashboardController extends Controller
 
         // Complementa o scheduler: salas suas com prazo vencido são excluídas agora.
         $expiration->expireDueRoomsHostedBy($actor);
+        // Salas com partida concluída há mais de 2 min saem agora, mesmo sem o scheduler.
+        app(FinishedRoomCleanup::class)->purgeDueFor($actor);
 
         $rooms = GameRoom::query()
             ->whereIn('id', RoomParticipant::query()->forActor($actor)->select('room_id'))
+            // Sala concluída não aceita mais ninguém: não aparece como disponível.
+            ->where('status', '!=', 'finished')
             ->withCount('participants')
             ->latest()
             ->limit(10)

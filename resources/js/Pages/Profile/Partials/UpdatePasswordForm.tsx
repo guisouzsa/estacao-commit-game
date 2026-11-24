@@ -61,7 +61,7 @@ export default function UpdatePasswordForm({
                 </p>
             </header>
 
-            <form onSubmit={updatePassword} className="mt-5 flex flex-1 flex-col space-y-4">
+            <form noValidate onSubmit={updatePassword} className="mt-5 flex flex-1 flex-col space-y-4">
                 <div>
                     <InputLabel
                         htmlFor="current_password"

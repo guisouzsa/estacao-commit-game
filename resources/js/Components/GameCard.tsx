@@ -56,6 +56,14 @@ const CARD_META: Record<
     },
 };
 
+/** Tipo da carta, para reconhecer de relance (a arte e as regras não mudam). */
+export const cardKind = (card: string): { label: string; color: string } =>
+    card === 'clear_credentials' || card === 'merge_conflict'
+        ? { label: 'Ataque', color: '#d01600' }
+        : card.startsWith('block_')
+          ? { label: 'Bloco', color: '#464498' }
+          : { label: 'Comando', color: '#1d1d1b' };
+
 export const cardLabel = (card: string) => CARD_META[card]?.label ?? card;
 
 /** Arte e cores de uma carta (usada também pelo tabuleiro e pelas cartas em voo). */
@@ -146,6 +154,14 @@ export default function GameCard({
                     </span>
                 </span>
             )}
+            {/* Faixa do tipo: identifica ataque, bloco ou comando sem cobrir a arte. */}
+            <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 py-px text-center font-mono text-[7px] font-black uppercase tracking-[.14em] text-white sm:text-[8px]"
+                style={{ background: `${cardKind(card).color}d9` }}
+            >
+                {cardKind(card).label}
+            </span>
             {playable && (
                 <span
                     className="absolute right-1 top-1 size-3 rounded-full border-2 border-[#1d1d1b] bg-[#b4da33]"

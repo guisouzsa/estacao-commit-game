@@ -40,6 +40,7 @@ class ProfileAppearanceUpdateRequest extends FormRequest
             'cover_position_x' => ['sometimes', 'integer', 'between:0,100'],
             'cover_position_y' => ['sometimes', 'integer', 'between:0,100'],
             'profile_frame' => ['required', Rule::in(array_keys(config('profiles.frames')))],
+            'profile_background' => ['nullable', Rule::in(array_keys(config('profiles.backgrounds')))],
             'primary_badge' => ['required', Rule::in(array_keys(config('profiles.badges')))],
             'profile_title' => ['nullable', Rule::in(array_keys(config('profiles.titles')))],
             'achievement_badge_id' => [
@@ -77,6 +78,7 @@ class ProfileAppearanceUpdateRequest extends FormRequest
             'cover.max' => 'A capa deve ter no máximo 4 MB.',
             'cover.dimensions' => 'A capa não pode exceder 4000 × 4000 pixels.',
             'profile_frame.in' => 'A moldura selecionada não está disponível.',
+            'profile_background.in' => 'O fundo selecionado não está disponível.',
             'primary_badge.in' => 'O selo selecionado não está disponível.',
             'profile_title.in' => 'O título selecionado não está disponível.',
         ];

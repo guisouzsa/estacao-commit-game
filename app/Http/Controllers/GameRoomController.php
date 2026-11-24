@@ -229,10 +229,12 @@ class GameRoomController extends Controller
             abort_unless($lockedRoom->hasParticipant($actor), 404);
             abort_unless($lockedRoom->isHostedBy($actor), 403);
             // Uma partida em andamento ou encerrada guarda histórico: não some em silêncio.
+            // Partida em andamento não pode ser excluída (derrubaria os outros jogadores).
+            // Concluída pode: o resultado fica no histórico (match_results).
             abort_if(
-                $lockedRoom->started_at !== null,
+                $lockedRoom->started_at !== null && $lockedRoom->status !== 'finished',
                 409,
-                'Esta sala já teve uma partida e não pode ser excluída.'
+                'Esta sala está em partida e não pode ser excluída agora.'
             );
 
             // Os outros humanos (contas e visitantes). Bots não recebem aviso.

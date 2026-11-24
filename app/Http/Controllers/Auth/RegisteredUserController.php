@@ -66,7 +66,7 @@ class RegisteredUserController extends Controller
                     if (User::query()
                         ->whereRaw('LOWER(email) = ?', [strtolower($value)])
                         ->exists()) {
-                        $fail('The email has already been taken.');
+                        $fail('Este e-mail já está cadastrado.');
                     }
                 },
             ],
@@ -96,7 +96,7 @@ class RegisteredUserController extends Controller
                 || str_contains($message, 'users_email_unique')
             ) {
                 throw ValidationException::withMessages([
-                    'email' => 'The email has already been taken.',
+                    'email' => 'Este e-mail já está cadastrado.',
                 ]);
             }
             throw $exception;

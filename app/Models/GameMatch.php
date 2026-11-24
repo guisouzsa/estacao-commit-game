@@ -23,6 +23,14 @@ class GameMatch extends Model
     protected static function booted(): void
     {
         static::creating(fn (self $match) => $match->id ??= (string) Str::uuid7());
+
+        // Todo caminho que conclui a partida (motor PHP, callback da Cloudflare) grava o
+        // resultado permanente, uma única vez. A sala pode sumir depois; o histórico fica.
+        static::saved(function (self $match): void {
+            if ($match->status === 'finished' && ($match->wasRecentlyCreated || $match->wasChanged('status'))) {
+                \App\Services\MatchResults::record($match);
+            }
+        });
     }
 
     public function room(): BelongsTo

@@ -102,9 +102,33 @@ export default function Create({
             <h1 className="mt-3 text-4xl font-black tracking-tight">
                 Quem vai jogar?
             </h1>
-            <p className="mt-3 text-ink/55">
-                Escolha um nome e um avatar. Sem e-mail, sem senha.
-            </p>
+
+            {/* Deixa claro que NÃO é um login: é uma conta temporária, sem e-mail nem senha. */}
+            <section
+                aria-labelledby="temp-account-title"
+                className="mt-4 border-2 border-[#1d1d1b] bg-[#f6f9e4] p-4 shadow-[4px_4px_0_#b4da33]"
+            >
+                <p
+                    className="font-mono text-[11px] font-black uppercase tracking-wider text-[#464498]"
+                    id="temp-account-title"
+                >
+                    Conta temporária · sem login
+                </p>
+                <p className="mt-1 text-lg font-black leading-snug">
+                    Você está entrando com uma conta temporária.
+                </p>
+                <p className="mt-2 text-sm leading-6 text-ink/70">
+                    Você pode começar a jogar imediatamente sem precisar criar
+                    uma conta. Entretanto, essa conta é temporária e poderá ser
+                    removida após um período de inatividade (6 horas sem
+                    jogar).
+                </p>
+                <p className="mt-2 text-sm leading-6 text-ink/70">
+                    Quer guardar seu perfil e suas vitórias no ranking? Crie uma
+                    conta permanente com e-mail. Ela é nova: o que você jogar
+                    como visitante não é transferido.
+                </p>
+            </section>
 
             <form className="mt-6" onSubmit={submit} noValidate>
                 <div className="flex items-center gap-4">
@@ -188,9 +212,22 @@ export default function Create({
                     className="auth-submit mt-6"
                     disabled={processing || availability.state === 'unavailable'}
                 >
-                    {processing ? 'Entrando...' : 'Entrar e jogar'}
+                    {processing ? 'Entrando...' : 'Continuar com conta temporária'}
                 </button>
             </form>
+
+            <div className="my-5 flex items-center gap-3 font-mono text-[11px] font-black uppercase text-ink/40">
+                <span className="h-px flex-1 bg-ink/15" />
+                ou
+                <span className="h-px flex-1 bg-ink/15" />
+            </div>
+
+            <Link
+                className="flex min-h-12 w-full items-center justify-center border-2 border-[#1d1d1b] bg-white px-4 text-center font-mono text-xs font-black uppercase shadow-[4px_4px_0_#464498] transition hover:-translate-y-0.5 hover:bg-[#f3f1ec]"
+                href={route('register')}
+            >
+                Criar conta permanente com e-mail
+            </Link>
 
             <p className="mt-8 text-center text-sm text-ink/55">
                 Já tem uma conta?{' '}

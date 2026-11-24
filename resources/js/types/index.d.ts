@@ -10,6 +10,7 @@ export interface User {
     cover_position_x?: number;
     cover_position_y?: number;
     profile_frame?: string | null;
+    profile_background?: string | null;
     primary_badge?: string | null;
     profile_title?: string | null;
     developer_badge?: string | null;

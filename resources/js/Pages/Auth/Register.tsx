@@ -52,7 +52,7 @@ export default function Register({
                 </>
             )}
 
-            <form onSubmit={submit} className={googleConfigured ? '' : 'mt-8'}>
+            <form noValidate onSubmit={submit} className={googleConfigured ? '' : 'mt-8'}>
                 <div className="space-y-6">
                     <div>
                         <label className="auth-label" htmlFor="username">Username único</label>

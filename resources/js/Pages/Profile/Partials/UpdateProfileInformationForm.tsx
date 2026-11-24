@@ -40,7 +40,7 @@ export default function UpdateProfileInformation({
                 </p>
             </header>
 
-            <form className="mt-5 flex flex-1 flex-col gap-4" onSubmit={submit}>
+            <form noValidate className="mt-5 flex flex-1 flex-col gap-4" onSubmit={submit}>
                 <div>
                     <InputLabel htmlFor="email" value="E-mail da conta" />
                     <TextInput

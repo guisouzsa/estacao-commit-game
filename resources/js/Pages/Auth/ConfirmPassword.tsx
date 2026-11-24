@@ -28,7 +28,7 @@ export default function ConfirmPassword() {
                 Esta é uma área de segurança elevada. Confirme sua senha atual para continuar a operação.
             </p>
 
-            <form onSubmit={submit}>
+            <form noValidate onSubmit={submit}>
                 <div>
                     <label className="auth-label" htmlFor="password">Senha</label>
                     <div className="relative">

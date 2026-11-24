@@ -10,5 +10,8 @@ Artisan::command('inspire', function () {
 
 Schedule::command('rooms:expire-waiting')->everyMinute();
 
-// Perfis de visitante sem atividade (consulta indexada, em lotes).
-Schedule::command('guests:prune')->hourly();
+// Salas com partida concluída: exclusão 2 minutos depois da vitória.
+Schedule::command('rooms:purge-finished')->everyMinute();
+
+// Perfis de visitante sem atividade por 6 horas (consulta indexada, em lotes).
+Schedule::command('guests:prune')->everyFifteenMinutes();

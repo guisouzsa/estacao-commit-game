@@ -45,6 +45,7 @@ class PublicProfileController extends Controller
                 'cover_position_x' => $user->cover_position_x ?? 50,
                 'cover_position_y' => $user->cover_position_y ?? 50,
                 'profile_frame' => $user->profile_frame ?? 'standard',
+                'profile_background' => $user->profile_background,
                 'primary_badge' => $user->primary_badge ?? 'terminal',
                 'profile_title' => $user->profile_title ?? 'explorer',
                 'developer_badge' => $user->developer_badge

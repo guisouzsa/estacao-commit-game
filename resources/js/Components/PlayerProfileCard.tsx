@@ -15,6 +15,8 @@ export interface PlayerProfile {
     cover_position_x?: number;
     cover_position_y?: number;
     profile_frame?: string | null;
+    /** Fundo escolhido (preset); vazio = visual antigo. */
+    profile_background?: string | null;
     primary_badge?: string | null;
     profile_title?: string | null;
     developer_badge?: string | null;
@@ -114,6 +116,12 @@ export default function PlayerProfileCard({
                         style={{
                             objectPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
                         }}
+                    />
+                ) : profileBackgroundStyle(profile.profile_background) ? (
+                    <div
+                        className="absolute inset-0"
+                        data-profile-background={profile.profile_background}
+                        style={profileBackgroundStyle(profile.profile_background)}
                     />
                 ) : (
                     <div className="absolute inset-0 bg-[linear-gradient(135deg,#464498_0_52%,#b4da33_52%_56%,#1d1d1b_56%)]" />
@@ -248,4 +256,5 @@ export default function PlayerProfileCard({
     );
 }
 import { ReactNode } from 'react';
+import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
 import PlayerAvatar from './PlayerAvatar';

@@ -1,4 +1,5 @@
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import JoinByCodeForm from '@/Components/JoinByCodeForm';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import { PlayerSummary } from '@/Components/PlayerSearch';
 import RoomCountdown from '@/Components/RoomCountdown';
@@ -9,7 +10,7 @@ import { startChannelSync } from '@/lib/roomSync';
 import { toast } from '@/lib/toast';
 import { PageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Room = {
     id: string;
@@ -99,17 +100,6 @@ export default function Dashboard({
         });
     };
 
-    const join = (event: FormEvent) => {
-        event.preventDefault();
-        const token = invite.trim().split('/').filter(Boolean).pop();
-        if (!token) return;
-        setJoining(true);
-        router.post(
-            route('rooms.join', token),
-            {},
-            { onFinish: () => setJoining(false) },
-        );
-    };
     return (
         <AuthenticatedLayout>
             <Head title="Vamos jogar?" />
@@ -169,30 +159,7 @@ export default function Dashboard({
                             <h2 className="mt-2 text-2xl font-black">
                                 Entrar em uma sala
                             </h2>
-                            <form className="mt-5" onSubmit={join}>
-                                <label
-                                    className="text-sm font-bold"
-                                    htmlFor="invite"
-                                >
-                                    Link ou código do convite
-                                </label>
-                                <input
-                                    id="invite"
-                                    value={invite}
-                                    onChange={(e) => setInvite(e.target.value)}
-                                    className="mt-2 min-h-12 w-full border-2 border-[#1d1d1b] bg-white px-3"
-                                    placeholder="Cole o convite aqui"
-                                    required
-                                />
-                                <button
-                                    disabled={joining}
-                                    className="mt-3 min-h-11 border-2 border-[#1d1d1b] bg-white px-5 font-mono text-xs font-black uppercase shadow-[3px_3px_0_#b4da33] disabled:opacity-60"
-                                >
-                                    {joining
-                                        ? 'Validando...'
-                                        : 'Entrar com convite'}
-                                </button>
-                            </form>
+                            <JoinByCodeForm />
                         </article>
                     </section>
                     <section className="mt-10">

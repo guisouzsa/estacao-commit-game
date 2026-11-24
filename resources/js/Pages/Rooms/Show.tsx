@@ -1,4 +1,7 @@
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import MissionTutorial, {
+    hasSeenMissionTutorial,
+} from '@/Components/MissionTutorial';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import RoomCountdown from '@/Components/RoomCountdown';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -51,6 +54,17 @@ export default function Show({
     const [busy, setBusy] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const [confirmingLeave, setConfirmingLeave] = useState(false);
+    // Tutorial narrativo: abre sozinho UMA vez por navegador, no lobby (antes de a partida começar).
+    // Atualizações do Reverb e reconexões não o reabrem; o botão "Como jogar" abre quando quiser.
+    const [tutorial, setTutorial] = useState(false);
+    const autoShown = useRef(false);
+    useEffect(() => {
+        if (autoShown.current) return;
+        autoShown.current = true;
+        if (room.status === 'waiting' && !hasSeenMissionTutorial())
+            setTutorial(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const [confirmingRevoke, setConfirmingRevoke] = useState(false);
     const [confirmingStart, setConfirmingStart] = useState(false);
     const code = inviteUrl?.split('/').filter(Boolean).pop();
@@ -230,6 +244,13 @@ export default function Show({
                     </Link>
 
                     <header className="mt-3 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-4 shadow-[5px_5px_0_#464498] sm:p-5">
+                        <button
+                            className="float-right inline-flex min-h-10 items-center gap-1.5 border-2 border-[#1d1d1b] bg-[#b4da33] px-3 font-mono text-[11px] font-black uppercase shadow-[2px_2px_0_#1d1d1b]"
+                            onClick={() => setTutorial(true)}
+                            type="button"
+                        >
+                            <span aria-hidden="true">?</span> Como jogar
+                        </button>
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#1d1d1b]/15 pb-3">
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-mono text-[10px] font-black uppercase tracking-[.16em] text-[#464498]">
@@ -515,6 +536,10 @@ export default function Show({
                 </div>
             </main>
 
+            <MissionTutorial
+                onClose={() => setTutorial(false)}
+                show={tutorial}
+            />
             <ConfirmDialog
                 show={confirming}
                 title="Excluir esta sala?"

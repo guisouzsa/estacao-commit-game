@@ -5,6 +5,7 @@ import GameLog, { type LogActor } from '@/Components/game/GameLog';
 import PlayerPanel, { type PanelPlayer } from '@/Components/game/PlayerPanel';
 import TargetPicker from '@/Components/game/TargetPicker';
 import GameCard, { cardLabel } from '@/Components/GameCard';
+import MissionTutorial from '@/Components/MissionTutorial';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { AREAS, sideOf, type Side } from '@/lib/gameGeometry';
 import { startRoomSync } from '@/lib/roomSync';
@@ -109,6 +110,7 @@ export default function Show({
     const staleDuringAction = useRef(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
     const [leaving, setLeaving] = useState(false);
+    const [tutorial, setTutorial] = useState(false);
     // Indica (sombra + seta) quando a mão tem mais cartas fora da tela; só ela rola, a mesa não.
     const handRef = useRef<HTMLDivElement>(null);
     const [handHint, setHandHint] = useState({ left: false, right: false });
@@ -567,6 +569,15 @@ export default function Show({
                             )}
                         </button>
                         <button
+                            aria-label="Como jogar"
+                            className="min-h-11 border border-white/25 px-3 font-mono font-bold hover:border-[#b4da33] sm:min-h-9"
+                            onClick={() => setTutorial(true)}
+                            title="Como jogar"
+                            type="button"
+                        >
+                            ?
+                        </button>
+                        <button
                             className="min-h-11 border border-white/25 px-3 font-mono font-bold hover:border-[#f481c6] sm:min-h-9"
                             onClick={() => setLeaveOpen(true)}
                             type="button"
@@ -827,6 +838,10 @@ export default function Show({
                 </section>
             </main>
 
+            <MissionTutorial
+                onClose={() => setTutorial(false)}
+                show={tutorial}
+            />
             <FlightLayer flights={flights} onDone={finishFlight} />
 
             {game.status === 'finished' && (

@@ -70,6 +70,9 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_code_expires_at' => 'datetime',
+            'email_code_sent_at' => 'datetime',
+            'email_code_attempts' => 'integer',
             'password' => 'hashed',
             'avatar_position_x' => 'integer',
             'avatar_position_y' => 'integer',

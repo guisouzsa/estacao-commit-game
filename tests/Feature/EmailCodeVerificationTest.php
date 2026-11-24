@@ -54,10 +54,14 @@ class EmailCodeVerificationTest extends TestCase
         $user = User::where('username', 'novato')->firstOrFail();
         $this->assertNull($user->email_verified_at);
         $this->assertNotSame($this->sentCode(), $user->email_code_hash, 'código nunca fica em texto puro');
+        $this->app['auth']->forgetGuards(); // como no navegador: cada requisição relê o usuário do banco
         $this->get(route('dashboard'))->assertRedirect(route('verification.code'));
+        $this->app['auth']->forgetGuards();
         $this->get(route('verification.code'))->assertOk();
+        $this->app['auth']->forgetGuards();
 
         $this->post(route('verification.verify'), ['code' => $this->sentCode()])->assertRedirect(route('dashboard'));
+        $this->app['auth']->forgetGuards();
         $this->assertNotNull($user->fresh()->email_verified_at);
         $this->assertNull($user->fresh()->email_code_hash);
         $this->get(route('dashboard'))->assertOk();
@@ -72,6 +76,7 @@ class EmailCodeVerificationTest extends TestCase
         $wrong = $real === '000000' ? '111111' : '000000';
 
         foreach (range(1, 3) as $_) {
+            $this->app['auth']->forgetGuards();
             $this->post(route('verification.verify'), ['code' => $wrong])->assertSessionHasErrors('code');
         }
         // mesmo o código certo é recusado depois de esgotar as tentativas
@@ -86,10 +91,13 @@ class EmailCodeVerificationTest extends TestCase
         $this->register();
         $code = $this->sentCode();
 
+        $this->app['auth']->forgetGuards();
         $this->post(route('verification.resend'))->assertSessionHasErrors('code'); // cooldown
         $this->travel(11)->minutes();
+        $this->app['auth']->forgetGuards();
         $this->post(route('verification.verify'), ['code' => $code])->assertSessionHasErrors('code');
 
+        $this->app['auth']->forgetGuards();
         $this->post(route('verification.resend'))->assertSessionDoesntHaveErrors();
         Mail::assertSent(EmailCodeMail::class, 2);
     }

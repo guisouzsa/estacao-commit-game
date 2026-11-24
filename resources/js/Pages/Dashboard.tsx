@@ -10,7 +10,7 @@ import { startChannelSync } from '@/lib/roomSync';
 import { toast } from '@/lib/toast';
 import { PageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Room = {
     id: string;
@@ -48,15 +48,14 @@ export default function Dashboard({
     const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    // Tempo real pelo canal privado do usuário, com o polling de 15 s como
-    // contingência enquanto houver sala aguardando. Os avisos persistidos vêm
-    // junto das salas em cada recarregamento.
-    const roomsRef = useRef(rooms);
-    roomsRef.current = rooms;
+    // A Dashboard NÃO usa WebSocket: no Render Free o Apache atende só 2 requisições ao mesmo tempo
+    // e cada WebSocket aberto ocupa uma delas por inteiro (uma pessoa parada aqui travaria o site
+    // para os outros). Os avisos chegam por consulta leve a cada 30 s, só com a aba visível, e
+    // também ao voltar para a aba ou à internet. Salas e partidas continuam em tempo real.
     useEffect(
         () =>
             startChannelSync({
-                echo: window.Echo,
+                echo: null,
                 channelName: channel ?? '',
                 event: '.user.notices.changed',
                 reload: (done) =>
@@ -64,10 +63,8 @@ export default function Dashboard({
                         only: ['rooms', 'notices', 'auth'],
                         onFinish: done,
                     }),
-                shouldPoll: () =>
-                    roomsRef.current.some(
-                        (room) => room.status === 'waiting' && room.expires_at,
-                    ),
+                shouldPoll: () => document.visibilityState === 'visible',
+                pollIntervalMs: 30000,
                 document,
                 window,
             }),

@@ -33,8 +33,28 @@
                 <h1 style="margin:6px 0 0;font-size:1.5rem;font-weight:900">Aguarde um instante…</h1>
                 <p style="margin:10px 0 0;line-height:1.6;color:#5b5953;font-size:.9rem">Estamos preparando o ambiente para você jogar.</p>
                 <div style="margin-top:18px;height:8px;border:2px solid #1d1d1b;background:#fff;overflow:hidden"><div style="height:100%;width:35%;background:#b4da33;animation:boot-bar 1.1s ease-in-out infinite"></div></div>
+                <p id="boot-hint" aria-live="polite" style="margin:14px 0 0;font:600 12px ui-monospace,Consolas,monospace;line-height:1.6;color:#464498;min-height:1.6em"></p>
             </div>
         </div>
+        {{-- A tela de abertura explica a demora em vez de parecer travada. As frases são só
+             texto: nada aqui faz requisição. Some junto com a tela quando o app monta. --}}
+        <script>
+            (function () {
+                var hint = document.getElementById('boot-hint');
+                if (!hint) return;
+                var steps = [
+                    [6000, '$ carregando o jogo…'],
+                    [15000, '$ ainda carregando — conexões lentas levam um pouco mais.'],
+                    [35000, '$ tudo certo, só está demorando. Não precisa recarregar.'],
+                    [75000, '$ ainda nada? Toque em recarregar; sua sala e sua partida continuam salvas.']
+                ];
+                steps.forEach(function (s) {
+                    setTimeout(function () {
+                        if (document.getElementById('boot-splash')) hint.textContent = s[1];
+                    }, s[0]);
+                });
+            })();
+        </script>
         <style>@keyframes boot-in{to{opacity:1}}@keyframes boot-bar{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}@media (prefers-reduced-motion:reduce){#boot-splash div div div{animation:none!important;width:100%!important}}</style>
         @inertia
     </body>

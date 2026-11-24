@@ -6,7 +6,7 @@ let child: ChildProcess | undefined;
 export async function setup() {
   child = spawn(
     process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['wrangler', 'dev', '--port', String(PORT), '--var', 'REALTIME_TOKEN_SECRET:test-token-secret', '--var', 'REALTIME_NOTIFY_SECRET:test-notify-secret', '--var', 'ALLOWED_ORIGINS:http://localhost:8000', '--var', 'REALTIME_CALLBACK_SECRET:test-callback-secret', '--var', 'LARAVEL_CALLBACK_URL:http://127.0.0.1:8801', '--local'],
+    ['wrangler', 'dev', '--port', String(PORT), '--var', 'REALTIME_TOKEN_SECRET:test-token-secret', '--var', 'REALTIME_NOTIFY_SECRET:test-notify-secret', '--var', 'ALLOWED_ORIGINS:http://localhost:8000', '--var', 'APP_ORIGIN:http://127.0.0.1:8802', '--var', 'REALTIME_CALLBACK_SECRET:test-callback-secret', '--var', 'LARAVEL_CALLBACK_URL:http://127.0.0.1:8801', '--local'],
     { stdio: 'pipe', shell: process.platform === 'win32' },
   );
   let log = '';

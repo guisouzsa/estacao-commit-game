@@ -80,7 +80,7 @@ class GuestPlayTest extends TestCase
         $this->assertNotSame($token, $profile->token_hash);
         $this->assertSame('viajante', $profile->name_key);
         $this->assertSame('robot', $profile->avatar_style);
-        $this->assertTrue($profile->expires_at->gt(now()->addHours(23)));
+        $this->assertTrue($profile->expires_at->gt(now()->addHours(5)));
         $this->assertDatabaseCount('users', 0); // não cria conta falsa
     }
 
@@ -161,9 +161,9 @@ class GuestPlayTest extends TestCase
         $this->asGuest($token)->get(route('dashboard'))->assertOk();
         $this->assertEquals($firstExpiry->timestamp, $profile->fresh()->expires_at->timestamp, 'dentro de 5 min não grava');
 
-        $this->travel(10)->hours();
+        $this->travel(4)->hours();
         $this->asGuest($token)->get(route('dashboard'))->assertOk();
-        $this->assertTrue($profile->fresh()->expires_at->gt($firstExpiry->copy()->addHours(9)), 'janela deslizante');
+        $this->assertTrue($profile->fresh()->expires_at->gt($firstExpiry->copy()->addHours(3)), 'janela deslizante');
     }
 
     public function test_a_visitor_cannot_use_account_only_pages(): void
@@ -403,7 +403,7 @@ class GuestPlayTest extends TestCase
             ->first(fn ($event) => str_contains($event->command, 'guests:prune'));
 
         $this->assertNotNull($event);
-        $this->assertSame('0 * * * *', $event->expression);
+        $this->assertSame('*/15 * * * *', $event->expression);
     }
 
     // ---- unicidade ---------------------------------------------------------------

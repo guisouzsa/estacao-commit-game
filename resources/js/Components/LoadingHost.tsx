@@ -1,3 +1,4 @@
+import { needsBlockingLoader } from '@/lib/loadingPolicy';
 import { router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -7,6 +8,8 @@ type Notice = { title: string; message: string };
 const SLOW_MS = 2000;
 /** Depois disto a tela de espera oferece "Tentar de novo" e "Fechar". */
 const STUCK_MS = 8000;
+/** Navegação completa do navegador: só mostra a tela se a rede estiver realmente lenta. */
+const SLOW_FULL_NAVIGATION_MS = 5000;
 
 const DEFAULT_NOTICE: Notice = {
     title: 'Aguarde um instante…',
@@ -88,13 +91,9 @@ export default function LoadingHost() {
                 return;
             }
             const method = String(visit.method);
-            // Ações (jogar carta, trocar, descartar, marcar como lida...) NUNCA mostram a tela de
-            // espera: o feedback delas é local. Só navegação e as duas ações que trocam de tela.
-            const changesScreen =
-                method === 'get' ||
-                (method === 'post' &&
-                    (url.pathname === '/jogar' || url.pathname === '/salas'));
-            if (!changesScreen) return;
+            // Modal só onde a pessoa não pode fazer mais nada até o servidor responder (ver
+            // lib/loadingPolicy.ts). O resto usa a barra de progresso do topo e o estado do botão.
+            if (!needsBlockingLoader(method, url.pathname)) return;
             const { notice: next, delayMs } = noticeFor(method, url);
             timer.current = window.setTimeout(() => setNotice(next), delayMs);
         });
@@ -114,7 +113,7 @@ export default function LoadingHost() {
             clear();
             timer.current = window.setTimeout(
                 () => setNotice((current) => current ?? DEFAULT_NOTICE),
-                SLOW_MS,
+                SLOW_FULL_NAVIGATION_MS,
             );
         };
         const onShow = (event: PageTransitionEvent) => {

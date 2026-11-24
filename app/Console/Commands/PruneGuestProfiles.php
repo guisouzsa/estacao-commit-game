@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\GuestProfile;
 use Illuminate\Console\Command;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Log;
 
 class PruneGuestProfiles extends Command
 {
@@ -33,6 +34,14 @@ class PruneGuestProfiles extends Command
                 // Participações e salas ligadas a eles saem por cascata (FKs).
                 $removed += GuestProfile::query()->whereIn('id', $ids)->delete();
             });
+
+        // Só a contagem: nada de nomes, ids ou tokens nos logs.
+        if ($removed > 0) {
+            Log::info('Perfis temporários inativos removidos.', [
+                'count' => $removed,
+                'inactivity_hours' => (int) config('players.guest_ttl_hours'),
+            ]);
+        }
 
         $this->info("Perfis temporários removidos: {$removed}");
 

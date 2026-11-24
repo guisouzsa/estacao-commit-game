@@ -18,6 +18,28 @@ return [
         'gold' => 'Commit dourado',
     ],
 
+    // Fundos de perfil (preset leve em CSS/SVG; o desenho fica em resources/js/lib/profileBackgrounds.ts).
+    'backgrounds' => [
+        'nebula' => 'Nebulosa',
+        'galaxy' => 'Galáxia',
+        'aurora' => 'Aurora',
+        'starfield' => 'Campo de estrelas',
+        'sunrise' => 'Nascer do sol',
+        'ocean-depth' => 'Fundo do mar',
+        'lime-violet' => 'Lima e violeta',
+        'candy' => 'Doce neon',
+        'grid' => 'Grade técnica',
+        'dots' => 'Pontos',
+        'diagonal' => 'Listras diagonais',
+        'terminal-green' => 'Terminal verde',
+        'code-lines' => 'Linhas de código',
+        'git-graph' => 'Grafo do Git',
+        'circuit-board' => 'Placa de circuito',
+        'hex-tech' => 'Hexágonos tech',
+        'night-mode' => 'Modo noturno',
+        'paper' => 'Papel quadriculado',
+    ],
+
     'badges' => [
         'terminal' => 'Terminal',
         'branch' => 'Branch',

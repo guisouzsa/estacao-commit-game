@@ -44,6 +44,7 @@ class ProfileAppearanceController extends Controller
         $user->cover_position_x = $validated['cover_position_x'] ?? $user->cover_position_x ?? 50;
         $user->cover_position_y = $validated['cover_position_y'] ?? $user->cover_position_y ?? 50;
         $user->profile_frame = $validated['profile_frame'];
+        $user->profile_background = $validated['profile_background'] ?? null;
         $user->primary_badge = $validated['primary_badge'];
         $user->profile_title = $validated['profile_title'] ?? null;
         $user->achievement_badge_id = $validated['achievement_badge_id'] ?? null;

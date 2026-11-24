@@ -78,7 +78,9 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    // O jogo é só em português do Brasil: fixo, para uma variável APP_LOCALE esquecida
+    // (ex.: 'en' herdado de outro ambiente) nunca trazer mensagens em inglês.
+    'locale' => 'pt_BR',
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 

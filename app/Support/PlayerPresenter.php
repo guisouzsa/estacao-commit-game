@@ -67,6 +67,7 @@ class PlayerPresenter
             'avatar_position_y' => $user->avatar_position_y ?? 50,
             'avatar_zoom' => $user->avatar_zoom ?? 100,
             'profile_frame' => $user->profile_frame ?? 'standard',
+            'profile_background' => $user->profile_background,
         ];
     }
 

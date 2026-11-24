@@ -1,3 +1,4 @@
+import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
 import { toast } from '@/lib/toast';
 import AvatarPicker from '@/Components/AvatarPicker';
 import InputError from '@/Components/InputError';
@@ -24,6 +25,7 @@ import UpdateProfileInformationForm from './Partials/UpdateProfileInformationFor
 
 type Options = {
     frames: Record<string, string>;
+    backgrounds?: Record<string, string>;
     badges: Record<string, string>;
     titles: Record<string, string>;
 };
@@ -52,6 +54,7 @@ type FormData = {
     cover_position_x: number;
     cover_position_y: number;
     profile_frame: string;
+    profile_background: string | null;
     primary_badge: string;
     profile_title: string | null;
     achievement_badge_id: number | null;
@@ -107,6 +110,7 @@ function initialFormData(
         cover_position_x: user.cover_position_x ?? 50,
         cover_position_y: user.cover_position_y ?? 50,
         profile_frame: user.profile_frame ?? 'standard',
+        profile_background: (user.profile_background ?? null) as string | null,
         primary_badge: user.primary_badge ?? 'terminal',
         profile_title: user.profile_title ?? null,
         achievement_badge_id: profileExtras.achievement_badge_id,
@@ -341,7 +345,7 @@ export default function Edit({
                         </div>
                     </header>
 
-                    <form onSubmit={submit}>
+                    <form noValidate onSubmit={submit}>
                         <PlayerProfileCard
                             profile={
                                 editing
@@ -490,6 +494,64 @@ export default function Edit({
                                                 ))}
                                             </div>
                                         </fieldset>
+
+                                        {appearanceOptions.backgrounds && (
+                                            <fieldset>
+                                                <legend className="mb-1 text-sm font-bold">
+                                                    Fundo do perfil
+                                                </legend>
+                                                <p className="mb-2 text-xs text-[#5b5953]">
+                                                    A pré-visualização acima muda ao escolher. São fundos leves, sem imagem para baixar.
+                                                </p>
+                                                <div
+                                                    aria-label="Fundos de perfil"
+                                                    className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
+                                                    role="group"
+                                                >
+                                                    <button
+                                                        aria-pressed={!data.profile_background}
+                                                        className={`relative flex h-16 flex-col justify-end border-2 bg-[linear-gradient(135deg,#464498_0_52%,#b4da33_52%_56%,#1d1d1b_56%)] p-1 text-left ${
+                                                            !data.profile_background
+                                                                ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
+                                                                : 'border-[#1d1d1b]/25'
+                                                        }`}
+                                                        onClick={() => setData('profile_background', null)}
+                                                        type="button"
+                                                    >
+                                                        <span className="bg-white/90 px-1 font-mono text-[9px] font-black uppercase">
+                                                            Padrão
+                                                        </span>
+                                                        {!data.profile_background && (
+                                                            <span aria-hidden="true" className="absolute right-1 top-1 grid size-4 place-items-center bg-[#b4da33] text-[10px] font-black">✓</span>
+                                                        )}
+                                                    </button>
+                                                    {Object.entries(appearanceOptions.backgrounds).map(([key, label]) => (
+                                                        <button
+                                                            aria-label={`Fundo ${label}`}
+                                                            aria-pressed={data.profile_background === key}
+                                                            className={`relative flex h-16 flex-col justify-end border-2 p-1 text-left ${
+                                                                data.profile_background === key
+                                                                    ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
+                                                                    : 'border-[#1d1d1b]/25'
+                                                            }`}
+                                                            key={key}
+                                                            onClick={() => setData('profile_background', key)}
+                                                            style={profileBackgroundStyle(key)}
+                                                            title={label}
+                                                            type="button"
+                                                        >
+                                                            <span className="truncate bg-white/90 px-1 font-mono text-[9px] font-black uppercase">
+                                                                {label}
+                                                            </span>
+                                                            {data.profile_background === key && (
+                                                                <span aria-hidden="true" className="absolute right-1 top-1 grid size-4 place-items-center bg-[#b4da33] text-[10px] font-black">✓</span>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <InputError message={errors.profile_background} className="mt-2" />
+                                            </fieldset>
+                                        )}
 
                                         <label className="block text-sm font-bold">
                                             Selo do perfil

@@ -37,7 +37,7 @@ export default function ResetPassword({
                 Defina sua nova credencial para retomar suas missões na estação.
             </p>
 
-            <form onSubmit={submit} className="space-y-6">
+            <form noValidate onSubmit={submit} className="space-y-6">
                 <div>
                     <label className="auth-label" htmlFor="email">E-mail</label>
                     <input

@@ -81,6 +81,7 @@ class HandleInertiaRequests extends Middleware
             'cover_position_x',
             'cover_position_y',
             'profile_frame',
+            'profile_background',
             'primary_badge',
             'profile_title',
             'email',

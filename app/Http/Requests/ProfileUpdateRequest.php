@@ -57,7 +57,7 @@ class ProfileUpdateRequest extends FormRequest
                         ->exists();
 
                     if ($exists) {
-                        $fail('The email has already been taken.');
+                        $fail('Este e-mail já está cadastrado.');
                     }
                 },
             ],

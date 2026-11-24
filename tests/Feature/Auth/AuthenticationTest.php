@@ -82,6 +82,6 @@ class AuthenticationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('email');
-        $this->assertStringContainsString('Too many login attempts', (string) session('errors')->first('email'));
+        $this->assertStringContainsString('Muitas tentativas de entrada', (string) session('errors')->first('email'));
     }
 }

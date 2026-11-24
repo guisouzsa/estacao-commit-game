@@ -6,6 +6,7 @@ use App\Models\GameAction;
 use App\Models\GameMatch;
 use App\Models\GameRoom;
 use App\Services\CloudflareMatchGateway;
+use App\Services\FinishedRoomCleanup;
 use App\Services\GameEngine;
 use App\Services\GameInactivityService;
 use App\Services\MatchStatistics;
@@ -49,6 +50,15 @@ class GameMatchController extends Controller
     {
         $actor = $request->user();
         abort_unless($room->hasParticipant($actor), 404);
+        // Partida concluída há mais de 2 minutos: a sala já deveria ter sumido.
+        if (app(FinishedRoomCleanup::class)->purgeIfDue($room)) {
+            return to_route('dashboard')->with('toast', [
+                'id' => (string) Str::uuid(),
+                'tone' => 'info',
+                'title' => 'Sala encerrada',
+                'message' => 'A partida terminou e a sala foi encerrada. O resultado ficou salvo no ranking.',
+            ]);
+        }
         if ($this->isRemote($room)) {
             return $this->showRemote($room, $actor);
         }
@@ -209,6 +219,8 @@ class GameMatchController extends Controller
                 'winner_participant_id' => $game['winner_participant_id'],
                 'deck_count' => $game['deck_count'], 'discard_count' => $game['discard_count'],
                 'turn_seconds_left' => $game['turn_seconds_left'],
+                'cleanup_at' => app(FinishedRoomCleanup::class)->deadline($room)?->toIso8601String(),
+                'winner_wins' => $this->winnerWins($room, $game['winner_participant_id']),
                 'history' => $game['history'],
             ],
             'participants' => $participants,
@@ -229,6 +241,18 @@ class GameMatchController extends Controller
         abort_unless($response->successful(), 503, 'Não foi possível registrar a jogada agora. Tente novamente.');
 
         return back();
+    }
+
+    /** Vitórias do vencedor no ranking geral (só contas; visitantes e bots não têm ranking). */
+    private function winnerWins(GameRoom $room, ?int $winnerParticipantId): ?int
+    {
+        if ($winnerParticipantId === null) {
+            return null;
+        }
+
+        $user = $room->participants->firstWhere('id', $winnerParticipantId)?->user;
+
+        return $user ? (int) ($user->matches_won ?? 0) : null;
     }
 
     private function turnSecondsLeft(GameRoom $room, GameMatch $match): ?int
@@ -274,6 +298,8 @@ class GameMatchController extends Controller
                 // Tempo que o jogador da vez ainda tem antes de um bot assumir (ver GameInactivityService).
                 // Só faz sentido para jogadores humanos em partida ativa.
                 'turn_seconds_left' => $this->turnSecondsLeft($room, $match),
+                'cleanup_at' => app(FinishedRoomCleanup::class)->deadline($room)?->toIso8601String(),
+                'winner_wins' => $this->winnerWins($room, $match->winner_participant_id),
                 'history' => array_reverse(array_slice($state['history'], -12)),
             ],
             'participants' => $participants,

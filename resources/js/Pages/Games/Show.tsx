@@ -1,6 +1,7 @@
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import FlightLayer, { type Flight } from '@/Components/game/FlightLayer';
 import GameBoard from '@/Components/game/GameBoard';
+import VictoryScreen from '@/Components/game/VictoryScreen';
 import GameLog, { type LogActor } from '@/Components/game/GameLog';
 import PlayerPanel, { type PanelPlayer } from '@/Components/game/PlayerPanel';
 import TargetPicker from '@/Components/game/TargetPicker';
@@ -23,6 +24,7 @@ type Player = {
     avatar_style?: string;
     avatar_seed?: string;
     profile_frame?: string;
+    profile_background?: string | null;
 };
 type Participant = {
     id: number;
@@ -53,6 +55,10 @@ type Game = {
     deck_count: number;
     discard_count: number;
     turn_seconds_left?: number | null;
+    /** Quando a sala concluída será excluída (2 min depois da vitória). */
+    cleanup_at?: string | null;
+    /** Vitórias do vencedor no ranking geral (só contas). */
+    winner_wins?: number | null;
     history: HistoryItem[];
 };
 
@@ -935,77 +941,16 @@ export default function Show({
             <FlightLayer flights={flights} onDone={finishFlight} />
 
             {game.status === 'finished' && (
-                <div className="fixed inset-0 z-40 grid place-items-center bg-[#10100f]/80 p-4 backdrop-blur-sm">
-                    {!reduced &&
-                        Array.from({ length: 28 }, (_, i) => (
-                            <span
-                                aria-hidden="true"
-                                className="confetti-piece"
-                                key={i}
-                                style={{
-                                    left: `${(i * 37) % 100}%`,
-                                    background: [
-                                        '#b4da33',
-                                        '#f481c6',
-                                        '#464498',
-                                        '#d01600',
-                                    ][i % 4],
-                                    animationDuration: `${2.4 + (i % 5) * 0.35}s`,
-                                    animationDelay: `${(i % 7) * 0.12}s`,
-                                }}
-                            />
-                        ))}
-                    <motion.div
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="relative w-full max-w-lg border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-7 text-center text-[#1d1d1b] shadow-[10px_10px_0_#b4da33]"
-                        initial={reduced ? false : { scale: 0.85, opacity: 0 }}
-                    >
-                        <p className="font-mono text-xs font-black uppercase text-[#464498]">
-                            Partida finalizada
-                        </p>
-                        <h2 className="mt-2 text-4xl font-black">
-                            {winner?.is_viewer
-                                ? 'Você conquistou a missão!'
-                                : `@${winner?.player.username ?? 'Jogador'} venceu`}
-                        </h2>
-                        <p className="mt-3 text-sm text-[#5b5953]">
-                            A Pull Request foi concluída e o foguete está
-                            pronto.
-                        </p>
-                        <ol className="mx-auto mt-4 max-w-xs space-y-1 text-left text-sm">
-                            {standings.map((participant, index) => (
-                                <li
-                                    className="flex items-center justify-between border-b border-[#1d1d1b]/10 py-1"
-                                    key={participant.id}
-                                >
-                                    <span className="font-bold">
-                                        {index + 1}º{' '}
-                                        {participant.is_viewer
-                                            ? 'Você'
-                                            : `@${participant.player.username}`}
-                                    </span>
-                                    <span className="font-mono text-xs text-[#5b5953]">
-                                        {participant.step}/18 etapas
-                                    </span>
-                                </li>
-                            ))}
-                        </ol>
-                        <div className="mt-6 flex justify-center gap-3">
-                            <Link
-                                className="border-2 border-[#1d1d1b] bg-white px-4 py-3 font-mono text-xs font-black uppercase"
-                                href={route('dashboard')}
-                            >
-                                Dashboard
-                            </Link>
-                            <Link
-                                className="border-2 border-[#1d1d1b] bg-[#b4da33] px-4 py-3 font-mono text-xs font-black uppercase"
-                                href={`${route('dashboard')}#criar-sala`}
-                            >
-                                Nova sala
-                            </Link>
-                        </div>
-                    </motion.div>
-                </div>
+                <VictoryScreen
+                    cleanupAt={game.cleanup_at}
+                    dashboardHref={route('dashboard')}
+                    gameId={game.id}
+                    newRoomHref={`${route('dashboard')}#criar-sala`}
+                    reduced={Boolean(reduced)}
+                    standings={standings}
+                    wins={game.winner_wins}
+                    winner={winner}
+                />
             )}
             <ConfirmDialog
                 busy={leaving}

@@ -30,7 +30,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                 </div>
             )}
 
-            <form onSubmit={submit} className="mt-8">
+            <form noValidate onSubmit={submit} className="mt-8">
                 <div>
                     <label className="auth-label" htmlFor="email">E-mail</label>
                     <input

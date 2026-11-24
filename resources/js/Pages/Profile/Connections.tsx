@@ -72,16 +72,26 @@ export default function Connections({
                             className="mt-3 flex gap-1 border-b-2 border-[#1d1d1b]/15"
                         >
                             <Link
-                                aria-current={kind === 'followers' ? 'page' : undefined}
+                                aria-current={
+                                    kind === 'followers' ? 'page' : undefined
+                                }
                                 className={`${tab} ${kind === 'followers' ? 'border-[#464498] text-[#464498]' : 'border-transparent text-[#5b5953]'}`}
-                                href={route('profile.followers', profile.username)}
+                                href={route(
+                                    'profile.followers',
+                                    profile.username,
+                                )}
                             >
                                 Seguidores · {counts.followers}
                             </Link>
                             <Link
-                                aria-current={kind === 'following' ? 'page' : undefined}
+                                aria-current={
+                                    kind === 'following' ? 'page' : undefined
+                                }
                                 className={`${tab} ${kind === 'following' ? 'border-[#464498] text-[#464498]' : 'border-transparent text-[#5b5953]'}`}
-                                href={route('profile.following', profile.username)}
+                                href={route(
+                                    'profile.following',
+                                    profile.username,
+                                )}
                             >
                                 Seguindo · {counts.following}
                             </Link>
@@ -98,7 +108,10 @@ export default function Connections({
                                     <PlayerAvatar profile={person} size="sm" />
                                     <Link
                                         className="min-w-0 flex-1 truncate font-bold hover:underline"
-                                        href={route('profile.public', person.username)}
+                                        href={route(
+                                            'profile.public',
+                                            person.username,
+                                        )}
                                     >
                                         @{person.username}
                                     </Link>
@@ -107,9 +120,11 @@ export default function Connections({
                                             type="button"
                                             disabled={busy === person.username}
                                             onClick={() => toggle(person)}
-                                            className={`min-h-10 border-2 border-[#1d1d1b] px-3 font-mono text-[11px] font-black uppercase disabled:opacity-60 ${person.is_following ? 'bg-white' : 'bg-[#b4da33]'}`}
+                                            className={`min-h-10 shrink-0 border-2 border-[#1d1d1b] px-3 font-mono text-[11px] font-black uppercase disabled:opacity-60 ${person.is_following ? 'bg-white text-[#d01600]' : 'bg-[#b4da33]'}`}
                                         >
-                                            {person.is_following ? 'Seguindo' : 'Seguir'}
+                                            {person.is_following
+                                                ? 'Deixar de seguir'
+                                                : 'Seguir'}
                                         </button>
                                     )}
                                 </li>

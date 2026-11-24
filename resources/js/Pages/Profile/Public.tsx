@@ -72,9 +72,14 @@ function SocialBar({ username, social }: { username: string; social: Social }) {
                         disabled={busy}
                         onClick={toggle}
                         aria-pressed={social.is_following}
+                        title={
+                            social.is_following
+                                ? 'Você segue este jogador. Clique para deixar de seguir.'
+                                : 'Seguir este jogador'
+                        }
                         className={`min-h-10 border-2 border-[#1d1d1b] px-4 font-mono text-xs font-black uppercase shadow-[3px_3px_0_#1d1d1b] transition disabled:opacity-60 ${social.is_following ? 'bg-white text-[#1d1d1b] hover:bg-[#f3f1ec]' : 'bg-[#b4da33] text-[#1d1d1b] hover:bg-[#c8ee46]'}`}
                     >
-                        {social.is_following ? 'Seguindo' : 'Seguir'}
+                        {social.is_following ? 'Deixar de seguir' : 'Seguir'}
                     </button>
                 )}
                 {!social.logged_in && (

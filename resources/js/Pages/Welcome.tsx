@@ -82,7 +82,7 @@ export default function Welcome({ auth }: PageProps) {
             <section id="jogo" className="bg-paper py-16 text-ink sm:py-20">
                 <div className="mx-auto w-full max-w-[1500px] px-5 lg:px-8">
                     <div className="grid gap-8 lg:grid-cols-2 lg:items-end"><div><div className="eyebrow !border-[#1d1d1b]/30 !text-[#1d1d1b]/60">Conheça o jogo</div><h2 className="section-title mt-6">A estação onde a missão toma forma.</h2></div><p className="max-w-xl text-lg leading-8 text-[#1d1d1b]/65">O tabuleiro organiza duas áreas: o Treinamento e a Estação de Montagem. As próprias cartas jogadas formam o percurso e tornam o progresso de cada participante visível.</p></div>
-                    <div className="board-stage mt-10"><div className="board-frame"><img src="/images/estacao-commit/tabuleiro.png" alt="Tabuleiro original do Estação Commit" /></div><aside className="board-notes"><Note color="lime" title="Treinamento">Git Login, clone e criação da branch preparam cada agente.</Note><Note color="pink" title="Montagem">Quatro ciclos unem bloco de código, add e commit.</Note><Note color="violet" title="Quatro bases">Rosa, azul, verde e vermelho identificam os percursos dos jogadores.</Note></aside></div>
+                    <div className="board-stage mt-10"><div className="board-frame"><img loading="lazy" decoding="async" src="/images/estacao-commit/tabuleiro.png" alt="Tabuleiro original do Estação Commit" /></div><aside className="board-notes"><Note color="lime" title="Treinamento">Git Login, clone e criação da branch preparam cada agente.</Note><Note color="pink" title="Montagem">Quatro ciclos unem bloco de código, add e commit.</Note><Note color="violet" title="Quatro bases">Rosa, azul, verde e vermelho identificam os percursos dos jogadores.</Note></aside></div>
                     <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-5 sm:grid-cols-4"><CardFigure src="git-clone" label="git clone" /><CardFigure src="git-add" label="git add ." /><CardFigure src="git-commit" label="git commit" /><CardFigure src="git-push" label="git push" /></div>
                 </div>
             </section>
@@ -102,5 +102,5 @@ export default function Welcome({ auth }: PageProps) {
 }
 
 function Note({ color, title, children }: { color: string; title: string; children: React.ReactNode }) { return <div className={`board-note board-note-${color}`}><strong>{title}</strong><p>{children}</p></div>; }
-function CardFigure({ src, label }: { src: string; label: string }) { return <figure className="card-figure"><div><img src={`/images/estacao-commit/corrected/${src}.png`} alt={`Carta oficial ${label}`} /></div><figcaption>{label}</figcaption></figure>; }
+function CardFigure({ src, label }: { src: string; label: string }) { return <figure className="card-figure"><div><img loading="lazy" decoding="async" src={`/images/estacao-commit/corrected/${src}.png`} alt={`Carta oficial ${label}`} /></div><figcaption>{label}</figcaption></figure>; }
 function Learning({ command, text }: { command: string; text: string }) { return <div className="learning-item"><code>{command}</code><p>{text}</p></div>; }

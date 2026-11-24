@@ -4,18 +4,16 @@ window.axios = axios;
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 import { createCloudflareEcho } from '@/lib/cloudflareRealtime';
+import { createLazyEcho, type RealEcho } from '@/lib/lazyEcho';
+import type { RoomEcho } from '@/lib/roomSync';
 import { toast } from '@/lib/toast';
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
 
 declare global {
     interface Window {
-        Pusher: typeof Pusher;
-        Echo: Echo<'reverb'> | null;
+        Pusher: unknown;
+        Echo: RoomEcho | null;
     }
 }
-
-window.Pusher = Pusher;
 
 // Variáveis VITE_* (definidas no build) têm prioridade. Sem elas, usa a chave pública
 // entregue pelo servidor (meta tag) e o próprio endereço do site: o Apache já encaminha
@@ -66,48 +64,63 @@ if (useCloudflare) {
                 );
             }
         },
-    }) as unknown as Echo<'reverb'>;
+    }) as unknown as RoomEcho;
 } else if (reverbKey && reverbHost) {
-    window.Echo = new Echo({
-        broadcaster: 'reverb',
-        key: reverbKey,
-        wsHost: reverbHost,
-        wsPort: Number(reverbPort),
-        wssPort: Number(reverbPort),
-        forceTLS: reverbScheme === 'https',
-        enabledTransports: ['ws', 'wss'],
-    });
-    // Avisa quando a conexão em tempo real cai e quando volta. Um único aviso por
-    // queda (a chave troca o conteúdo em vez de empilhar). A atualização do estado
-    // depois da volta já é feita pelo sincronismo da página.
-    try {
-        let everConnected = false;
-        let lost = false;
-        window.Echo.connector.pusher.connection.bind(
-            'state_change',
-            ({ current }: { current: string }) => {
-                if (current === 'connected') {
-                    if (lost) {
-                        toast.success('Conexão restabelecida.', { key: 'connection' });
-                        lost = false;
+    // laravel-echo e pusher-js só são baixados, e o WebSocket só abre, quando uma página
+    // assina um canal (sala, partida, Dashboard). Páginas sem tempo real (início, login,
+    // perfil) não ocupam uma conexão do servidor nem pagam o custo do download.
+    let everConnected = false;
+    let lost = false;
+
+    window.Echo = createLazyEcho(async () => {
+        const [{ default: Echo }, { default: Pusher }] = await Promise.all([
+            import('laravel-echo'),
+            import('pusher-js'),
+        ]);
+        window.Pusher = Pusher;
+
+        const echo = new Echo({
+            broadcaster: 'reverb',
+            key: reverbKey,
+            wsHost: reverbHost,
+            wsPort: Number(reverbPort),
+            wssPort: Number(reverbPort),
+            forceTLS: reverbScheme === 'https',
+            enabledTransports: ['ws', 'wss'],
+        });
+
+        // Avisa quando a conexão em tempo real cai e quando volta. Um único aviso por
+        // queda (a chave troca o conteúdo em vez de empilhar). A atualização do estado
+        // depois da volta já é feita pelo sincronismo da página.
+        try {
+            echo.connector.pusher.connection.bind(
+                'state_change',
+                ({ current }: { current: string }) => {
+                    if (current === 'connected') {
+                        if (lost) {
+                            toast.success('Conexão restabelecida.', { key: 'connection' });
+                            lost = false;
+                        }
+                        everConnected = true;
+                    } else if (
+                        everConnected &&
+                        !lost &&
+                        ['unavailable', 'failed', 'disconnected'].includes(current)
+                    ) {
+                        lost = true;
+                        toast.info(
+                            'Sua conexão foi interrompida. Estamos tentando reconectar.',
+                            { key: 'connection', durationMs: 0 },
+                        );
                     }
-                    everConnected = true;
-                } else if (
-                    everConnected &&
-                    !lost &&
-                    ['unavailable', 'failed', 'disconnected'].includes(current)
-                ) {
-                    lost = true;
-                    toast.info(
-                        'Sua conexão foi interrompida. Estamos tentando reconectar.',
-                        { key: 'connection', durationMs: 0 },
-                    );
-                }
-            },
-        );
-    } catch {
-        // Sem aviso de conexão: o polling de segurança continua funcionando.
-    }
+                },
+            );
+        } catch {
+            // Sem aviso de conexão: o polling de segurança continua funcionando.
+        }
+
+        return echo as unknown as RealEcho;
+    });
 } else {
     window.Echo = null;
     console.warn(

@@ -28,7 +28,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Vite::prefetch(concurrency: 3);
+        // Sem Vite::prefetch(): ele baixava TODOS os pedaços de página (~40 arquivos, ~900 kB)
+        // logo após a primeira carga, 3 por vez. O servidor atende só 2 requisições ao mesmo
+        // tempo (512 MB de RAM), então esse download em segundo plano disputava vaga com o
+        // que a pessoa realmente clicava. Cada página baixa o seu pedaço quando é aberta.
 
         // Guard "visitor": quem é o visitante vem sempre do cookie HttpOnly.
         Auth::viaRequest('visitor-token', fn (Request $request) => app(GuestIdentity::class)->resolve($request));

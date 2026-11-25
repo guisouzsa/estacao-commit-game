@@ -10,15 +10,15 @@ class VerifiedBadgeTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function admin(): User
+    private function admin(string $username = 'dono'): User
     {
-        config(['profiles.admin_emails' => ['dono@example.com']]);
-
-        return User::factory()->create([
-            'username' => 'dono',
-            'email' => 'dono@example.com',
+        $user = User::factory()->create([
+            'username' => $username,
             'email_verified_at' => now(),
         ]);
+        $user->forceFill(['can_grant_verified' => true])->save();
+
+        return $user;
     }
 
     public function test_admin_grants_and_removes_the_verified_badge(): void
@@ -43,7 +43,6 @@ class VerifiedBadgeTest extends TestCase
 
     public function test_regular_players_cannot_verify_anyone_not_even_themselves(): void
     {
-        config(['profiles.admin_emails' => ['dono@example.com']]);
         $player = User::factory()->create(['username' => 'intruso']);
 
         $this->actingAs($player)
@@ -72,9 +71,8 @@ class VerifiedBadgeTest extends TestCase
             ->assertJsonPath('players.0.is_verified', true);
     }
 
-    public function test_the_badge_cannot_be_self_assigned_through_profile_update(): void
+    public function test_the_badge_and_the_power_cannot_be_self_assigned_through_profile_update(): void
     {
-        config(['profiles.admin_emails' => ['dono@example.com']]);
         $player = User::factory()->create(['username' => 'esperto']);
 
         $this->actingAs($player)->patch('/profile', [
@@ -82,18 +80,46 @@ class VerifiedBadgeTest extends TestCase
             'email' => $player->email,
             'verified_at' => now()->toDateTimeString(),
             'is_verified' => true,
+            'can_grant_verified' => true,
         ]);
 
-        $this->assertFalse($player->fresh()->isVerified());
+        $fresh = $player->fresh();
+        $this->assertFalse($fresh->isVerified());
+        $this->assertFalse($fresh->canGrantVerified());
+        $this->actingAs($fresh)->patch('/admin/users/esperto/verified', ['verified' => true])->assertForbidden();
     }
 
-    public function test_an_unconfirmed_account_with_the_admin_email_has_no_power(): void
+    public function test_power_requires_a_confirmed_email(): void
     {
-        config(['profiles.admin_emails' => ['dono@example.com']]);
-        $squatter = User::factory()->create(['username' => 'falso', 'email' => 'dono@example.com', 'email_verified_at' => null]);
+        $user = User::factory()->create(['username' => 'falso', 'email_verified_at' => null]);
+        $user->forceFill(['can_grant_verified' => true])->save();
         User::factory()->create(['username' => 'alvo']);
 
-        $this->actingAs($squatter)
+        $this->actingAs($user)
+            ->patch('/admin/users/alvo/verified', ['verified' => true])
+            ->assertForbidden();
+    }
+
+    public function test_the_username_alone_never_grants_power(): void
+    {
+        $impostor = User::factory()->create(['username' => 'gui', 'email_verified_at' => now()]);
+        User::factory()->create(['username' => 'alvo']);
+
+        $this->actingAs($impostor)
+            ->patch('/admin/users/alvo/verified', ['verified' => true])
+            ->assertForbidden();
+        $this->actingAs($impostor)->get('/profile')->assertInertia(
+            fn ($page) => $page->where('canManageVerified', false),
+        );
+    }
+
+    public function test_the_admin_email_in_env_no_longer_matters(): void
+    {
+        config(['profiles.admin_emails' => ['leader@example.com']]);
+        $leader = User::factory()->create(['email' => 'leader@example.com', 'email_verified_at' => now()]);
+        User::factory()->create(['username' => 'alvo']);
+
+        $this->actingAs($leader)
             ->patch('/admin/users/alvo/verified', ['verified' => true])
             ->assertForbidden();
     }
@@ -114,32 +140,5 @@ class VerifiedBadgeTest extends TestCase
         $this->actingAs($admin)->patch('/admin/users/dono/verified', ['verified' => false])->assertRedirect();
 
         $this->assertFalse($admin->fresh()->isVerified());
-    }
-
-    public function test_the_username_alone_never_grants_power(): void
-    {
-        config(['profiles.admin_emails' => ['dono@example.com']]);
-        $impostor = User::factory()->create(['username' => 'gui', 'email' => 'outro@example.com', 'email_verified_at' => now()]);
-        User::factory()->create(['username' => 'alvo']);
-
-        $this->actingAs($impostor)
-            ->patch('/admin/users/alvo/verified', ['verified' => true])
-            ->assertForbidden();
-        $this->actingAs($impostor)->get('/profile')->assertInertia(
-            fn ($page) => $page->where('canManageVerified', false),
-        );
-    }
-
-    public function test_changing_the_email_to_the_admin_one_does_not_keep_power(): void
-    {
-        config(['profiles.admin_emails' => ['dono@example.com']]);
-        $player = User::factory()->create(['username' => 'troca', 'email_verified_at' => now()]);
-
-        $this->actingAs($player)->patch('/profile', ['username' => 'troca', 'email' => 'dono@example.com']);
-
-        $this->assertNull($player->fresh()->email_verified_at);
-        $this->actingAs($player->fresh())
-            ->patch('/admin/users/troca/verified', ['verified' => true])
-            ->assertForbidden();
     }
 }

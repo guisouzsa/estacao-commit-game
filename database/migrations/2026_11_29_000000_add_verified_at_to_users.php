@@ -5,29 +5,35 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Selo de "perfil verificado" (o check azul ao lado do nome).
- * Só adiciona uma coluna anulável: ninguém nasce verificado e nada existente muda.
- * Quem concede o selo é a conta administradora (PROFILE_ADMIN_EMAILS), pela caixa no próprio perfil.
+ * Selo de "perfil verificado" (o check azul ao lado do nome) e a permissão de concedê-lo.
+ * Só adiciona colunas: ninguém nasce verificado nem com poder de conceder. A permissão
+ * `can_grant_verified` NÃO tem tela, rota nem campo de formulário: só é ligada por SQL, por quem administra o banco.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasColumn('users', 'verified_at')) {
-            return;
+        if (! Schema::hasColumn('users', 'verified_at')) {
+            Schema::table('users', function (Blueprint $table): void {
+                $table->timestamp('verified_at')->nullable();
+            });
         }
 
-        Schema::table('users', function (Blueprint $table): void {
-            $table->timestamp('verified_at')->nullable();
-        });
+        if (! Schema::hasColumn('users', 'can_grant_verified')) {
+            Schema::table('users', function (Blueprint $table): void {
+                $table->boolean('can_grant_verified')->default(false);
+            });
+        }
     }
 
     public function down(): void
     {
-        if (Schema::hasColumn('users', 'verified_at')) {
-            Schema::table('users', function (Blueprint $table): void {
-                $table->dropColumn('verified_at');
-            });
+        foreach (['verified_at', 'can_grant_verified'] as $column) {
+            if (Schema::hasColumn('users', $column)) {
+                Schema::table('users', function (Blueprint $table) use ($column): void {
+                    $table->dropColumn($column);
+                });
+            }
         }
     }
 };

@@ -37,6 +37,15 @@ class User extends Authenticatable
         return $this->verified_at !== null;
     }
 
+    /**
+     * Pode conceder o selo de verificado. Vem da coluna `can_grant_verified`, que não é preenchível e só muda por SQL.
+     * Exige e-mail confirmado. O nome de usuário nunca conta (pode ser trocado e reaproveitado).
+     */
+    public function canGrantVerified(): bool
+    {
+        return $this->email_verified_at !== null && $this->can_grant_verified === true;
+    }
+
     protected static function booted(): void
     {
         static::creating(function (User $user): void {
@@ -88,6 +97,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'verified_at' => 'datetime',
+            'can_grant_verified' => 'boolean',
             'email_code_expires_at' => 'datetime',
             'email_code_sent_at' => 'datetime',
             'email_code_attempts' => 'integer',

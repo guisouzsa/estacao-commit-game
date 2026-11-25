@@ -1,10 +1,11 @@
-import VerifiedBadge from '@/Components/VerifiedBadge';
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import HowToPlayButton from '@/Components/HowToPlayButton';
 import JoinByCodeForm from '@/Components/JoinByCodeForm';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import { PlayerSummary } from '@/Components/PlayerSearch';
 import RoomCountdown from '@/Components/RoomCountdown';
 import RoomCreationModal, { BotPreview } from '@/Components/RoomCreationModal';
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import WelcomeTutorial from '@/Components/WelcomeTutorial';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { startChannelSync } from '@/lib/roomSync';
@@ -86,6 +87,17 @@ export default function Dashboard({
         [channel],
     );
 
+    // Voltar pelo navegador (seta) restaura a cópia antiga desta página, sem pedir nada ao servidor:
+    // a sala recém-criada não aparecia até recarregar. Ao abrir, relemos só a lista de salas.
+    useEffect(() => {
+        const timer = window.setTimeout(
+            () => router.reload({ only: ['rooms'] }),
+            300,
+        );
+
+        return () => window.clearTimeout(timer);
+    }, []);
+
     // Avisos persistidos (ex.: sala excluída automaticamente). O servidor os
     // marca como lidos ao entregar; o id evita exibir o mesmo aviso duas vezes.
     useEffect(() => {
@@ -119,12 +131,17 @@ export default function Dashboard({
             <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-8 text-[#1d1d1b] sm:px-4 lg:px-6">
                 <div className="w-full">
                     <header className="border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-6 shadow-[8px_8px_0_#1d1d1b]">
-                        <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-[#464498]">
-                            Estação Commit / central de jogo
-                        </p>
-                        <h1 className="mt-2 text-4xl font-black">
-                            Vamos jogar?
-                        </h1>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-[#464498]">
+                                    Estação Commit / inicial
+                                </p>
+                                <h1 className="mt-2 text-4xl font-black">
+                                    Vamos jogar?
+                                </h1>
+                            </div>
+                            <HowToPlayButton className="!w-auto px-5" />
+                        </div>
                         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5b5953]">
                             Crie uma sala privada ou entre com um convite. A
                             partida começa somente com quatro participantes.
@@ -281,7 +298,13 @@ export default function Dashboard({
                                                 />
                                                 <span className="min-w-0 flex-1">
                                                     <strong className="block truncate">
-                                                        @{player.username}{player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
+                                                        @{player.username}
+                                                        {player.is_verified && (
+                                                            <VerifiedBadge
+                                                                className="ml-1"
+                                                                size={15}
+                                                            />
+                                                        )}
                                                     </strong>
                                                     {player.profile_title ? (
                                                         <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">
@@ -309,7 +332,13 @@ export default function Dashboard({
                                                 />
                                                 <span className="min-w-0 flex-1">
                                                     <strong className="block truncate">
-                                                        @{player.username}{player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
+                                                        @{player.username}
+                                                        {player.is_verified && (
+                                                            <VerifiedBadge
+                                                                className="ml-1"
+                                                                size={15}
+                                                            />
+                                                        )}
                                                     </strong>
                                                     {player.profile_title ? (
                                                         <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">

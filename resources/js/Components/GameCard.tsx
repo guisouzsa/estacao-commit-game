@@ -124,7 +124,7 @@ export default function GameCard({
             transition={{ duration: 0.18 }}
             aria-pressed={selected}
             aria-label={`${meta.label}${playable ? ', pode ser jogada' : ''}`}
-            className={`focus-visible:outline-3 relative shrink-0 overflow-hidden rounded-xl border-[3px] bg-[#f3f1ec] text-left shadow-[4px_5px_0_#10100f] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#b4da33] ${compact ? 'h-24 w-[4.25rem]' : 'h-28 w-[5rem] sm:h-32 sm:w-[5.75rem] lg:h-[var(--hand-card-h,8.25rem)] lg:w-[calc(var(--hand-card-h,8.25rem)*0.715)]'} ${(onClick && !playable && !selected) || (dimmed && !selected) ? 'brightness-[.7]' : ''} ${selected ? 'border-[#b4da33]' : playable ? 'border-white' : 'border-[#1d1d1b]'} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
+            className={`focus-visible:outline-3 relative shrink-0 overflow-hidden rounded-xl border-[3px] bg-[#f3f1ec] text-left shadow-[4px_5px_0_#10100f] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#b4da33] ${compact ? 'h-24 w-[4.25rem]' : 'aspect-[5/7] w-[min(5rem,var(--hand-w,5rem))] sm:w-[min(5.75rem,var(--hand-w,5.75rem))] lg:w-[min(calc(var(--hand-card-h,8.25rem)*0.715),var(--hand-w,99rem))]'} ${(onClick && !playable && !selected) || (dimmed && !selected) ? 'brightness-[.7]' : ''} ${selected ? 'border-[#b4da33]' : playable ? 'border-white' : 'border-[#1d1d1b]'} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
             style={{
                 transformOrigin: '50% 100%',
                 boxShadow: selected
@@ -136,12 +136,12 @@ export default function GameCard({
                 <img
                     src={`/images/estacao-commit/corrected/${meta.image}`}
                     alt=""
-                    className="size-full object-cover"
+                    className="absolute inset-0 size-full object-cover"
                     draggable={false}
                 />
             ) : (
                 <span
-                    className="flex size-full flex-col justify-between p-2"
+                    className="absolute inset-0 flex size-full flex-col justify-between p-2"
                     style={{
                         background: `linear-gradient(145deg, ${meta.tone}, #1d1d1b)`,
                     }}

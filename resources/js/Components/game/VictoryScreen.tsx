@@ -285,7 +285,7 @@ export default function VictoryScreen({
                             className="grid min-h-11 place-items-center border-2 border-[#1d1d1b] bg-white px-4 font-mono text-xs font-black uppercase"
                             href={dashboardHref}
                         >
-                            Dashboard
+                            Inicial
                         </Link>
                         <Link
                             className="grid min-h-11 place-items-center border-2 border-[#1d1d1b] bg-[#b4da33] px-4 font-mono text-xs font-black uppercase"

@@ -34,94 +34,84 @@ const CARDS: Record<string, CardInfo> = {
     git_login: {
         image: 'git-login.webp',
         name: 'Git Login',
-        text: 'Configura a autoria dos seus commits. Todo mundo começa com uma na mão.',
+        text: 'Primeira carta do percurso. Todo mundo começa com uma.',
     },
     git_clone: {
         image: 'git-clone.webp',
         name: 'git clone',
-        text: 'Cria uma cópia local do repositório remoto.',
+        text: 'Traz o projeto para o seu computador.',
     },
     git_checkout: {
         image: 'git-checkout.webp',
         name: 'git checkout -b',
-        text: 'Cria a sua própria branch para desenvolver.',
+        text: 'Cria o seu próprio caminho de trabalho.',
     },
     git_add: {
         image: 'git-add.webp',
         name: 'git add .',
-        text: 'Prepara as alterações para o commit.',
+        text: 'Separa as mudanças que serão salvas.',
     },
     git_commit: {
         image: 'git-commit.webp',
         name: 'git commit',
-        text: 'Registra as alterações com uma mensagem.',
+        text: 'Salva as mudanças feitas.',
     },
     git_pull: {
         image: 'git-pull.webp',
         name: 'git pull',
-        text: 'Atualiza o seu repositório local antes do envio.',
+        text: 'Traz as novidades antes de enviar. No Treinamento, compra 2 cartas.',
     },
     git_push: {
         image: 'git-push.webp',
         name: 'git push',
-        text: 'Envia os commits da sua branch ao repositório remoto.',
+        text: 'Envia o seu trabalho.',
     },
     pull_request: {
         image: 'pull-request.webp',
         name: 'Pull Request',
-        text: 'Propõe a integração das alterações. É a carta que decide a partida.',
+        text: 'Pede para juntar o seu trabalho. Quem jogar primeiro vence.',
     },
     clear_credentials: {
         image: 'limpar-credenciais.webp',
         name: 'Limpar Credenciais',
-        text: 'Ataque: só entre jogadores no Treinamento. O alvo volta ao início do percurso.',
+        text: 'Ataque: só contra quem também está no Treinamento. A pessoa volta ao início.',
         attack: true,
     },
     merge_conflict: {
         image: 'merge-conflict.webp',
         name: 'Merge Conflict',
-        text: 'Ataque: o alvo perde a próxima vez.',
+        text: 'Ataque: a pessoa escolhida perde a próxima vez.',
         attack: true,
     },
     block_1: {
         image: 'bloco-1.webp',
         name: 'Bloco de Código 1',
-        text: 'Abre o 1º ciclo de desenvolvimento.',
+        text: 'Peça do 1º ciclo.',
     },
     block_2: {
         image: 'bloco-2.webp',
         name: 'Bloco de Código 2',
-        text: 'Abre o 2º ciclo de desenvolvimento.',
+        text: 'Peça do 2º ciclo.',
     },
     block_3: {
         image: 'bloco-3.webp',
         name: 'Bloco de Código 3',
-        text: 'Abre o 3º ciclo de desenvolvimento.',
+        text: 'Peça do 3º ciclo.',
     },
     block_4: {
         image: 'bloco-4.webp',
         name: 'Bloco de Código 4',
-        text: 'Abre o 4º e último ciclo de desenvolvimento.',
+        text: 'Peça do 4º e último ciclo.',
     },
 };
 
 type Step = { title: string; kicker: string };
 const STEPS: Step[] = [
-    { kicker: 'Etapa 1 · Missão', title: 'Prepare o foguete' },
-    { kicker: 'Etapa 2 · Treinamento', title: 'Configure o ambiente' },
-    { kicker: 'Etapa 3 · Desenvolvimento', title: 'Complete quatro ciclos' },
-    { kicker: 'Etapa 4 · Envio', title: 'Envie o código' },
-    { kicker: 'Etapa 5 · Vitória', title: 'Abra a Pull Request' },
+    { kicker: 'Como jogar', title: 'O objetivo' },
+    { kicker: 'Etapa 1', title: 'Treinamento' },
+    { kicker: 'Etapa 2', title: 'Desenvolvimento' },
+    { kicker: 'Etapa 3', title: 'Envio' },
 ];
-
-function Terminal({ children }: { children: string }) {
-    return (
-        <p className="mt-3 border-l-4 border-[#b4da33] bg-[#1d1d1b] px-3 py-2 font-mono text-xs text-[#b4da33]">
-            <span className="text-white/50">$ </span>
-            {children}
-        </p>
-    );
-}
 
 /** Lista de cartas com a arte real e a função de cada uma. */
 function CardList({
@@ -171,25 +161,26 @@ function Note({ children }: { children: React.ReactNode }) {
 }
 
 function StepBody({ step }: { step: number }) {
-    // ---- Contexto ----
     if (step === 0) {
         return (
             <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto]">
                 <div className="space-y-2 text-sm leading-5">
                     <p>
-                        Você é o novo <strong>estagiário</strong>. Sua missão é
-                        preparar o código e lançar o foguete antes dos outros
-                        jogadores.
+                        <strong>Objetivo:</strong> chegar ao fim do percurso
+                        antes dos outros jogadores. Quem jogar a{' '}
+                        <strong>Pull Request</strong> primeiro vence.
                     </p>
                     <p>
-                        Em cada turno, jogue a carta indicada no percurso ou
-                        troque uma carta da mão. A troca também encerra o turno.
+                        O percurso tem <strong>3 etapas</strong>: Treinamento,
+                        Desenvolvimento e Envio.{' '}
+                        <strong>
+                            Em cada etapa você só joga as cartas dela.
+                        </strong>
                     </p>
                     <p>
-                        <strong>Objetivo:</strong> concluir Treinamento,
-                        Desenvolvimento e Envio — 18 passos no total.
+                        Na sua vez, jogue a carta da próxima etapa ou troque uma
+                        carta da mão (trocar também gasta a sua vez).
                     </p>
-                    <Terminal>git checkout -b missao-foguete</Terminal>
                 </div>
                 <img
                     alt=""
@@ -201,132 +192,63 @@ function StepBody({ step }: { step: number }) {
         );
     }
 
-    // ---- Primeira etapa: Treinamento ----
     if (step === 1) {
         return (
             <div className="text-sm leading-5">
                 <p>
-                    O <strong>Treinamento</strong> prepara o seu ambiente. Jogue
-                    as três cartas <strong>nesta ordem</strong>:
+                    Na etapa de <strong>Treinamento</strong> você só joga estas
+                    3 cartas, <strong>nesta ordem</strong>:
                 </p>
                 <CardList
                     cards={['git_login', 'git_clone', 'git_checkout']}
                     numbered
                 />
                 <p className="mt-2 font-mono text-[10px] font-black uppercase text-[#d01600]">
-                    Carta especial do Treinamento
+                    Carta extra desta etapa
                 </p>
                 <CardList cards={['clear_credentials']} />
-                <Note>
-                    Você começa com <strong>Git Login</strong>.{' '}
-                    <strong>Limpar Credenciais</strong> é exclusiva desta fase:
-                    atacante e alvo precisam estar no Treinamento. Aqui,{' '}
-                    <code>git pull</code> compra duas cartas.
-                </Note>
             </div>
         );
     }
 
-    // ---- Segunda etapa: Desenvolvimento ----
     if (step === 2) {
         return (
             <div className="text-sm leading-5">
                 <p>
-                    O <strong>Desenvolvimento</strong> tem{' '}
-                    <strong>quatro ciclos</strong>. Cada ciclo repete a mesma
-                    sequência:
+                    Na etapa de <strong>Desenvolvimento</strong> são{' '}
+                    <strong>4 ciclos</strong>. Em cada ciclo você só joga estas
+                    3 cartas, nesta ordem:
                 </p>
                 <CardList
                     cards={['block_1', 'git_add', 'git_commit']}
                     numbered
                 />
                 <p className="mt-2 font-mono text-[10px] font-black uppercase text-[#d01600]">
-                    Carta de conflito
+                    Carta extra desta etapa
                 </p>
                 <CardList cards={['merge_conflict']} />
                 <Note>
-                    Repita <strong>bloco → add → commit</strong> quatro vezes. O
-                    bloco fica separado da mão. O{' '}
-                    <strong>Merge Conflict</strong> faz o alvo perder a próxima
-                    vez e pode ser usado em qualquer fase. Limite da mão: seis
-                    cartas.
+                    O bloco fica separado da mão e muda a cada ciclo (bloco 1,
+                    2, 3 e 4). A mão guarda no máximo 6 cartas.
                 </Note>
             </div>
         );
     }
 
-    // ---- Terceira etapa: Envio ----
-    if (step === 3) {
-        return (
-            <div className="text-sm leading-5">
-                <p>
-                    Com os quatro ciclos prontos, é hora do{' '}
-                    <strong>Envio</strong>. Jogue, em ordem:
-                </p>
-                <CardList
-                    cards={['git_pull', 'git_push', 'pull_request']}
-                    numbered
-                />
-                <Note>
-                    Depois dos quatro ciclos, siga{' '}
-                    <strong>pull → push → Pull Request</strong>. Não há atalhos.
-                </Note>
-            </div>
-        );
-    }
-
-    // ---- Etapa final: Como vencer ----
     return (
         <div className="text-sm leading-5">
             <p>
-                Para vencer, cumpra o percurso inteiro. São{' '}
-                <strong>quatro Blocos de Código</strong>, um por ciclo, sempre
-                na ordem:
+                Na etapa de <strong>Envio</strong> você só joga estas 3 cartas,{' '}
+                <strong>nesta ordem</strong>:
             </p>
-            <ol className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {(['block_1', 'block_2', 'block_3', 'block_4'] as const).map(
-                    (key, index) => (
-                        <li
-                            className="border-2 border-[#1d1d1b] bg-white p-1.5 text-center"
-                            key={key}
-                        >
-                            <img
-                                alt={CARDS[key].name}
-                                className="mx-auto h-16 w-12 rounded-sm border border-[#1d1d1b] object-cover"
-                                decoding="async"
-                                src={`${ART}/corrected/${CARDS[key].image}`}
-                            />
-                            <strong className="mt-1 block font-mono text-[10px]">
-                                Ciclo {index + 1}
-                            </strong>
-                            <span className="block text-[10px] leading-4 text-[#5b5953]">
-                                bloco → add → commit
-                            </span>
-                        </li>
-                    ),
-                )}
-            </ol>
-            <div className="mt-3 grid items-center gap-3 sm:grid-cols-[auto_1fr]">
-                <img
-                    alt={CARDS.pull_request.name}
-                    className="mx-auto h-20 w-14 rounded-sm border-2 border-[#1d1d1b] object-cover"
-                    decoding="async"
-                    src={`${ART}/corrected/${CARDS.pull_request.image}`}
-                />
-                <div className="space-y-2">
-                    <p>
-                        A <strong>Pull Request</strong> só vale após completar
-                        todo o percurso, incluindo pull e push.
-                    </p>
-                    <p className="font-bold">
-                        Quem jogar a primeira Pull Request válida vence, e a
-                        partida termina na hora.
-                    </p>
-                </div>
-            </div>
+            <CardList
+                cards={['git_pull', 'git_push', 'pull_request']}
+                numbered
+            />
             <Note>
-                Resumo do percurso: Treinamento (3) + quatro ciclos de bloco,
-                add e commit (12) + Envio (3) = 18 etapas.
+                <strong>Quem jogar a Pull Request primeiro vence</strong> e a
+                partida termina na hora. Ao todo são 18 passos: 3 de
+                Treinamento, 12 de Desenvolvimento e 3 de Envio.
             </Note>
         </div>
     );

@@ -161,7 +161,8 @@ export default function Error({
                     </p>
                 )}
                 <p className="mt-5 border-l-4 border-[#b4da33] bg-white px-3 py-2 font-mono text-xs text-[#5b5953]">
-                    git checkout -b <span className="font-black">voltar-ao-inicio</span>
+                    git checkout -b{' '}
+                    <span className="font-black">voltar-ao-inicio</span>
                 </p>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -175,7 +176,7 @@ export default function Error({
                         </button>
                     ) : canDashboard ? (
                         <Link className={primary} href={route('dashboard')}>
-                            Ir para a Dashboard
+                            Ir para a página inicial
                         </Link>
                     ) : (
                         <Link className={primary} href={route('guest.create')}>

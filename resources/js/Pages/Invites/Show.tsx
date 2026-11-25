@@ -183,7 +183,7 @@ export default function Show({
                         href={route('dashboard')}
                         className="mt-5 block text-center font-mono text-[10px] font-bold uppercase text-[#464498] underline decoration-2 underline-offset-4"
                     >
-                        Voltar para a Dashboard
+                        Voltar para a tela inicial
                     </Link>
                 </section>
             </main>

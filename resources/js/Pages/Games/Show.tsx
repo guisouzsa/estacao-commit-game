@@ -18,7 +18,14 @@ import { toast } from '@/lib/toast';
 import { claimTutorial } from '@/lib/tutorialOnce';
 import { Head, router } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    CSSProperties,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 
 type Player = {
     key: string;
@@ -160,21 +167,6 @@ export default function Show({
             setTutorial(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [game.id]);
-    // Indica (sombra + seta) quando a mão tem mais cartas fora da tela; só ela rola, a mesa não.
-    const handRef = useRef<HTMLDivElement>(null);
-    const [handHint, setHandHint] = useState({ left: false, right: false });
-    const measureHand = useCallback(() => {
-        const element = handRef.current;
-        if (!element) return;
-        const left = element.scrollLeft > 4;
-        const right =
-            element.scrollLeft + element.clientWidth < element.scrollWidth - 4;
-        setHandHint((current) =>
-            current.left === left && current.right === right
-                ? current
-                : { left, right },
-        );
-    }, []);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [online, setOnline] = useState(() => navigator.onLine);
     const reduced = useReducedMotion();
@@ -203,6 +195,7 @@ export default function Show({
         });
     }, [hand]);
     const selectedCard = selected === null ? null : hand[selected];
+    const handSlots = Math.max(1, hand.length + (holdsBlock(viewer) ? 1 : 0));
     const needsTarget =
         selectedCard === 'clear_credentials' ||
         selectedCard === 'merge_conflict';
@@ -551,12 +544,6 @@ export default function Show({
         );
     };
 
-    useEffect(() => {
-        measureHand();
-        window.addEventListener('resize', measureHand);
-        return () => window.removeEventListener('resize', measureHand);
-    }, [measureHand, hand.length]);
-
     // ---------- Turno e tempo ----------
     const [clock, setClock] = useState(() => ({
         base: game.turn_seconds_left ?? null,
@@ -787,11 +774,15 @@ export default function Show({
                     </div>
 
                     <div className="min-w-0 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 shadow-[0_-10px_30px_#0006] lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3 xl:col-start-2 xl:row-start-2">
-                        <div className="relative min-w-0">
+                        <div className="relative min-w-0 [container-type:inline-size]">
+                            {/* Sem rolagem: as cartas dividem a largura disponível (até o tamanho normal) e todas ficam visíveis. */}
                             <div
-                                className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto"
-                                onScroll={measureHand}
-                                ref={handRef}
+                                className="flex items-end justify-center gap-2 px-1 pb-2 pt-5"
+                                style={
+                                    {
+                                        '--hand-w': `calc((100cqw - 0.5rem - ${(handSlots - 1) * 0.5}rem) / ${handSlots})`,
+                                    } as CSSProperties
+                                }
                             >
                                 {holdsBlock(viewer) && (
                                     <motion.div
@@ -861,20 +852,6 @@ export default function Show({
                                         ))}
                                 </AnimatePresence>
                             </div>
-                            {handHint.left && (
-                                <span
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#161615] to-transparent"
-                                />
-                            )}
-                            {handHint.right && (
-                                <span
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-gradient-to-l from-[#161615] to-transparent pr-1 text-lg font-black text-white/70"
-                                >
-                                    ›
-                                </span>
-                            )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 border-t border-white/10 pt-2 lg:flex lg:flex-col lg:items-stretch lg:border-0 lg:pt-0">
@@ -1022,7 +999,7 @@ export default function Show({
                     onClick={() => router.visit(route('dashboard'))}
                     type="button"
                 >
-                    Só voltar à Dashboard (continuo na mesa)
+                    Só voltar à tela inicial (continuo na mesa)
                 </button>
             </ConfirmDialog>
         </AuthenticatedLayout>

@@ -4,43 +4,28 @@ import Modal from './Modal';
 const steps = [
     [
         'Objetivo',
-        'Complete sua contribuição antes dos outros: treinamento, quatro ciclos de desenvolvimento, envio e uma Pull Request válida.',
+        'Chegue ao fim do percurso antes dos outros jogadores. Quem jogar a Pull Request primeiro vence. A partida tem quatro jogadores e cada um joga na sua vez.',
         '/images/estacao-commit/mascots/foguete-gato.webp',
     ],
     [
-        'Preparação',
-        'A partida tem quatro jogadores. Cada pessoa começa no Treinamento com o Bloco 1 e quatro cartas comuns. O primeiro turno é sorteado.',
-        '/images/estacao-commit/tabuleiro.webp',
-    ],
-    [
-        'Treinamento',
-        'Jogue, nesta ordem: Git Login, git clone e git checkout -b.',
+        'Etapa 1: Treinamento',
+        'Nesta etapa você só joga 3 cartas, nesta ordem: Git Login, git clone e git checkout -b.',
         '/images/estacao-commit/corrected/git-login.webp',
     ],
     [
-        'Desenvolvimento',
-        'Complete quatro ciclos. Em cada ciclo: bloco correspondente, git add . e git commit.',
+        'Etapa 2: Desenvolvimento',
+        'São 4 ciclos. Em cada ciclo você só joga: o bloco, git add e git commit, nesta ordem.',
         '/images/estacao-commit/corrected/git-commit.webp',
     ],
     [
-        'Envio',
-        'Depois do quarto commit, jogue git pull, git push e finalize com Pull Request.',
-        '/images/estacao-commit/corrected/git-push.webp',
+        'Etapa 3: Envio',
+        'Aqui você só joga git pull, git push e, por último, a Pull Request. Quem jogar a Pull Request vence na hora.',
+        '/images/estacao-commit/corrected/pull-request.webp',
     ],
     [
-        'Mão e trocas',
-        'O limite é de seis cartas comuns. O Code Block não conta. Você pode descartar exatamente uma carta comum para comprar outra.',
-        '/images/estacao-commit/corrected/bloco-1.webp',
-    ],
-    [
-        'Cartas especiais',
-        'Limpar Credenciais reinicia o treinamento de um adversário elegível. Merge Conflict faz o alvo perder a próxima vez inteira.',
+        'Trocas e ataques',
+        'Na sua vez, jogue a carta da etapa ou troque uma carta (trocar gasta a vez). Limpar Credenciais manda alguém do Treinamento de volta ao início. Merge Conflict faz a pessoa perder a próxima vez.',
         '/images/estacao-commit/corrected/merge-conflict.webp',
-    ],
-    [
-        'Vitória',
-        'Uma Pull Request válida, após toda a sequência obrigatória, encerra a partida imediatamente.',
-        '/images/estacao-commit/mascots/gato-commit.webp',
     ],
 ];
 export default function WelcomeTutorial() {

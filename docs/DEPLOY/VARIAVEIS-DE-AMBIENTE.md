@@ -265,6 +265,8 @@ Não há identificadores de conta no repositório: o `wrangler login` associa ao
 | `GAME_SWEEP_BATCH` | `50` | máximo de partidas verificadas por execução do `games:sweep` |
 | `FINISHED_ROOM_TTL_MINUTES` | `2` | quanto tempo a sala encerrada fica visível antes da limpeza |
 | `GUEST_TTL_HOURS` | `6` | validade (por inatividade) da conta temporária de visitante |
+| `SCHEDULER_ENABLED` | `true` | `false` desliga o agendador sem deploy de código (lida pelo shell, não pelo Laravel) |
+| `SCHEDULER_NICE` / `SCHEDULER_TIMEOUT` / `SCHEDULER_MEMORY_LIMIT` | `15` / `50` / `96M` | prioridade de CPU, tempo máximo (s) e memória de cada execução do `schedule:run` |
 | `GUEST_MAX_DAYS` | `3` | teto absoluto de vida da conta temporária, contado da criação, mesmo com atividade contínua |
 | `GUEST_MAX_DAYS` | `3` | teto de vida de uma conta temporária, mesmo com atividade |
 

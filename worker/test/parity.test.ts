@@ -83,11 +83,11 @@ describe('paridade PHP x Worker (mesmos cenários, mesmo resultado)', () => {
     });
   }
 
-  it('partida nova: Git Login para todos, baralho de 62 cartas e composição igual à do PHP', () => {
+  it('partida nova: Git Login para todos, baralho de 67 cartas e composição igual à do PHP', () => {
     const ps: Participant[] = [1, 2, 3, 4].map((i) => ({ id: i, seat: i, kind: 'user' }));
     for (let t = 0; t < 30; t++) {
       const m = createMatch(ps);
-      expect(m.deck).toHaveLength(62);
+      expect(m.deck).toHaveLength(67);
       expect(m.deck).not.toContain('git_login');
       for (const p of Object.values(m.players)) {
         expect(p.hand).toHaveLength(4);
@@ -97,7 +97,7 @@ describe('paridade PHP x Worker (mesmos cenários, mesmo resultado)', () => {
       const count = (c: string) => all.filter((x) => x === c).length;
       expect(
         ['git_login', 'git_clone', 'git_checkout', 'git_pull', 'git_add', 'git_commit', 'git_push', 'pull_request', 'clear_credentials', 'merge_conflict'].map(count),
-      ).toEqual([4, 7, 7, 4, 16, 16, 16, 4, 2, 2]); // mesma constante do EngineParityTest.php
+      ).toEqual([4, 10, 10, 6, 18, 18, 8, 5, 2, 2]); // mesma constante do EngineParityTest.php
       expect([m.version, m.turn_number, m.status]).toEqual([1, 1, 'active']);
       expect(m.current_seat).toBeGreaterThanOrEqual(1);
       expect(m.current_seat).toBeLessThanOrEqual(4);
@@ -117,7 +117,7 @@ describe('paridade PHP x Worker (mesmos cenários, mesmo resultado)', () => {
     }
   });
 
-  it('partida só de bots termina com vencedor, percurso completo e 78 cartas conservadas (como no PHP)', () => {
+  it('partida só de bots termina com vencedor, percurso completo e 83 cartas conservadas (como no PHP)', () => {
     for (let t = 0; t < 12; t++) {
       const ps: Participant[] = [1, 2, 3, 4].map((i) => ({ id: i, seat: i, kind: 'bot' }));
       const m = createMatch(ps);
@@ -127,7 +127,7 @@ describe('paridade PHP x Worker (mesmos cenários, mesmo resultado)', () => {
       expect(w.path).toHaveLength(18);
       expect(w.path.at(-1)).toBe('pull_request');
       const total = m.deck.length + m.discard.length + Object.values(m.players).reduce((n, p) => n + p.hand.length + p.path.filter((c) => !c.startsWith('block_')).length, 0);
-      expect(total).toBe(78);
+      expect(total).toBe(83);
     }
   });
 });

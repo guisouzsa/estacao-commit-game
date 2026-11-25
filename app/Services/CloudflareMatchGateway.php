@@ -24,7 +24,7 @@ class CloudflareMatchGateway
      * fixture, rode os dois lados e suba esta versão (e o "parity_version" do JSON): a liberação antiga
      * deixa de valer sozinha.
      */
-    public const PARITY_VERSION = '2026-11-26-2';
+    public const PARITY_VERSION = '2026-11-27-3';
 
     public function __construct(private readonly CloudflareRealtime $realtime) {}
 

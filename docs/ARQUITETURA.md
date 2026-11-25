@@ -130,7 +130,7 @@ padrão do Laravel. Se um dia houver `ShouldQueue`, será preciso um processo `q
 | --- | --- | --- | --- | --- | --- |
 | `apache` | Supervisor | Supervisor (`autorestart`) + `essential-watchdog.py` | serve o site (PHP) e encaminha `/app/` ao Reverb | se cair, o watchdog derruba o contêiner e o Render reinicia | logs do Render (`stderr`/`stdout`) |
 | `reverb` | Supervisor | Supervisor + watchdog | WebSocket interno (porta 8080) | idem; sem ele o front cai para polling | logs do Render |
-| `scheduler` | Supervisor (`schedule:work`) | Supervisor (`autorestart`, não essencial) | roda os comandos agendados (tabela abaixo) | se parar, o app continua; as limpezas passam a ocorrer sob demanda | linhas `Running [artisan ...]` nos logs |
+| `scheduler` | Supervisor (laço `scheduler-loop.sh` → `schedule:run` por minuto) | Supervisor (`autorestart`, não essencial) | roda os comandos agendados (tabela abaixo) | se parar, o app continua; as limpezas passam a ocorrer sob demanda | linhas `Running [artisan ...]` nos logs |
 | `essential-watchdog` | Supervisor | Supervisor | vigia `apache` e `reverb` | se ele cair, o Supervisor o reinicia | logs do Render |
 | migrations | `docker-entrypoint.sh` | o próprio script (5 tentativas) | `php artisan migrate --force` antes de subir | falha final impede o deploy (o Render mantém a versão anterior) | logs de deploy |
 
@@ -152,7 +152,7 @@ limite, mesmo com todas as páginas fechadas:
 - **vez de bot parada** há mais de `GAME_BOT_STALL_SECONDS` (8 s): o servidor joga os passos do bot até chegar a vez de um humano.
 
 Custo: uma consulta por minuto com índice `game_matches_status_turn_clock_index (status, turn_started_at)`, no máximo `GAME_SWEEP_BATCH` (50) mesas por
-execução. **Limitação honesta:** o `schedule:work` roda a cada minuto, então a resolução tem até ~1 minuto de atraso em mesas sem ninguém olhando
+execução. **Limitação honesta:** o `schedule:run` roda a cada minuto (e só enquanto o serviço do Render Free está acordado), então a resolução tem até ~1 minuto de atraso em mesas sem ninguém olhando
 (com a página aberta, o atraso é de segundos, pois o front sincroniza). Partidas do Worker usam o alarme do Durable Object e são ignoradas pelo comando.
 Reinício do contêiner: o estado está no banco; a próxima execução continua de onde parou.
 

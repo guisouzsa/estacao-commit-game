@@ -408,6 +408,7 @@ export default function Edit({
                                           )
                                 }
                                 share={!editing}
+                                editableAchievements={!editing}
                                 statistics={profileExtras.statistics}
                                 username={data.username}
                             />
@@ -465,9 +466,9 @@ export default function Edit({
                                         <div
                                             className={`border-l-4 px-3 py-2 text-sm leading-6 ${renaming ? 'border-[#d01600] bg-[#fff2ef] text-[#6e160d]' : 'border-[#1d1d1b]/30 bg-white/60 text-[#5b5953]'}`}
                                         >
-                                            <strong>Atenção:</strong> ao
-                                            alterar seu identificador, o atual
-                                            será liberado. Se outra pessoa o
+                                            <strong>Atenção:</strong> ao alterar
+                                            seu identificador, o atual será
+                                            liberado. Se outra pessoa o
                                             registrar, você poderá perdê-lo
                                             definitivamente.
                                         </div>
@@ -1186,8 +1187,10 @@ export default function Edit({
                         onConfirm={save}
                         onClose={() => setConfirmRename(false)}
                     >
-                        O identificador atual (<strong>@{user.username}</strong>) será liberado e você passará a ser{' '}
-                        <strong>@{data.username}</strong>. Se outra pessoa registrar o antigo, você poderá perdê-lo
+                        O identificador atual (<strong>@{user.username}</strong>
+                        ) será liberado e você passará a ser{' '}
+                        <strong>@{data.username}</strong>. Se outra pessoa
+                        registrar o antigo, você poderá perdê-lo
                         definitivamente. Deseja continuar?
                     </ConfirmDialog>
 

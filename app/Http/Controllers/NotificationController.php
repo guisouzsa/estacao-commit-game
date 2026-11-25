@@ -17,7 +17,7 @@ use Inertia\Response;
 class NotificationController extends Controller
 {
     /** Tipos exibidos na central. (RoomDeleted é um aviso de Dashboard, não da central.) */
-    public const TYPES = [NewFollower::class];
+    public const TYPES = [NewFollower::class, \App\Notifications\AchievementUnlocked::class];
 
     private const PER_PAGE = 15;
 
@@ -31,19 +31,30 @@ class NotificationController extends Controller
             ->whereIn('type', self::TYPES)
             ->latest()
             ->paginate(self::PER_PAGE)
-            ->through(fn ($notification) => [
-                'id' => $notification->id,
-                'message' => (string) ($notification->data['message'] ?? ''),
-                'username' => $notification->data['username'] ?? null,
-                'avatar_seed' => $notification->data['avatar_seed'] ?? null,
-                'read' => $notification->read_at !== null,
-                'created_at' => $notification->created_at->toIso8601String(),
-            ]);
+            ->through(fn ($notification) => $this->present($notification));
 
         return Inertia::render('Notifications/Index', [
             'notifications' => config('ui.defer_lists') ? Inertia::defer($build) : $build(),
             'unread' => $user->unreadNotifications()->whereIn('type', self::TYPES)->count(),
         ]);
+    }
+
+    /** Formato único de uma notificação para a central e para o sino (inclui a insígnia quando for conquista). */
+    private function present($notification): array
+    {
+        $data = $notification->data;
+
+        return [
+            'id' => $notification->id,
+            'message' => (string) ($data['message'] ?? ''),
+            'username' => $data['username'] ?? null,
+            'avatar_seed' => $data['avatar_seed'] ?? null,
+            'achievement' => ($data['kind'] ?? null) === 'achievement'
+                ? \Illuminate\Support\Arr::only($data, ['slug', 'name', 'description', 'rarity', 'tier', 'icon'])
+                : null,
+            'read' => $notification->read_at !== null,
+            'created_at' => $notification->created_at->toIso8601String(),
+        ];
     }
 
     /** Últimas notificações para o popover da navbar (JSON leve, buscado só ao abrir). */
@@ -54,14 +65,7 @@ class NotificationController extends Controller
             ->latest()
             ->limit(8)
             ->get()
-            ->map(fn ($notification) => [
-                'id' => $notification->id,
-                'message' => (string) ($notification->data['message'] ?? ''),
-                'username' => $notification->data['username'] ?? null,
-                'avatar_seed' => $notification->data['avatar_seed'] ?? null,
-                'read' => $notification->read_at !== null,
-                'created_at' => $notification->created_at->toIso8601String(),
-            ]);
+            ->map(fn ($notification) => $this->present($notification));
 
         return response()->json(['data' => $items])->header('Cache-Control', 'no-store');
     }

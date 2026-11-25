@@ -40,7 +40,12 @@ class AppServiceProvider extends ServiceProvider
         // auth.register, auth.password_reset. Ver App\Support\OpsLog.
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, fn ($e) => \App\Support\OpsLog::event('auth.login', ['user' => $e->user->getAuthIdentifier(), 'guard' => $e->guard]));
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Failed::class, fn ($e) => \App\Support\OpsLog::event('auth.login_failed', ['guard' => $e->guard], 'warning'));
-        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Registered::class, fn ($e) => \App\Support\OpsLog::event('auth.register', ['user' => $e->user->getAuthIdentifier()]));
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Registered::class, function ($e) {
+            \App\Support\OpsLog::event('auth.register', ['user' => $e->user->getAuthIdentifier()]);
+            if ($e->user instanceof \App\Models\User) {
+                app(\App\Services\Achievements::class)->onRegistered($e->user); // Estrela Inicial
+            }
+        });
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\PasswordReset::class, fn ($e) => \App\Support\OpsLog::event('auth.password_reset', ['user' => $e->user->getAuthIdentifier()]));
 
         // Envio de e-mail por API (Brevo): `MAIL_MAILER=brevo` + BREVO_API_KEY.

@@ -39,6 +39,16 @@ export type PageProps<
         channel: string | null;
         /** Não lidas na central (só contas permanentes). */
         unread_notifications?: number;
+        /** Conquistas desbloqueadas ainda não vistas (popup). */
+        achievement_popups?: {
+            id: string;
+            slug: string;
+            name: string;
+            description: string;
+            rarity: string;
+            tier: string;
+            icon: string;
+        }[];
     };
     flash?: {
         toast?: ToastPayload | null;

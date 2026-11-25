@@ -1,3 +1,4 @@
+import AchievementsPanel from '@/Components/AchievementsPanel';
 import { useState } from 'react';
 import type { ProfileBadge, ProfileLink } from './PlayerProfileCard';
 
@@ -10,13 +11,6 @@ const labels: Record<string, string> = {
     portfolio: 'Portfólio',
     website: 'Site',
     other: 'Link',
-};
-const colors: Record<string, string> = {
-    common: '#b4da33',
-    uncommon: '#f481c6',
-    rare: '#464498',
-    epic: '#d01600',
-    legendary: '#f0b429',
 };
 type Statistics = {
     matches: number | null;
@@ -31,18 +25,17 @@ export default function ProfileExtras({
     username,
     links = [],
     badges = [],
-    statistics = null,
     share = false,
+    editableAchievements = false,
 }: {
     username: string;
     links?: ProfileLink[];
     badges?: ProfileBadge[];
     statistics?: Statistics | null;
     share?: boolean;
+    editableAchievements?: boolean;
 }) {
     const [message, setMessage] = useState('');
-    const unlocked = badges.filter((b) => b.unlocked);
-    const showAchievements = Boolean(statistics?.matches && unlocked.length);
     const shareProfile = async () => {
         const url = `${window.location.origin}/u/${username}`;
         const nativeShare = typeof navigator.share === 'function';
@@ -106,44 +99,10 @@ export default function ProfileExtras({
                     )}
                 </div>
             </section>
-            {showAchievements && (
-                <section className="border-t-2 border-[#1d1d1b]/15 pt-5">
-                    <div className="flex items-end justify-between gap-3">
-                        <h2 className="text-lg font-black">Conquistas</h2>
-                        <p className="font-mono text-xs font-bold">
-                            {unlocked.length} desbloqueadas
-                        </p>
-                    </div>
-                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {unlocked.map((b) => (
-                            <article
-                                key={b.id}
-                                className="flex gap-3 border-2 border-[#1d1d1b] bg-white p-3 shadow-[3px_3px_0_#1d1d1b]"
-                            >
-                                <div
-                                    className="grid size-12 shrink-0 place-items-center border-[3px] border-[#1d1d1b]"
-                                    style={{
-                                        backgroundColor:
-                                            colors[b.rarity] ?? '#b4da33',
-                                    }}
-                                >
-                                    <span className="font-mono font-black">
-                                        {b.name.slice(0, 2).toUpperCase()}
-                                    </span>
-                                </div>
-                                <div className="min-w-0">
-                                    <h3 className="text-sm font-black">
-                                        {b.name}
-                                    </h3>
-                                    <p className="mt-1 text-xs leading-5 text-[#5b5953]">
-                                        {b.description}
-                                    </p>
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                </section>
-            )}
+            <AchievementsPanel
+                badges={badges}
+                editable={editableAchievements}
+            />
         </div>
     );
 }

@@ -52,6 +52,10 @@ export interface ProfileBadge {
     image_path?: string | null;
     unlocked?: boolean;
     unlocked_at?: string | null;
+    tier?: string;
+    icon?: string;
+    criterion?: string;
+    featured_order?: number | null;
 }
 
 const badgeLabels: Record<string, string> = {
@@ -123,7 +127,9 @@ export default function PlayerProfileCard({
                     <div
                         className="absolute inset-0"
                         data-profile-background={profile.profile_background}
-                        style={profileBackgroundStyle(profile.profile_background)}
+                        style={profileBackgroundStyle(
+                            profile.profile_background,
+                        )}
                     />
                 ) : (
                     <div className="absolute inset-0 bg-[linear-gradient(135deg,#464498_0_52%,#b4da33_52%_56%,#1d1d1b_56%)]" />
@@ -154,7 +160,7 @@ export default function PlayerProfileCard({
                             @{profile.username}
                         </h1>
                         {title && (
-                            <span className="inline-flex border-2 border-[#464498] bg-white px-2.5 py-1 font-mono text-xs font-bold text-[#464498] shadow-[2px_2px_0_#f481c6]">
+                            <span className="inline-flex border border-[#464498] bg-white px-2.5 py-1 font-mono text-xs font-bold text-[#464498]">
                                 {title}
                             </span>
                         )}
@@ -212,20 +218,20 @@ export default function PlayerProfileCard({
                         aria-label="Selos do perfil"
                     >
                         {profile.is_leader && (
-                            <span className="inline-flex items-center gap-1.5 border-2 border-[#1d1d1b] bg-[#f481c6] px-2.5 py-1 font-mono text-[11px] font-black uppercase text-[#1d1d1b] shadow-[2px_2px_0_#1d1d1b]">
+                            <span className="inline-flex items-center gap-1.5 border border-[#1d1d1b] bg-[#f481c6] px-2.5 py-1 font-mono text-[11px] font-black uppercase text-[#1d1d1b]">
                                 <span aria-hidden="true">★</span>
                                 Líder
                             </span>
                         )}
                         {profile.primary_badge && (
-                            <span className="inline-flex items-center gap-1.5 border-2 border-[#1d1d1b] bg-[#b4da33] px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-[#1d1d1b] shadow-[2px_2px_0_#1d1d1b]">
+                            <span className="inline-flex items-center gap-1.5 border border-[#1d1d1b] bg-[#b4da33] px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-[#1d1d1b]">
                                 <span aria-hidden="true">✦</span>
                                 {badgeLabels[profile.primary_badge] ??
                                     profile.primary_badge}
                             </span>
                         )}
                         {profile.developer_badge && (
-                            <span className="inline-flex items-center gap-1.5 border-2 border-[#464498] bg-white px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-[#1d1d1b] shadow-[2px_2px_0_#f481c6]">
+                            <span className="inline-flex items-center gap-1.5 border border-[#464498] bg-white px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-[#1d1d1b]">
                                 <span
                                     className="text-[#464498]"
                                     aria-hidden="true"
@@ -263,6 +269,6 @@ export default function PlayerProfileCard({
         </article>
     );
 }
-import { ReactNode } from 'react';
 import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
+import { ReactNode } from 'react';
 import PlayerAvatar from './PlayerAvatar';

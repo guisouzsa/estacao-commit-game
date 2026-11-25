@@ -269,56 +269,56 @@ export default function Dashboard({
                                 página.
                             </p>
                             <ul className="mt-4 grid gap-2 sm:max-w-xl">
-                                {recommendedPlayers.map((player, index) => (
+                                {recommendedPlayers.map((player) => (
                                     <li key={player.username}>
                                         {player.is_bot ? (
                                             // Bot do catálogo: identificado como bot, sem perfil público nem seguir.
                                             <div className="flex items-center gap-3 border-2 border-[#1d1d1b] bg-white p-2.5 shadow-[3px_3px_0_#1d1d1b]">
-                                            <PlayerAvatar
-                                                profile={player}
-                                                size="sm"
-                                            />
-                                            <span className="min-w-0 flex-1">
-                                                <strong className="block truncate">
-                                                    @{player.username}
-                                                </strong>
-                                                {player.profile_title ? (
-                                                    <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">
-                                                        {titleLabel(
-                                                            player.profile_title,
-                                                        )}
-                                                    </span>
-                                                ) : null}
-                                            </span>
+                                                <PlayerAvatar
+                                                    profile={player}
+                                                    size="sm"
+                                                />
+                                                <span className="min-w-0 flex-1">
+                                                    <strong className="block truncate">
+                                                        @{player.username}
+                                                    </strong>
+                                                    {player.profile_title ? (
+                                                        <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">
+                                                            {titleLabel(
+                                                                player.profile_title,
+                                                            )}
+                                                        </span>
+                                                    ) : null}
+                                                </span>
                                                 <span className="shrink-0 border border-[#1d1d1b] bg-[#464498] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase text-white">
                                                     Bot
                                                 </span>
                                             </div>
                                         ) : (
-                                        <Link
-                                            className="group flex items-center gap-3 border-2 border-[#1d1d1b] bg-white p-2.5 shadow-[3px_3px_0_#1d1d1b] transition hover:-translate-y-0.5 hover:bg-[#b4da33]"
-                                            href={route(
-                                                'profile.public',
-                                                player.username,
-                                            )}
-                                        >
-                                            <PlayerAvatar
-                                                profile={player}
-                                                size="sm"
-                                            />
-                                            <span className="min-w-0 flex-1">
-                                                <strong className="block truncate">
-                                                    @{player.username}
-                                                </strong>
-                                                {player.profile_title ? (
-                                                    <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">
-                                                        {titleLabel(
-                                                            player.profile_title,
-                                                        )}
-                                                    </span>
-                                                ) : null}
-                                            </span>
-                                        </Link>
+                                            <Link
+                                                className="group flex items-center gap-3 border-2 border-[#1d1d1b] bg-white p-2.5 shadow-[3px_3px_0_#1d1d1b] transition hover:-translate-y-0.5 hover:bg-[#b4da33]"
+                                                href={route(
+                                                    'profile.public',
+                                                    player.username,
+                                                )}
+                                            >
+                                                <PlayerAvatar
+                                                    profile={player}
+                                                    size="sm"
+                                                />
+                                                <span className="min-w-0 flex-1">
+                                                    <strong className="block truncate">
+                                                        @{player.username}
+                                                    </strong>
+                                                    {player.profile_title ? (
+                                                        <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">
+                                                            {titleLabel(
+                                                                player.profile_title,
+                                                            )}
+                                                        </span>
+                                                    ) : null}
+                                                </span>
+                                            </Link>
                                         )}
                                     </li>
                                 ))}

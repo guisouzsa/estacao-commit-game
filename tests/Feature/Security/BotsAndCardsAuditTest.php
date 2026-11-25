@@ -167,13 +167,13 @@ class BotsAndCardsAuditTest extends TestCase
         $handCards = [];
         $triples = 0;
         $seats = array_fill(1, 4, 0);
-        $expected = ['git_clone' => 7, 'git_checkout' => 7, 'git_pull' => 4, 'git_add' => 16, 'git_commit' => 16, 'git_push' => 16, 'pull_request' => 4, 'clear_credentials' => 2, 'merge_conflict' => 2];
+        $expected = collect(config('game.deck'))->except('git_login')->all();
 
         for ($i = 0; $i < $n; $i++) {
             GameMatch::query()->delete();
             $state = $engine->create($room)->state;
             $seats[(int) GameMatch::first()->current_seat]++;
-            $this->assertCount(62, $state['deck']);
+            $this->assertCount(67, $state['deck']);
             foreach ($state['players'] as $p) {
                 $this->assertSame(1, count(array_keys($p['hand'], 'git_login', true)), 'todos começam com exatamente 1 Git Login');
                 foreach (array_count_values($p['hand']) as $card => $count) {
@@ -223,7 +223,7 @@ class BotsAndCardsAuditTest extends TestCase
         for ($t = 0; $t < $trials; $t++) {
             $state = $match->state;
             $deck = [];
-            foreach (['git_clone' => 7, 'git_checkout' => 7, 'git_pull' => 4, 'git_add' => 16, 'git_commit' => 16, 'git_push' => 16, 'pull_request' => 4, 'clear_credentials' => 2, 'merge_conflict' => 2] as $c => $q) {
+            foreach (collect(config('game.deck'))->except('git_login')->all() as $c => $q) {
                 $deck = [...$deck, ...array_fill(0, $q, $c)];
             }
             shuffle($deck);
@@ -282,6 +282,6 @@ class BotsAndCardsAuditTest extends TestCase
         $sb = $b->state;
         $sa['deck'] = [];
         $a->forceFill(['state' => $sa])->save();
-        $this->assertCount(62, $b->fresh()->state['deck'], 'mexer no baralho de uma partida não afeta a outra');
+        $this->assertCount(67, $b->fresh()->state['deck'], 'mexer no baralho de uma partida não afeta a outra');
     }
 }

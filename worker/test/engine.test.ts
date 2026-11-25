@@ -27,9 +27,9 @@ const fail = (fn: () => void): RuleError => {
 const cur = (m: MatchState, ps: Participant[]) => ps.find((p) => p.seat === m.current_seat)!;
 
 describe('motor: distribuição', () => {
-  it('78 cartas, 4 por jogador, sentada inicial válida', () => {
+  it('83 cartas, 4 por jogador, sentada inicial válida', () => {
     const m = createMatch(humans, seeded(1));
-    expect(m.deck.length).toBe(78 - 16);
+    expect(m.deck.length).toBe(83 - 16);
     for (const p of Object.values(m.players)) expect(p.hand).toHaveLength(4);
     for (const p of Object.values(m.players)) expect(p.hand).toContain('git_login'); // todos começam com o Git Login
     expect(m.deck).not.toContain('git_login');
@@ -133,7 +133,7 @@ describe('motor: partidas completas com bots (várias sementes)', () => {
     const winner = m.players[String(m.winner_participant_id)];
     expect(winner.path.at(-1)).toBe('pull_request');
     expect(winner.path).toHaveLength(REQUIRED.length);
-    expect(total(m)).toBe(78);
+    expect(total(m)).toBe(83);
     for (const p of Object.values(m.players)) expect(p.hand.length).toBeLessThanOrEqual(6);
   });
   it('humano na vez: bots não jogam por ele e param de novo na vez dele', () => {

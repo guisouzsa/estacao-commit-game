@@ -310,7 +310,7 @@ paridade `GAME_ENGINE_PARITY_ACK`; partidas iniciadas continuam no motor em que 
 
 ## Rotinas agendadas
 
-Em produção o `scheduler` (`schedule:work`) fica ativo no mesmo contêiner, mantido pelo Supervisor. **Não há worker de fila.** Detalhes, testes e recuperação em [`docs/DEPLOY/CRON-JOBS.md`](docs/DEPLOY/CRON-JOBS.md):
+Em produção o `scheduler` (um laço leve que roda `schedule:run` a cada minuto, sem processo PHP residente) fica no mesmo contêiner, mantido pelo Supervisor. **Não há worker de fila.** Detalhes, testes e recuperação em [`docs/DEPLOY/CRON-JOBS.md`](docs/DEPLOY/CRON-JOBS.md):
 
 | Frequência | Comando | Finalidade |
 | --- | --- | --- |

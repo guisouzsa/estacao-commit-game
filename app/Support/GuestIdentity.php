@@ -118,13 +118,16 @@ class GuestIdentity
             ->first();
 
         if ($profile && $profile->last_seen_at->lt(now()->subMinutes(self::TOUCH_EVERY_MINUTES))) {
-            $profile->forceFill(['last_seen_at' => now(), 'expires_at' => $this->newExpiry()])->save();
+            // Janela deslizante, mas com TETO absoluto: ninguém mantém um perfil temporário (e o nome dele) vivo para sempre
+            // só mandando requisições. Passou do teto, o perfil vence no horário já gravado.
+            $ceiling = $profile->created_at->copy()->addDays(max(1, (int) config('players.guest_max_days')));
+            $profile->forceFill(['last_seen_at' => now(), 'expires_at' => $this->newExpiry()->min($ceiling)])->save();
         }
 
         return $profile;
     }
 
-    private function newExpiry()
+    private function newExpiry(): \Illuminate\Support\Carbon
     {
         return now()->addHours((int) config('players.guest_ttl_hours'));
     }

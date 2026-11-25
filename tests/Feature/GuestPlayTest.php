@@ -400,7 +400,7 @@ class GuestPlayTest extends TestCase
     public function test_the_prune_command_is_scheduled(): void
     {
         $event = collect(app(Schedule::class)->events())
-            ->first(fn ($event) => str_contains($event->command, 'guests:prune'));
+            ->first(fn ($event) => str_contains((string) $event->command, 'guests:prune') || $event->description === 'guests:prune');
 
         $this->assertNotNull($event);
         $this->assertSame('*/15 * * * *', $event->expression);

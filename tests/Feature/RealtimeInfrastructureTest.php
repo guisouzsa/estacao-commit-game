@@ -96,7 +96,7 @@ class RealtimeInfrastructureTest extends TestCase
     public function test_the_scheduler_runs_the_room_expiration_every_minute(): void
     {
         $event = collect(app(Schedule::class)->events())
-            ->first(fn ($event) => str_contains($event->command, 'rooms:expire-waiting'));
+            ->first(fn ($event) => str_contains((string) $event->command, 'rooms:expire-waiting') || $event->description === 'rooms:expire-waiting');
 
         $this->assertNotNull($event, 'rooms:expire-waiting precisa estar agendado.');
         $this->assertSame('* * * * *', $event->expression);
@@ -109,9 +109,9 @@ class RealtimeInfrastructureTest extends TestCase
         $room->participants()->create(['user_id' => $host->id, 'seat' => 1, 'joined_at' => now()]);
 
         $event = collect(app(Schedule::class)->events())
-            ->first(fn ($event) => str_contains($event->command, 'rooms:expire-waiting'));
+            ->first(fn ($event) => str_contains((string) $event->command, 'rooms:expire-waiting') || $event->description === 'rooms:expire-waiting');
 
-        // O Laravel dispara o comando em um subprocesso; aqui o mesmo comando
+        // O agendador executa a rotina no processo do schedule:run; aqui o comando equivalente
         // roda em processo para ser verificado com o banco do teste.
         $this->travel(4)->minutes();
         $this->assertTrue($event->isDue($this->app));
@@ -131,7 +131,9 @@ class RealtimeInfrastructureTest extends TestCase
         foreach (['reverb', 'scheduler', 'apache'] as $program) {
             $this->assertSame(1, substr_count($supervisor, "[program:$program]"), "programa $program deve existir uma vez");
         }
-        $this->assertSame(1, preg_match_all('/^command=.*artisan schedule:work\s*$/m', $supervisor));
+        // Um único laço leve que roda `schedule:run` a cada minuto; nenhum processo PHP residente (`schedule:work`).
+        $this->assertSame(1, preg_match_all('/^command=\/bin\/sh \/usr\/local\/bin\/scheduler-loop\.sh\s*$/m', $supervisor));
+        $this->assertStringNotContainsString('schedule:work', preg_replace('/^#.*$/m', '', $supervisor));
         $this->assertSame(1, preg_match('/\[program:scheduler\].*?numprocs=1/s', $supervisor));
 
         // Cada programa é monitorado, reinicia e escreve nos logs do container.

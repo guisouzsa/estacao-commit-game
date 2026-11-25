@@ -14,7 +14,7 @@ Um único contêiner (imagem do [`Dockerfile`](../../Dockerfile)), com o Supervi
 | --- | --- |
 | `apache` | serve o site (PHP) e encaminha `/app/` ao Reverb (WebSocket) |
 | `reverb` | servidor WebSocket interno (`127.0.0.1:8080`) |
-| `scheduler` | `php artisan schedule:work` (rotinas agendadas) |
+| `scheduler` | laço de shell (~1 MB) que roda `php artisan schedule:run` uma vez por minuto (rotinas agendadas) |
 | `essential-watchdog.py` | vigia `apache` e `reverb`; se um cair, derruba o contêiner e o Render reinicia |
 
 **Limite do plano gratuito:** ~512 MB de RAM. O Apache está limitado a **2 processos** (`docker/apache/mpm-tuning.conf`) de propósito.
@@ -50,7 +50,7 @@ a chave pública e o endereço do próprio site se faltarem).
 - `Entrar` / `Criar conta` funciona (e o e-mail chega, se ligado).
 - Criar sala → lobby → iniciar partida com bots.
 - Logs do Render sem `integration.failure` nem erros de banco.
-- Linhas `Running [artisan games:sweep]` por minuto (scheduler vivo).
+- Linha `scheduler: iniciado ...` na inicialização e `cron.heartbeat` a cada 15 min (scheduler vivo). Veja [`CRON-JOBS.md`](CRON-JOBS.md), seção 11.
 
 ## 5. Plano gratuito: o serviço dorme
 

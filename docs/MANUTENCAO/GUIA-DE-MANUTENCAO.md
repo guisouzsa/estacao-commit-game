@@ -105,7 +105,7 @@ o Neon pode estar acordando). Depois o Supervisor mantém:
 | --- | --- |
 | `apache` | serve o site e encaminha `/app/` ao Reverb |
 | `reverb` | WebSocket interno |
-| `scheduler` | roda as rotinas abaixo |
+| `scheduler` | laço leve que roda `schedule:run` a cada minuto (rotinas abaixo) |
 | `essential-watchdog` | reinicia processos essenciais que caírem |
 
 | Frequência | Comando | Finalidade |

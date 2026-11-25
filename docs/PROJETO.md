@@ -80,7 +80,7 @@ flowchart LR
     B -. opcional WSS .-> W
     S[Supervisor] --> A
     S --> R
-    S --> C[scheduler<br/>schedule:work]
+    S --> C[scheduler<br/>laço + schedule:run]
     C --> A
 ```
 

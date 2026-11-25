@@ -126,6 +126,8 @@ class RankingController extends Controller
             ->where('finished_at', '<', $to->utc()->format('Y-m-d H:i:s'))
             ->groupBy('user_id')
             ->selectRaw('user_id, count(*) as played, sum(case when is_winner then 1 else 0 end) as won')
+            // O ranking é só de VITÓRIAS: quem jogou mas não venceu no período não aparece.
+            ->havingRaw('sum(case when is_winner then 1 else 0 end) > 0')
             ->orderByDesc('won')
             ->orderBy('played')
             ->limit((int) config('ranking.limit'))
@@ -142,7 +144,7 @@ class RankingController extends Controller
     private function overall(): array
     {
         $rows = User::query()
-            ->where('matches_played', '>', 0)
+            ->where('matches_won', '>', 0) // só quem tem vitórias entra no ranking
             ->orderByDesc('matches_won')
             ->orderBy('matches_lost')
             ->orderBy('username')

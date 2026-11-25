@@ -85,13 +85,11 @@ class RankingTest extends TestCase
         $this->finishedMatch($loser, $winner, now()->subDays(20)); // fora da semana e do mês
 
         $this->actingAs($winner)->get(route('rankings'))->assertInertia(fn ($page) => $page
-            ->has('rankings.weekly', 2)
+            // Quem só perdeu (0 vitórias) não aparece: o ranking é de vitórias.
+            ->has('rankings.weekly', 1)
             ->where('rankings.weekly.0.user_id', $winner->id)
             ->where('rankings.weekly.0.won', 2)
-            ->where('rankings.weekly.0.played', 2)
-            ->where('rankings.weekly.1.user_id', $loser->id)
-            ->where('rankings.weekly.1.won', 0)
-            ->where('rankings.weekly.1.lost', 2));
+            ->where('rankings.weekly.0.played', 2));
     }
 
     public function test_guests_and_bots_are_never_ranked(): void
@@ -114,5 +112,20 @@ class RankingTest extends TestCase
         $w = $room->participants()->create(['user_id' => $winner->id, 'kind' => 'user', 'is_host' => true, 'seat' => 1, 'joined_at' => now()]);
         $room->participants()->create(['user_id' => $loser->id, 'kind' => 'user', 'is_host' => false, 'seat' => 2, 'joined_at' => now()]);
         GameMatch::create(['room_id' => $room->id, 'status' => 'finished', 'current_seat' => 1, 'state' => [], 'winner_participant_id' => $w->id, 'finished_at' => $finishedAt]);
+    }
+
+    public function test_players_with_zero_wins_never_appear_in_any_ranking(): void
+    {
+        $this->travelTo(now()->setDate(2026, 11, 19)->setTime(12, 0));
+        $viewer = User::factory()->create(['username' => 'campeao', 'matches_played' => 5, 'matches_won' => 3, 'matches_lost' => 2]);
+        User::factory()->create(['username' => 'natan', 'matches_played' => 1, 'matches_won' => 0, 'matches_lost' => 1]);
+        [$loser] = User::factory()->count(1)->create();
+        $this->finishedMatch($viewer, $loser, now()->subHour());
+
+        $this->actingAs($viewer)->get(route('rankings'))->assertInertia(fn ($page) => $page
+            ->has('rankings.overall', 1)
+            ->where('rankings.overall.0.player.username', 'campeao')
+            ->has('rankings.weekly', 1)
+            ->where('rankings.weekly.0.user_id', $viewer->id));
     }
 }

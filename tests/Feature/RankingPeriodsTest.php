@@ -9,6 +9,7 @@ use App\Services\MatchResults;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /** Rankings semanal, mensal e geral calculados pela data real das vitórias (fuso America/Sao_Paulo). */
@@ -52,10 +53,10 @@ class RankingPeriodsTest extends TestCase
             ->where('periods.weekly.isCurrent', true)
             ->where('periods.weekly.next', null)
             ->where('periods.weekly.previous', '2026-11-16')
-            ->has('rankings.weekly', 2)
+            // Só quem VENCEU entra: quem perdeu na semana não aparece (ranking é de vitórias).
+            ->has('rankings.weekly', 1)
             ->where('rankings.weekly.0.user_id', $a->id)
-            ->where('rankings.weekly.0.won', 1)
-            ->where('rankings.weekly.1.won', 0));
+            ->where('rankings.weekly.0.won', 1));
     }
 
     public function test_previous_week_can_be_consulted_and_a_future_week_falls_back_to_the_current_one(): void
@@ -83,10 +84,9 @@ class RankingPeriodsTest extends TestCase
 
         $this->page($a)->assertInertia(fn ($p) => $p
             ->where('periods.weekly.start', '2026-11-30')
-            ->has('rankings.weekly', 2)
+            ->has('rankings.weekly', 1)
             ->where('rankings.weekly.0.user_id', $b->id)
-            ->where('rankings.weekly.0.won', 1)
-            ->where('rankings.weekly.1.won', 0));
+            ->where('rankings.weekly.0.won', 1));
 
         $this->page($a, ['week' => '2026-11-23'])->assertInertia(fn ($p) => $p
             ->where('rankings.weekly.0.user_id', $a->id)
@@ -157,7 +157,7 @@ class RankingPeriodsTest extends TestCase
         DB::table('match_results')->delete();
 
         $migration = require database_path('migrations/2026_11_24_000000_create_match_results_table.php');
-        \Illuminate\Support\Facades\Schema::drop('match_results');
+        Schema::drop('match_results');
         $migration->up();
         $this->assertSame(2, DB::table('match_results')->count());
         $this->assertSame(1, DB::table('match_results')->where('is_winner', true)->count());

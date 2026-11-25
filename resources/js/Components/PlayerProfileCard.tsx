@@ -251,7 +251,7 @@ export default function PlayerProfileCard({
                             </p>
                             <ul
                                 aria-label="Conquistas em destaque"
-                                className="mt-2 flex flex-wrap items-center gap-2 border-2 border-[#1d1d1b] bg-[#26253a] p-2 shadow-[3px_3px_0_#464498]"
+                                className="mt-2 flex flex-wrap items-center gap-2"
                             >
                                 {featuredAchievements.map((badge) => (
                                     <li key={badge.id}>
@@ -266,7 +266,7 @@ export default function PlayerProfileCard({
                                                     (badge.icon ??
                                                         'star') as BadgeIcon
                                                 }
-                                                size="md"
+                                                size="profile"
                                                 tier={
                                                     (badge.tier ??
                                                         'starter') as BadgeTier

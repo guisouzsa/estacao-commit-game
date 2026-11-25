@@ -33,10 +33,10 @@ class ProfileTest extends TestCase
         ]);
         $user = User::factory()->create(['google_id' => 'google-123']);
 
-        $this->actingAs($user)->get(route('profile.edit'))
+        $this->actingAs($user)->get(route('settings'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Profile/Edit')
+                ->component('Profile/Settings')
                 ->where('googleConfigured', true)
                 ->where('googleLinked', true));
     }
@@ -49,7 +49,7 @@ class ProfileTest extends TestCase
             'services.google.redirect' => null,
         ]);
 
-        $this->actingAs(User::factory()->create())->get(route('profile.edit'))
+        $this->actingAs(User::factory()->create())->get(route('settings'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('googleConfigured', false)

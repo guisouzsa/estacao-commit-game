@@ -1,4 +1,6 @@
-import AchievementPicker, { AchievementDraft } from '@/Components/AchievementPicker';
+import AchievementPicker, {
+    AchievementDraft,
+} from '@/Components/AchievementPicker';
 import AvatarPicker from '@/Components/AvatarPicker';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import InputError from '@/Components/InputError';
@@ -23,11 +25,6 @@ import {
     useRef,
     useState,
 } from 'react';
-import DeleteUserForm from './Partials/DeleteUserForm';
-import GoogleAccountForm from './Partials/GoogleAccountForm';
-import UpdatePasswordForm from './Partials/UpdatePasswordForm';
-import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
-import VerifiedManager from './Partials/VerifiedManager';
 
 type Options = {
     frames: Record<string, string>;
@@ -140,17 +137,11 @@ export default function Edit({
     appearanceOptions,
     avatarStyles = ['pixel', 'robot', 'terminal'],
     profileExtras = emptyExtras,
-    googleConfigured = false,
-    googleLinked = false,
-    canManageVerified = false,
     status,
 }: {
     appearanceOptions: Options;
     avatarStyles?: string[];
     profileExtras: ProfileExtrasData;
-    googleConfigured?: boolean;
-    googleLinked?: boolean;
-    canManageVerified?: boolean;
     status?: string;
 }) {
     const page = usePage();
@@ -249,14 +240,20 @@ export default function Edit({
     const savedAchievementMode = profileExtras.achievement_display_mode;
     const savedAchievementIds = useMemo(() => {
         const unlocked = profileExtras.badges.filter((badge) => badge.unlocked);
-        if (savedAchievementMode === 'all') return unlocked.slice(0, ACHIEVEMENT_LIMIT).map((badge) => badge.id);
+        if (savedAchievementMode === 'all')
+            return unlocked
+                .slice(0, ACHIEVEMENT_LIMIT)
+                .map((badge) => badge.id);
         return unlocked
             .filter((badge) => badge.featured_order)
             .sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0))
             .map((badge) => badge.id);
     }, [profileExtras.badges, savedAchievementMode]);
-    const [achievementsOn, setAchievementsOn] = useState(savedAchievementMode !== 'none');
-    const [achievementIds, setAchievementIds] = useState<number[]>(savedAchievementIds);
+    const [achievementsOn, setAchievementsOn] = useState(
+        savedAchievementMode !== 'none',
+    );
+    const [achievementIds, setAchievementIds] =
+        useState<number[]>(savedAchievementIds);
     const [achievementsTouched, setAchievementsTouched] = useState(false);
     const resetAchievements = useCallback(() => {
         setAchievementsOn(savedAchievementMode !== 'none');
@@ -270,14 +267,20 @@ export default function Edit({
         dirty:
             achievementsTouched &&
             ((achievementsOn ? 'custom' : 'none') !== savedAchievementMode ||
-                (achievementsOn && achievementIds.join(',') !== savedAchievementIds.join(','))),
+                (achievementsOn &&
+                    achievementIds.join(',') !==
+                        savedAchievementIds.join(','))),
     };
     const achievementsDirty = achievementDraft.dirty;
     // Prévia do card durante a edição: só as conquistas escolhidas, na ordem escolhida.
     const previewBadges = profileExtras.badges.map((badge) => {
         const position = achievementsOn ? achievementIds.indexOf(badge.id) : -1;
 
-        return { ...badge, displayed: position >= 0, featured_order: position >= 0 ? position + 1 : null };
+        return {
+            ...badge,
+            displayed: position >= 0,
+            featured_order: position >= 0 ? position + 1 : null,
+        };
     });
     const hasChanges = isDirty || achievementsDirty;
 
@@ -292,9 +295,16 @@ export default function Edit({
                     onDone();
                 },
                 onError: (errs: Record<string, string>) =>
-                    toast.error(String(errs.featured ?? errs.mode ?? 'Não foi possível salvar as conquistas agora.'), {
-                        id: 'profile:achievements',
-                    }),
+                    toast.error(
+                        String(
+                            errs.featured ??
+                                errs.mode ??
+                                'Não foi possível salvar as conquistas agora.',
+                        ),
+                        {
+                            id: 'profile:achievements',
+                        },
+                    ),
             },
         );
     };
@@ -302,7 +312,9 @@ export default function Edit({
     const finishSaved = () => {
         setEditor(null);
         setEditing(false);
-        toast.success('Perfil atualizado com sucesso!', { id: 'profile:saved' });
+        toast.success('Perfil atualizado com sucesso!', {
+            id: 'profile:saved',
+        });
     };
 
     const submit = (event: FormEvent) => {
@@ -339,8 +351,11 @@ export default function Edit({
                 setDefaults(saved);
                 setAvatarUrl(props.auth.user.avatar ?? null);
                 setCoverUrl(props.auth.user.cover ?? null);
-                const pendingAchievements = achievementDraft.dirty ? achievementDraft : null;
-                if (pendingAchievements) saveAchievements(pendingAchievements, finishSaved);
+                const pendingAchievements = achievementDraft.dirty
+                    ? achievementDraft
+                    : null;
+                if (pendingAchievements)
+                    saveAchievements(pendingAchievements, finishSaved);
                 else finishSaved();
             },
         });
@@ -612,7 +627,10 @@ export default function Edit({
                                             badges={profileExtras.badges}
                                             enabled={achievementsOn}
                                             limit={ACHIEVEMENT_LIMIT}
-                                            onChange={({ enabled, selected }) => {
+                                            onChange={({
+                                                enabled,
+                                                selected,
+                                            }) => {
                                                 setAchievementsOn(enabled);
                                                 setAchievementIds(selected);
                                                 setAchievementsTouched(true);
@@ -1224,37 +1242,6 @@ export default function Edit({
                         registrar o antigo, você poderá perdê-lo
                         definitivamente. Deseja continuar?
                     </ConfirmDialog>
-
-                    {!editing && (
-                        <section className="mt-10 border-t-[3px] border-[#1d1d1b] pt-7">
-                            <div className="mb-5">
-                                <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-[#464498]">
-                                    Conta e segurança
-                                </p>
-                                <h2 className="mt-1 text-2xl font-black">
-                                    Acesso à conta
-                                </h2>
-                                <p className="mt-1 text-sm text-[#5b5953]">
-                                    Configurações privadas, separadas do perfil
-                                    público.
-                                </p>
-                            </div>
-                            <div className="grid items-stretch gap-4 lg:grid-cols-2">
-                                <UpdateProfileInformationForm className="h-full" />
-                                <GoogleAccountForm
-                                    configured={googleConfigured}
-                                    linked={googleLinked}
-                                />
-                                <UpdatePasswordForm />
-                                <DeleteUserForm />
-                            </div>
-                        </section>
-                    )}
-                    {canManageVerified && !editing && (
-                        <div className="mt-6">
-                            <VerifiedManager />
-                        </div>
-                    )}
                 </div>
             </main>
 

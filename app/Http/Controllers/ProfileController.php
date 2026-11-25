@@ -23,11 +23,6 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'status' => session('status'),
             'avatarStyles' => config('players.selectable_avatar_styles'),
-            'googleLinked' => filled($request->user()->google_id),
-            'canManageVerified' => $request->user()->can('manage-verified'),
-            'googleConfigured' => filled(config('services.google.client_id'))
-                && filled(config('services.google.client_secret'))
-                && filled(config('services.google.redirect')),
             'appearanceOptions' => [
                 'frames' => config('profiles.frames'),
                 'backgrounds' => config('profiles.backgrounds'),
@@ -40,6 +35,19 @@ class ProfileController extends Controller
                 'achievement_display_mode' => $user->achievement_display_mode ?? 'none',
                 'statistics' => $user->historicalGameStatistics(),
             ],
+        ]);
+    }
+
+    /** Configurações da conta (e-mail, Google, senha, exclusão e, só para quem tem permissão, a verificação de jogadores). */
+    public function settings(Request $request): Response
+    {
+        return Inertia::render('Profile/Settings', [
+            'status' => session('status'),
+            'googleLinked' => filled($request->user()->google_id),
+            'canManageVerified' => $request->user()->can('manage-verified'),
+            'googleConfigured' => filled(config('services.google.client_id'))
+                && filled(config('services.google.client_secret'))
+                && filled(config('services.google.redirect')),
         ]);
     }
 
@@ -59,7 +67,7 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit');
+        return Redirect::back(302, [], route('profile.edit'));
     }
 
     /**

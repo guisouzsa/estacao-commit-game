@@ -71,6 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/notificacoes/lidas', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notificacoes/{id}/lida', [NotificationController::class, 'read'])->whereUuid('id')->name('notifications.read');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/configuracoes', [ProfileController::class, 'settings'])->name('settings');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/appearance', [ProfileAppearanceController::class, 'update'])->name('profile.appearance.update');
     Route::put('/profile/conquistas/destaques', [\App\Http\Controllers\ProfileAchievementController::class, 'featured'])->middleware('throttle:30,1')->name('profile.achievements.featured');

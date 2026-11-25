@@ -54,7 +54,7 @@ const PALETTE: Record<
     },
 };
 
-const SIZES = { sm: 'size-10', md: 'size-16', lg: 'size-28' } as const;
+const SIZES = { sm: 'size-10', md: 'size-16', lg: 'size-28', profile: 'size-11 sm:size-12' } as const;
 
 /** Símbolos desenhados em uma grade 48×48 (SVG leve, sem imagens nem bibliotecas). */
 function Symbol({ icon }: { icon: BadgeIcon }) {

@@ -201,6 +201,26 @@ export default function Authenticated({
                                 >
                                     Sair
                                 </Link>
+                                <Link
+                                    aria-label="Configurações"
+                                    className="grid size-11 place-items-center border-2 border-white/25 text-white/85 transition hover:border-[#b4da33] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#b4da33] max-md:order-2"
+                                    href={route('settings')}
+                                    title="Configurações"
+                                >
+                                    <svg
+                                        aria-hidden="true"
+                                        className="size-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="1.8"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+                                        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+                                    </svg>
+                                </Link>
                             </>
                         )}
                     </div>

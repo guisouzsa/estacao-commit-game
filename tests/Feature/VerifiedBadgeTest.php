@@ -53,11 +53,11 @@ class VerifiedBadgeTest extends TestCase
 
     public function test_the_manage_box_is_offered_only_to_the_admin(): void
     {
-        $this->actingAs($this->admin())->get('/profile')->assertInertia(
+        $this->actingAs($this->admin())->get('/configuracoes')->assertInertia(
             fn ($page) => $page->where('canManageVerified', true),
         );
 
-        $this->actingAs(User::factory()->create())->get('/profile')->assertInertia(
+        $this->actingAs(User::factory()->create())->get('/configuracoes')->assertInertia(
             fn ($page) => $page->where('canManageVerified', false),
         );
     }
@@ -108,7 +108,7 @@ class VerifiedBadgeTest extends TestCase
         $this->actingAs($impostor)
             ->patch('/admin/users/alvo/verified', ['verified' => true])
             ->assertForbidden();
-        $this->actingAs($impostor)->get('/profile')->assertInertia(
+        $this->actingAs($impostor)->get('/configuracoes')->assertInertia(
             fn ($page) => $page->where('canManageVerified', false),
         );
     }

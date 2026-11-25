@@ -60,7 +60,7 @@ class EngineParityTest extends TestCase
         $match = app(GameEngine::class)->create($room);
         $state = $match->state;
 
-        $this->assertSame(62, count($state['deck']));
+        $this->assertSame(67, count($state['deck']));
         $this->assertNotContains('git_login', $state['deck']);
         foreach ($state['players'] as $player) {
             $this->assertCount(4, $player['hand']);
@@ -70,7 +70,7 @@ class EngineParityTest extends TestCase
         $this->assertSame(1, $match->turn_number);
         // Mesmo conteúdo que o Worker precisa ter (constante compartilhada com worker/test/parity.test.ts).
         $all = [...$state['deck'], ...array_merge(...array_column($state['players'], 'hand'))];
-        $this->assertSame(['git_login' => 4, 'git_clone' => 7, 'git_checkout' => 7, 'git_pull' => 4, 'git_add' => 16, 'git_commit' => 16, 'git_push' => 16, 'pull_request' => 4, 'clear_credentials' => 2, 'merge_conflict' => 2], $this->counts($all));
+        $this->assertSame(config('game.deck'), $this->counts($all));
     }
 
     public function test_bots_only_matches_always_end_with_a_valid_winner(): void
@@ -97,7 +97,7 @@ class EngineParityTest extends TestCase
         foreach ($match->state['players'] as $p) {
             $total += count($p['hand']) + count(array_filter($p['path'], fn ($c) => ! str_starts_with($c, 'block_')));
         }
-        $this->assertSame(78, $total, 'nenhuma carta criada ou perdida');
+        $this->assertSame(array_sum(config("game.deck")), $total, 'nenhuma carta criada ou perdida');
     }
 
     /** @return array<string, mixed> */

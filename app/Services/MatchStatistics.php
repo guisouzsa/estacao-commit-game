@@ -30,6 +30,8 @@ class MatchStatistics
                 $user->matches_won ??= 0;
             }
             $user->save();
+            // Conquistas por partidas/vitórias (idempotente; uma falha aqui nunca derruba o fim da partida).
+            app(Achievements::class)->onMatchFinished($user);
         });
     }
 }

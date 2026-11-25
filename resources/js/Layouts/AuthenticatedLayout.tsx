@@ -1,3 +1,4 @@
+import AchievementPopup from '@/Components/AchievementPopup';
 import BrandLogo from '@/Components/BrandLogo';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import NotificationBell from '@/Components/NotificationBell';
@@ -85,16 +86,6 @@ export default function Authenticated({
                                 </svg>
                                 Inicial
                             </Link>
-                        </>
-                    )}
-                    <div
-                        className={
-                            isGuest
-                                ? 'order-2 ml-auto flex shrink-0 items-center gap-2 md:order-4'
-                                : 'contents md:order-4 md:ml-auto md:flex md:shrink-0 md:items-center md:gap-2'
-                        }
-                    >
-                        {!isGuest && (
                             <Link
                                 aria-current={ranking ? 'page' : undefined}
                                 aria-label="Rankings"
@@ -114,7 +105,15 @@ export default function Authenticated({
                                     <path d="M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4" />
                                 </svg>
                             </Link>
-                        )}
+                        </>
+                    )}
+                    <div
+                        className={
+                            isGuest
+                                ? 'order-2 ml-auto flex shrink-0 items-center gap-2 md:order-4'
+                                : 'contents md:order-4 md:ml-auto md:flex md:shrink-0 md:items-center md:gap-2'
+                        }
+                    >
                         {!isGuest && (
                             <button
                                 aria-expanded={searchOpen}
@@ -237,6 +236,7 @@ export default function Authenticated({
             <main className="flex min-h-0 w-full flex-1 flex-col">
                 {children}
             </main>
+            {!isGuest && <AchievementPopup />}
         </div>
     );
 }

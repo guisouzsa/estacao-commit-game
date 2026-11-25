@@ -14,8 +14,8 @@ export const REQUIRED = [
 ] as const;
 
 const COMMON_COUNTS: Record<string, number> = {
-  git_login: 4, git_clone: 7, git_checkout: 7, git_pull: 4,
-  git_add: 16, git_commit: 16, git_push: 16, pull_request: 4,
+  git_login: 4, git_clone: 10, git_checkout: 10, git_pull: 6,
+  git_add: 18, git_commit: 18, git_push: 8, pull_request: 5,
   clear_credentials: 2, merge_conflict: 2,
 };
 

@@ -83,7 +83,7 @@ class CloudflareMatchTest extends TestCase
         $this->actingAs($users[0])->post(route('games.start', $room))->assertRedirect(route('games.show', $room));
 
         Http::assertNothingSent();
-        $this->assertCount(62, GameMatch::firstOrFail()->state['deck']);
+        $this->assertCount(67, GameMatch::firstOrFail()->state['deck']);
     }
 
     public function test_start_creates_a_light_record_and_sends_a_signed_start_to_the_worker(): void

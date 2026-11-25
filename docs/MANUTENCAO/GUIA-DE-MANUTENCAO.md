@@ -9,7 +9,7 @@ Este documento é o guia de **manutenção** do Estação Commit. Ele responde a
 > **Regra de ouro:** este arquivo guarda só **nomes** e exemplos fictícios. Valores reais (senhas, chaves, tokens) ficam
 > apenas no painel de cada serviço, nunca no repositório, em issues, em prints ou em conversas.
 
-Voltar ao [README](../README.md). Fluxos de autenticação, regras do multiplayer, quedas de serviço e investigação: [`ARQUITETURA-E-OPERACAO.md`](ARQUITETURA-E-OPERACAO.md).
+Voltar ao [README](../../README.md). Fluxos de autenticação, regras do multiplayer, quedas de serviço e investigação: [`ARQUITETURA.md`](../ARQUITETURA.md).
 
 ---
 
@@ -67,7 +67,7 @@ Pontos importantes da arquitetura:
 | Apache (prefork) | serve o Laravel, termina WSS e encaminha `/app/` ao Reverb interno |
 | Supervisor | mantém Apache, Reverb, scheduler e vigia essencial |
 | Render (Web Service, runtime Docker) | hospedagem atual |
-| Cloudflare Workers + Durable Objects (opcional) | alternativa ao Reverb e motor de partidas em [`worker/`](../worker/README.md) |
+| Cloudflare Workers + Durable Objects (opcional) | alternativa ao Reverb e motor de partidas em [`worker/`](../../worker/README.md) |
 | Brevo (API transacional) | envio dos e-mails (o Render Free bloqueia SMTP) |
 | Google Cloud (OAuth 2.0) | credenciais do login com Google |
 | GitHub | código-fonte; o Render faz deploy a cada push na `main` |
@@ -86,187 +86,13 @@ Pontos importantes da arquitetura:
 
 ## 3. Variáveis de ambiente
 
-Onde configurar cada uma:
+> **Mudou de lugar.** A lista completa (todas as variáveis, por categoria, com padrões, segredos 🔒, as de build `VITE_*`, as do
+> Worker da Cloudflare e o pacote para colar no Render) está em
+> [`../DEPLOY/VARIAVEIS-DE-AMBIENTE.md`](../DEPLOY/VARIAVEIS-DE-AMBIENTE.md). O modelo em formato `.env` está em
+> [`.env.example`](../../.env.example).
 
-| Onde | Como |
-| --- | --- |
-| **Local** | arquivo `.env` (copie de `.env.example`; nunca versione) |
-| **Render** | *Environment* do Web Service |
-| **Worker da Cloudflare** | `npx wrangler secret put NOME` (segredos) e `worker/wrangler.jsonc` (variáveis públicas) |
-| **Build do Docker** | variáveis `VITE_*` entram no front **durante o build** (ver 3.9) |
-
-Legenda da coluna **Segredo**: 🔒 = nunca em chat, commit ou print. Um valor 🔒 vazado deve ser trocado.
-
-### 3.1 Aplicação (obrigatórias)
-
-| Variável | Segredo | Exemplo / padrão | Para quê |
-| --- | :-: | --- | --- |
-| `APP_NAME` | | `Estação Commit` | nome em e-mails e título |
-| `APP_ENV` | | `production` (Docker já define) | ambiente |
-| `APP_DEBUG` | | `false` (Docker já define) | **nunca `true` em produção** |
-| `APP_KEY` | 🔒 | gerada por `php artisan key:generate` | criptografia de sessão e cookies; trocar derruba as sessões |
-| `APP_URL` | | `https://estacaocommit.onrender.com` | URL pública: links e logo dos e-mails, callback do Google |
-| `APP_LOCALE` | | `pt_BR` | idioma |
-| `LOG_CHANNEL` | | `stderr` (Docker já define) | logs aparecem no painel do Render |
-| `LOG_LEVEL` | | `debug` ou `error` | detalhe dos logs |
-| `BCRYPT_ROUNDS` | | `12` | custo do hash de senha |
-
-### 3.2 Banco de dados (Neon / PostgreSQL)
-
-| Variável | Segredo | Exemplo / padrão | Para quê |
-| --- | :-: | --- | --- |
-| `DB_CONNECTION` | | `pgsql` | driver |
-| `DB_HOST` | | `ep-xxxx-pooler.regiao.aws.neon.tech` | host (use o *pooler* do painel do Neon) |
-| `DB_PORT` | | `5432` | porta |
-| `DB_DATABASE` | | `neondb` | nome do banco |
-| `DB_USERNAME` | 🔒 | | usuário |
-| `DB_PASSWORD` | 🔒 | | senha |
-| `DB_SSLMODE` | | `require` | SSL obrigatório no Neon |
-| `DB_ENDPOINT` | | `ep-xxxx` | só se o cliente PostgreSQL não envia SNI (ver `.env.example`) |
-| `DB_URL` | 🔒 | | alternativa que junta todos os campos acima |
-
-### 3.3 Sessão, cache e fila
-
-| Variável | Padrão | Observação |
-| --- | --- | --- |
-| `SESSION_DRIVER` | `database` | guarda sessões na tabela `sessions` |
-| `SESSION_LIFETIME` | `120` | minutos de inatividade |
-| `CACHE_STORE` | `database` | cache na tabela `cache` |
-| `QUEUE_CONNECTION` | `database` | fila na tabela `jobs` |
-| `CACHE_LIMITER_STORE` | `file` | limitação de requisições (throttle) |
-| `FILESYSTEM_DISK` | `local` | não há uploads em disco: imagens vão ao PostgreSQL |
-
-### 3.4 E-mail (Brevo) e verificação por código
-
-| Variável | Segredo | Exemplo / padrão | Para quê |
-| --- | :-: | --- | --- |
-| `MAIL_MAILER` | | `brevo` ou `resilient` em produção; `log` local | `resilient` tenta Brevo e, se ele cair, o Resend (ver `ARQUITETURA-E-OPERACAO.md`) |
-| `RESEND_API_KEY` | 🔒 | | provedor alternativo (opcional; sem domínio verificado só envia ao dono da conta) |
-| `MAIL_HTTP_TIMEOUT` | | `8` | segundos esperando a API de e-mail |
-| `BREVO_API_KEY` | 🔒 | chave restrita a "E-mails transacionais" | envia pela API HTTPS |
-| `MAIL_FROM_ADDRESS` | | `estacaocommit@gmail.com` | **tem que ser um remetente verificado no Brevo** |
-| `MAIL_FROM_NAME` | | `Estação Commit` | nome do remetente |
-| `EMAIL_VERIFICATION` | | `false` (padrão) / `true` | liga o código de 6 dígitos no cadastro |
-| `EMAIL_CODE_TTL` | | `10` | minutos de validade do código |
-| `EMAIL_CODE_ATTEMPTS` | | `5` | tentativas antes de pedir novo código |
-| `EMAIL_CODE_COOLDOWN` | | `60` | segundos entre reenvios |
-| `EMAIL_DNS_CHECK` | | `true` | rejeita domínios de e-mail que não recebem mensagens |
-
-Como funciona: com `EMAIL_VERIFICATION=true`, o cadastro guarda os dados na sessão, envia o código e **só cria a conta depois
-que o código é confirmado**. O login continua sendo só e-mail e senha. O e-mail de recuperação de senha usa o mesmo mailer.
-
-Variáveis de outros provedores (`POSTMARK_API_KEY`, `MAIL_HOST`/`MAIL_PORT` de SMTP, `AWS_*` do SES) existem
-no `config/` mas **não são usadas** hoje. Ver 5.3 para trocar de provedor.
-
-### 3.5 Login com Google
-
-| Variável | Segredo | Exemplo | Para quê |
-| --- | :-: | --- | --- |
-| `GOOGLE_CLIENT_ID` | 🔒 | `1234-abc.apps.googleusercontent.com` | identifica o app no Google |
-| `GOOGLE_CLIENT_SECRET` | 🔒 | | segredo do cliente OAuth |
-| `GOOGLE_REDIRECT_URI` | | `https://estacaocommit.onrender.com/auth/google/callback` | **idêntica** à cadastrada no Google Cloud |
-
-O botão "Continuar com Google" só aparece quando as três estão preenchidas.
-
-### 3.6 Administração e perfis
-
-| Variável | Exemplo | Para quê |
-| --- | --- | --- |
-| `PROFILE_ADMIN_EMAILS` | `voce@exemplo.com,outro@exemplo.com` | e-mails (verificados) que podem atribuir selos de desenvolvedor. Vazio = ninguém |
-
-### 3.7 Regras de jogo e interface
-
-| Variável | Padrão | Para quê |
-| --- | --- | --- |
-| `GAME_TURN_TIMEOUT_SECONDS` | `25` | duração da vez de um humano (menos de 30 s); passou, a vez é pulada |
-| `GAME_MAX_CONSECUTIVE_TIMEOUTS` | `3` | timeouts seguidos até o jogador sair da sala |
-| `GAME_BOT_DELAY_MS` | `700` | pausa do bot antes de jogar |
-| `GAME_BOT_STALL_SECONDS` | `8` | vez de bot parada há mais que isso é jogada pelo servidor (`games:sweep`) |
-| `GAME_SWEEP_BATCH` | `50` | máximo de partidas verificadas por execução do `games:sweep` |
-| `FINISHED_ROOM_TTL_MINUTES` | `2` | quanto tempo a sala encerrada fica visível antes da limpeza |
-| `GUEST_TTL_HOURS` | `6` | validade da conta temporária (visitante) |
-| `UI_DEFER_LISTS` | `true` | listas de notificações/seguidores carregam depois, com esqueleto |
-
-### 3.8 Tempo real
-
-**Opção A, Reverb (padrão, dentro do contêiner):**
-
-| Variável | Segredo | Exemplo | Para quê |
-| --- | :-: | --- | --- |
-| `BROADCAST_CONNECTION` | | `reverb` | driver de broadcast |
-| `REALTIME_DRIVER` | | `reverb` | escolhe Reverb ou Cloudflare |
-| `REVERB_APP_ID` | | `gamehub` | identificador do app Reverb |
-| `REVERB_APP_KEY` | | chave pública | vai também ao navegador (via `VITE_`) |
-| `REVERB_APP_SECRET` | 🔒 | | **nunca** repetir em `VITE_*` |
-| `REVERB_HOST` / `REVERB_PORT` / `REVERB_SCHEME` | | `estacaocommit.onrender.com` / `443` / `https` | endereço público |
-| `REVERB_SERVER_HOST` / `REVERB_SERVER_PORT` | | `127.0.0.1` / `8080` | onde o Reverb escuta dentro do contêiner |
-| `REVERB_PUBLISH_HOST/PORT/SCHEME` | | `127.0.0.1` / `8080` / `http` | endereço **interno** para o Laravel publicar eventos (o Docker já define) |
-| `REVERB_APP_MAX_CONNECTIONS` | | `25` | conexões simultâneas; não aumente sem medir a RAM (Render Free: 512 MB) |
-
-**Opção B, Cloudflare (opcional):**
-
-| Onde | Variável | Segredo | Para quê |
-| --- | --- | :-: | --- |
-| Render | `REALTIME_DRIVER=cloudflare` | | liga o Worker no lugar do Reverb |
-| Render | `REALTIME_WORKER_URL` | | URL pública do Worker (`https://....workers.dev`) |
-| Render e Worker | `REALTIME_TOKEN_SECRET` | 🔒 | mesmo valor nos dois; assina o token de conexão |
-| Render e Worker | `REALTIME_NOTIFY_SECRET` | 🔒 | mesmo valor nos dois; assina avisos Laravel → Worker |
-| Render | `GAME_ENGINE` | | `laravel` (padrão) ou `cloudflare` |
-| Render e Worker | `REALTIME_CALLBACK_SECRET` | 🔒 | assina o retorno Worker → Laravel (`/realtime/callback`) |
-| Render | `GAME_ENGINE_PARITY_ACK` | | **trava**: só liga o motor da Cloudflare se for igual à versão de paridade do código |
-| Worker (`wrangler.jsonc`) | `APP_ORIGIN`, `LARAVEL_CALLBACK_URL`, `ALLOWED_ORIGINS` | | endereços do site; **mudam se o domínio mudar** |
-
-Gere cada segredo com `openssl rand -hex 32`. Detalhes de publicação e retorno ao Reverb em [`worker/README.md`](../worker/README.md).
-
-### 3.9 Variáveis de build (`VITE_*`)
-
-Entram no JavaScript do navegador **na hora do build**. Mudou o valor? Faça **novo deploy com rebuild**; reiniciar não basta.
-Nunca coloque segredo nelas.
-
-| Variável | Exemplo em produção |
-| --- | --- |
-| `VITE_APP_NAME` | `Estação Commit` |
-| `VITE_REVERB_APP_KEY` | igual a `REVERB_APP_KEY` |
-| `VITE_REVERB_HOST` | `estacaocommit.onrender.com` |
-| `VITE_REVERB_PORT` | `443` |
-| `VITE_REVERB_SCHEME` | `https` |
-
-### 3.10 Mínimo para o site funcionar
-
-Para subir uma instância nova **sem** e-mail, Google nem Cloudflare, bastam:
-
-```dotenv
-APP_KEY=...            # php artisan key:generate --show
-APP_URL=https://seu-dominio
-DB_CONNECTION=pgsql
-DB_HOST=... DB_PORT=5432 DB_DATABASE=... DB_USERNAME=... DB_PASSWORD=... DB_SSLMODE=require
-REVERB_APP_ID=gamehub
-REVERB_APP_KEY=...
-REVERB_APP_SECRET=...
-REVERB_HOST=seu-dominio  REVERB_PORT=443  REVERB_SCHEME=https
-VITE_REVERB_APP_KEY=...  VITE_REVERB_HOST=seu-dominio  VITE_REVERB_PORT=443  VITE_REVERB_SCHEME=https
-```
-
-Todo o resto tem padrão seguro ou é opcional (e-mail, Google, Cloudflare, administração).
-
-### 3.11 Pacote completo para o Render hoje
-
-```dotenv
-# aplicação
-APP_URL=https://estacaocommit.onrender.com
-# e-mail
-MAIL_MAILER=brevo
-BREVO_API_KEY=<segredo>
-MAIL_FROM_ADDRESS=<remetente verificado no Brevo>
-MAIL_FROM_NAME=Estação Commit
-EMAIL_VERIFICATION=true
-# google
-GOOGLE_CLIENT_ID=<segredo>
-GOOGLE_CLIENT_SECRET=<segredo>
-GOOGLE_REDIRECT_URI=https://estacaocommit.onrender.com/auth/google/callback
-# administração
-PROFILE_ADMIN_EMAILS=<e-mails separados por vírgula>
-```
+Onde configurar: **local** no `.env`; **Render** em *Environment* do serviço; **Worker** com `npx wrangler secret put` e
+`worker/wrangler.jsonc`; variáveis `VITE_*` entram **no build** (mudou? faça deploy com rebuild).
 
 ---
 
@@ -279,7 +105,7 @@ o Neon pode estar acordando). Depois o Supervisor mantém:
 | --- | --- |
 | `apache` | serve o site e encaminha `/app/` ao Reverb |
 | `reverb` | WebSocket interno |
-| `scheduler` | roda as rotinas abaixo |
+| `scheduler` | laço leve que roda `schedule:run` a cada minuto (rotinas abaixo) |
 | `essential-watchdog` | reinicia processos essenciais que caírem |
 
 | Frequência | Comando | Finalidade |
@@ -288,6 +114,8 @@ o Neon pode estar acordando). Depois o Supervisor mantém:
 | a cada minuto | `rooms:purge-finished` | remove salas encerradas, preservando resultados |
 | a cada minuto | `games:sweep` | resolve timeouts e vezes de bot paradas, mesmo sem ninguém na página |
 | a cada 15 min | `guests:prune` | remove visitantes inativos que não estão jogando |
+
+Como testar, ver logs, identificar duplicidade/travamento e recuperar: [`../DEPLOY/CRON-JOBS.md`](../DEPLOY/CRON-JOBS.md).
 
 ---
 
@@ -299,8 +127,8 @@ Antes de qualquer troca: **faça backup do banco** e anote os valores atuais das
 
 O projeto é um contêiner Docker padrão, então qualquer plataforma que rode Docker serve (Fly.io, Railway, VPS, etc.).
 
-1. Crie o serviço apontando para o repositório e para o [`Dockerfile`](../Dockerfile). A imagem escuta na porta definida em `PORT`.
-2. Copie **todas** as variáveis da seção 3. Não esqueça as `VITE_*` (devem existir **no build**).
+1. Crie o serviço apontando para o repositório e para o [`Dockerfile`](../../Dockerfile). A imagem escuta na porta definida em `PORT`.
+2. Copie **todas** as variáveis de [`VARIAVEIS-DE-AMBIENTE.md`](../DEPLOY/VARIAVEIS-DE-AMBIENTE.md). Não esqueça as `VITE_*` (devem existir **no build**).
 3. Defina `APP_URL` com o novo endereço público.
 4. Faça o deploy e confirme nos logs: migrations executadas, Apache e Reverb em "RUNNING".
 5. Atualize tudo que guarda o endereço antigo:
@@ -325,7 +153,7 @@ Sessões ficam no banco, então **todo mundo será deslogado** na troca.
 
 ### 5.3 Trocar o serviço de e-mail
 
-Hoje o envio usa a classe [`BrevoTransport`](../app/Mail/BrevoTransport.php) (API HTTPS). Para trocar:
+Hoje o envio usa a classe [`BrevoTransport`](../../app/Mail/BrevoTransport.php) (API HTTPS). Para trocar:
 
 - **Outro serviço por API (Resend, Postmark, Mailgun, SES):** o projeto já inclui o Resend (`MAIL_MAILER=resend-http` + `RESEND_API_KEY`, ou `resilient` para usar os dois em sequência). Postmark e SES exigem os pacotes do Laravel para esses transportes. Os templates não mudam.
 - **SMTP:** funciona fora do Render Free (que bloqueia as portas SMTP). Use `MAIL_MAILER=smtp` com `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`.

@@ -9,7 +9,7 @@ use App\Support\PlayerPresenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\Badge;
+use App\Support\AchievementPresenter;
 
 class PublicProfileController extends Controller
 {
@@ -54,11 +54,7 @@ class PublicProfileController extends Controller
                     : null,
                 'created_at' => $user->created_at,
                 'links' => $user->profileLinks->map->only(['platform','label','url'])->values(),
-                'badges' => Badge::query()->whereRaw('active IS TRUE')->whereRaw('secret IS FALSE')->orderBy('sort_order')->get()->map(fn ($badge) => [
-                    ...$badge->only(['id','slug','name','description','category','rarity','image_path']),
-                    'unlocked' => $user->badges->contains($badge->id),
-                    'unlocked_at' => optional($user->badges->firstWhere('id', $badge->id)?->pivot)->unlocked_at,
-                ]),
+                'badges' => AchievementPresenter::forUser($user),
                 'achievement_badge' => $user->achievementBadge?->only(['id','slug','name','description','rarity','image_path']),
                 'statistics' => $user->historicalGameStatistics(),
             ],

@@ -140,7 +140,9 @@ class RegistrationTest extends TestCase
         $user = User::where('email', 'unverified@example.com')->firstOrFail();
         $this->assertNull($user->email_verified_at);
         $this->assertTrue($user->password_set);
-        Notification::assertNothingSent();
+        // Nenhum e-mail de verificação sai; só o aviso interno da conquista "Estrela Inicial" é gravado.
+        Notification::assertNotSentTo($user, \Illuminate\Auth\Notifications\VerifyEmail::class);
+        Notification::assertSentTo($user, \App\Notifications\AchievementUnlocked::class);
         $this->assertAuthenticatedAs($user);
         $this->get('/dashboard')->assertOk();
     }

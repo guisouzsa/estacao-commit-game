@@ -20,11 +20,6 @@ class GameEngine
         'git_pull', 'git_push', 'pull_request',
     ];
 
-    private const COMMON_COUNTS = [
-        'git_login' => 4, 'git_clone' => 7, 'git_checkout' => 7, 'git_pull' => 4,
-        'git_add' => 16, 'git_commit' => 16, 'git_push' => 16, 'pull_request' => 4,
-        'clear_credentials' => 2, 'merge_conflict' => 2,
-    ];
 
     public function create(GameRoom $room): GameMatch
     {
@@ -36,16 +31,16 @@ class GameEngine
         // Regra: TODOS começam com o Git Login. As 4 cópias vão uma para cada jogador e não entram
         // no baralho; o resto da mão (3 cartas comuns) sai do baralho embaralhado.
         $deck = [];
-        foreach (self::COMMON_COUNTS as $card => $quantity) {
+        foreach ((array) config('game.deck') as $card => $quantity) {
             $quantity -= $card === 'git_login' ? $participants->count() : 0;
             $deck = [...$deck, ...array_fill(0, max(0, $quantity), $card)];
         }
-        shuffle($deck);
+        $deck = $this->shuffled($deck);
 
         $players = [];
         foreach ($participants as $participant) {
             $hand = ['git_login', ...array_splice($deck, 0, 3)];
-            shuffle($hand);
+            $hand = $this->shuffled($hand);
             $players[(string) $participant->id] = [
                 'seat' => $participant->seat,
                 'hand' => $hand,
@@ -339,6 +334,18 @@ class GameEngine
         }
     }
 
+    /**
+     * Embaralha com Fisher-Yates uniforme sobre uma fonte CRIPTOGRÁFICA (Random\Randomizer, motor seguro do PHP 8.2).
+     * Nada do que o cliente envia entra no sorteio, e a ordem do baralho não é previsível a partir de jogadas anteriores.
+     *
+     * @param  list<string>  $cards
+     * @return list<string>
+     */
+    private function shuffled(array $cards): array
+    {
+        return (new \Random\Randomizer)->shuffleArray(array_values($cards));
+    }
+
     /** Quantas cartas do topo do baralho (já embaralhado) podem ser consideradas ao comprar. */
     public const DRAW_LOOKAHEAD = 8;
 
@@ -346,8 +353,7 @@ class GameEngine
     {
         for ($i = 0; $i < $quantity; $i++) {
             if ($state['deck'] === [] && $state['discard'] !== []) {
-                shuffle($state['discard']);
-                $state['deck'] = $state['discard'];
+                $state['deck'] = $this->shuffled($state['discard']);
                 $state['discard'] = [];
             }
             if ($state['deck'] === []) {

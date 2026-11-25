@@ -128,3 +128,12 @@ body { margin: 0; background: var(--ec-ink); font-family: 'Space Grotesk', sans-
 @keyframes block-arrive { 0% { box-shadow: 0 0 0 0 #b4da33cc; opacity: 1; } 100% { box-shadow: 0 0 0 16px #b4da3300; opacity: 0; } }
 .block-arrive-ring { animation: block-arrive .9s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) { .block-arrive-ring { animation: none; opacity: 0; } }
+
+/* ---- Insígnias de conquista (SVG + CSS, sem JS). Brilho nas raridades altas e flutuação na lendária. ---- */
+@keyframes badge-shine { 0%, 55% { transform: translateX(0); opacity: 0; } 65% { opacity: 1; } 100% { transform: translateX(150px); opacity: 0; } }
+.badge-shine { animation: badge-shine 3.8s ease-in-out infinite; }
+@keyframes badge-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.badge-float { animation: badge-float 3.2s ease-in-out infinite; }
+@keyframes achievement-pop { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+.achievement-pop { animation: achievement-pop .32s cubic-bezier(.2, .9, .3, 1.2); }
+@media (prefers-reduced-motion: reduce) { .badge-shine, .badge-float, .achievement-pop { animation: none !important; } }

@@ -754,9 +754,9 @@ export default function Show({
                     <GameLog actors={logActors} items={game.history} />
                 </aside>
 
-                <section className="mx-auto w-full max-w-[1280px] px-2 py-2 max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-1.5 max-lg:py-1 sm:px-4">
+                <section className="mx-auto w-full max-w-[1280px] px-2 py-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:grid [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:max-w-[1680px] [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:grid-cols-[auto_minmax(22rem,1fr)] [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:pl-[16.5rem] [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:items-start [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:gap-x-6 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:gap-y-1 max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-1.5 max-lg:py-1 sm:px-4">
                     {/* Prioridade visual: 1) tabuleiro e cartas, 2) quem joga agora, 3) indicadores. */}
-                    <div className="relative z-20 shrink-0 lg:pt-2">
+                    <div className="relative z-20 shrink-0 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:col-start-1 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:row-start-1 lg:pt-2">
                         <TurnBanner
                             current={
                                 currentPlayer
@@ -782,7 +782,7 @@ export default function Show({
                         />
                     </div>
 
-                    <div className="mx-auto w-full max-lg:min-h-0 max-lg:flex-1 max-lg:[container-type:size] lg:mt-1 lg:w-[max(18rem,min(calc(100vw_-_21rem),calc(100dvh_-_23rem),58rem))]">
+                    <div className="mx-auto w-full max-lg:min-h-0 max-lg:flex-1 max-lg:[container-type:size] lg:mt-1 lg:w-[max(18rem,min(calc(100vw_-_21rem),calc(100dvh_-_23rem),58rem))] [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:col-start-1 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:row-start-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:mx-0 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:w-[max(18rem,min(calc(100vw_-_44rem),calc(100dvh_-_12.5rem),60rem))]">
                         {/* Celular: o tabuleiro ocupa o MAIOR quadrado que cabe no espaço livre (sem rolagem). */}
                         <div className="max-lg:grid max-lg:size-full max-lg:place-items-center">
                             <div className="w-full max-lg:w-[min(100cqw,100cqh)]">
@@ -798,10 +798,10 @@ export default function Show({
                         </div>
                     </div>
 
-                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_#0006] max-lg:mt-0 max-lg:shrink-0 sm:p-3 [@media(min-width:1024px)_and_(max-height:1100px)]:sm:p-2 lg:mt-1 lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3">
+                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_#0006] max-lg:mt-0 max-lg:shrink-0 sm:p-3 lg:mt-1 lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:col-start-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:row-span-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:row-start-1 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:mt-0 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:grid-cols-1 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:items-stretch [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:self-center [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:p-4 [@media(min-width:1024px)_and_(max-height:1100px)]:sm:p-2">
                         <div className="relative min-w-0">
                             <div
-                                className="flex min-h-[9.5rem] items-end gap-0 overflow-x-auto px-1 pb-2 pt-7 [@media(min-width:1024px)_and_(max-height:1100px)]:min-h-[7.25rem] [@media(min-width:1024px)_and_(max-height:1100px)]:pt-4 [scrollbar-width:none] sm:gap-2 sm:[scrollbar-width:thin] max-sm:[&>*+*]:-ml-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto"
+                                className="flex min-h-[9.5rem] items-end gap-0 overflow-x-auto [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:!min-h-0 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:flex-wrap [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:items-start [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:justify-center [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:gap-3 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:overflow-visible [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:!pt-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:[&>*]:!m-0 px-1 pb-2 pt-7 [scrollbar-width:none] sm:gap-2 sm:[scrollbar-width:thin] max-sm:[&>*+*]:-ml-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto [@media(min-width:1024px)_and_(max-height:1100px)]:min-h-[7.25rem] [@media(min-width:1024px)_and_(max-height:1100px)]:pt-4"
                                 onScroll={measureHand}
                                 ref={handRef}
                             >

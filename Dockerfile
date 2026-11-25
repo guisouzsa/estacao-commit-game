@@ -86,6 +86,7 @@ COPY docker/apache/error-pages.conf /etc/apache2/conf-available/error-pages.conf
 COPY docker/apache/perf-headers.conf /etc/apache2/conf-available/perf-headers.conf
 COPY docker/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker/supervisor/essential-watchdog.py /usr/local/bin/essential-watchdog.py
+COPY docker/supervisor/scheduler-loop.sh /usr/local/bin/scheduler-loop.sh
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 
 RUN composer dump-autoload --no-dev --optimize --no-interaction \
@@ -95,6 +96,7 @@ RUN composer dump-autoload --no-dev --optimize --no-interaction \
     && sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/*.conf \
     && sed -ri 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
     && chmod +x /usr/local/bin/docker-entrypoint \
+    && sed -i 's/\r$//' /usr/local/bin/scheduler-loop.sh \
     && mkdir -p \
         storage/app/private \
         storage/app/public \

@@ -1,3 +1,7 @@
+import AchievementBadge, {
+    BadgeIcon,
+    BadgeTier,
+} from '@/Components/AchievementBadge';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import { Link, router } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -7,6 +11,14 @@ type Item = {
     message: string;
     username: string | null;
     avatar_seed: string | null;
+    achievement?: {
+        slug: string;
+        name: string;
+        description: string;
+        rarity: string;
+        tier: string;
+        icon: string;
+    } | null;
     read: boolean;
     created_at: string;
 };
@@ -33,7 +45,11 @@ function timeAgo(iso: string): string {
  * A lista só é buscada quando o popover abre (nada de consulta periódica); o contador
  * do sino continua vindo das props compartilhadas.
  */
-export default function NotificationBell({ unreadCount }: { unreadCount: number }) {
+export default function NotificationBell({
+    unreadCount,
+}: {
+    unreadCount: number;
+}) {
     const [open, setOpen] = useState(false);
     const [items, setItems] = useState<Item[] | null>(null);
     const [failed, setFailed] = useState(false);
@@ -44,7 +60,10 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
         setFailed(false);
         try {
             const response = await fetch(route('notifications.recent'), {
-                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
                 credentials: 'same-origin',
             });
             if (!response.ok) throw new Error('falhou');
@@ -80,13 +99,33 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
     }, [open]);
 
     const markRead = (id: string) => {
-        setItems((current) => current?.map((item) => (item.id === id ? { ...item, read: true } : item)) ?? null);
-        router.post(route('notifications.read', id), {}, { preserveScroll: true, preserveState: true, only: ['auth'] });
+        setItems(
+            (current) =>
+                current?.map((item) =>
+                    item.id === id ? { ...item, read: true } : item,
+                ) ?? null,
+        );
+        router.post(
+            route('notifications.read', id),
+            {},
+            { preserveScroll: true, preserveState: true, only: ['auth'] },
+        );
     };
 
     const markAll = () => {
-        setItems((current) => current?.map((item) => ({ ...item, read: true })) ?? null);
-        router.post(route('notifications.read-all'), {}, { preserveScroll: true, preserveState: true, only: ['auth', 'flash'] });
+        setItems(
+            (current) =>
+                current?.map((item) => ({ ...item, read: true })) ?? null,
+        );
+        router.post(
+            route('notifications.read-all'),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['auth', 'flash'],
+            },
+        );
     };
 
     return (
@@ -96,12 +135,25 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
                 type="button"
                 aria-haspopup="dialog"
                 aria-expanded={open}
-                aria-label={unreadCount ? `Notificações, ${unreadCount} não lidas` : 'Notificações'}
+                aria-label={
+                    unreadCount
+                        ? `Notificações, ${unreadCount} não lidas`
+                        : 'Notificações'
+                }
                 className="relative grid size-11 place-items-center border-2 border-white/25 transition hover:border-[#b4da33] focus:outline-none focus:ring-2 focus:ring-[#b4da33]"
                 onClick={() => setOpen((value) => !value)}
                 title="Notificações"
             >
-                <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+                <svg
+                    aria-hidden="true"
+                    className="size-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.8"
+                    viewBox="0 0 24 24"
+                >
                     <path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7Zm4 10a2 2 0 0 0 4 0" />
                 </svg>
                 {unreadCount > 0 && (
@@ -118,7 +170,9 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
                     className="toast-in fixed inset-x-3 top-[4.5rem] z-[60] border-[3px] border-[#1d1d1b] bg-[#f3f1ec] text-[#1d1d1b] shadow-[6px_6px_0_#464498] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96"
                 >
                     <div className="flex items-center justify-between gap-2 border-b-[3px] border-[#1d1d1b] bg-[#1d1d1b] px-3 py-2 text-white">
-                        <strong className="font-mono text-[11px] uppercase tracking-wide">Notificações</strong>
+                        <strong className="font-mono text-[11px] uppercase tracking-wide">
+                            Notificações
+                        </strong>
                         <button
                             type="button"
                             disabled={unreadCount === 0}
@@ -133,15 +187,25 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
                         {failed ? (
                             <p className="p-4 text-sm">
                                 Não conseguimos carregar agora.{' '}
-                                <button type="button" onClick={() => void load()} className="font-bold underline">
+                                <button
+                                    type="button"
+                                    onClick={() => void load()}
+                                    className="font-bold underline"
+                                >
                                     Tentar de novo
                                 </button>
                             </p>
                         ) : items === null ? (
-                            <p className="p-4 text-sm text-[#5b5953]" aria-live="polite">Carregando…</p>
+                            <p
+                                className="p-4 text-sm text-[#5b5953]"
+                                aria-live="polite"
+                            >
+                                Carregando…
+                            </p>
                         ) : items.length === 0 ? (
                             <p className="p-4 text-sm text-[#5b5953]">
-                                Nada por aqui ainda. Quando alguém começar a seguir você, o aviso aparece neste lugar.
+                                Nada por aqui ainda. Quando alguém começar a
+                                seguir você, o aviso aparece neste lugar.
                             </p>
                         ) : (
                             <ul>
@@ -150,28 +214,58 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
                                         key={item.id}
                                         className={`flex items-center gap-3 border-b border-[#1d1d1b]/15 p-3 last:border-0 ${item.read ? '' : 'bg-[#b4da33]/20'}`}
                                     >
-                                        <PlayerAvatar
-                                            profile={{ username: item.username ?? 'jogador', avatar_seed: item.avatar_seed }}
-                                            size="xs"
-                                        />
+                                        {item.achievement ? (
+                                            <AchievementBadge
+                                                icon={
+                                                    item.achievement
+                                                        .icon as BadgeIcon
+                                                }
+                                                size="sm"
+                                                tier={
+                                                    item.achievement
+                                                        .tier as BadgeTier
+                                                }
+                                            />
+                                        ) : (
+                                            <PlayerAvatar
+                                                profile={{
+                                                    username:
+                                                        item.username ??
+                                                        'jogador',
+                                                    avatar_seed:
+                                                        item.avatar_seed,
+                                                }}
+                                                size="xs"
+                                            />
+                                        )}
                                         <div className="min-w-0 flex-1">
                                             {item.username ? (
                                                 <Link
                                                     className="block text-sm font-bold hover:underline"
-                                                    href={route('profile.public', item.username)}
+                                                    href={route(
+                                                        'profile.public',
+                                                        item.username,
+                                                    )}
                                                     onClick={() => {
-                                                        if (!item.read) markRead(item.id);
+                                                        if (!item.read)
+                                                            markRead(item.id);
                                                         setOpen(false);
                                                     }}
                                                 >
                                                     {item.message}
                                                 </Link>
                                             ) : (
-                                                <p className="text-sm">{item.message}</p>
+                                                <p className="text-sm">
+                                                    {item.message}
+                                                </p>
                                             )}
                                             <p className="mt-0.5 font-mono text-[10px] uppercase text-[#68665f]">
                                                 {timeAgo(item.created_at)}
-                                                {!item.read && <span className="ml-2 text-[#464498]">· nova</span>}
+                                                {!item.read && (
+                                                    <span className="ml-2 text-[#464498]">
+                                                        · nova
+                                                    </span>
+                                                )}
                                             </p>
                                         </div>
                                         {!item.read && (
@@ -179,7 +273,9 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
                                                 type="button"
                                                 aria-label="Marcar como lida"
                                                 title="Marcar como lida"
-                                                onClick={() => markRead(item.id)}
+                                                onClick={() =>
+                                                    markRead(item.id)
+                                                }
                                                 className="grid size-8 shrink-0 place-items-center border-2 border-[#1d1d1b] font-black hover:bg-white"
                                             >
                                                 ✓

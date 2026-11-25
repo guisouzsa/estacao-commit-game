@@ -45,7 +45,7 @@ class GameMatchTest extends TestCase
         $this->actingAs($users[0])->post(route('games.start', $room));
         $match = GameMatch::firstOrFail();
 
-        $this->assertCount(62, $match->state['deck']);
+        $this->assertCount(67, $match->state['deck']);
         foreach ($match->state['players'] as $player) {
             $this->assertCount(4, $player['hand']);
             $this->assertSame(0, $player['step']);

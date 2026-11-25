@@ -30,11 +30,7 @@ class ProfileController extends Controller
             ],
             'profileExtras' => [
                 'links' => $user->profileLinks->map->only(['platform','label','url','is_public'])->values(),
-                'badges' => \App\Models\Badge::query()->whereRaw('active IS TRUE')->whereRaw('secret IS FALSE')->orderBy('sort_order')->get()->map(fn ($badge) => [
-                    ...$badge->only(['id','slug','name','description','category','rarity','image_path']),
-                    'unlocked' => $user->badges->contains($badge->id),
-                    'unlocked_at' => optional($user->badges->firstWhere('id', $badge->id)?->pivot)->unlocked_at,
-                ]),
+                'badges' => \App\Support\AchievementPresenter::forUser($user),
                 'achievement_badge_id' => $user->achievement_badge_id,
                 'statistics' => $user->historicalGameStatistics(),
             ],

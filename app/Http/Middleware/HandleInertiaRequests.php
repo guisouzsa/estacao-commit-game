@@ -39,6 +39,13 @@ class HandleInertiaRequests extends Middleware
         // Conta permanente ou visitante. Em rotas públicas o guard padrão (web)
         // não conhece o visitante, então ele é consultado à parte (sem cookie, sem consulta).
         $actor = $request->user() ?? Auth::guard('visitor')->user();
+        // Contador de avisos não lidos: calculado no máximo UMA vez por resposta e só se alguma prop o pedir.
+        $count = null;
+        $unread = function () use ($actor, &$count): int {
+            return $count ??= $actor instanceof User
+                ? $actor->unreadNotifications()->whereIn('type', NotificationController::TYPES)->count()
+                : 0;
+        };
 
         return [
             ...parent::share($request),
@@ -49,9 +56,13 @@ class HandleInertiaRequests extends Middleware
                 'channel' => $actor ? Actor::channel($actor) : null,
                 // Só contas têm central de notificações. Closure: uma consulta por resposta
                 // de página, e nenhuma em recarregamentos parciais que não pedem "auth".
-                'unread_notifications' => fn () => $actor instanceof User
-                    ? $actor->unreadNotifications()->whereIn('type', NotificationController::TYPES)->count()
-                    : 0,
+                'unread_notifications' => $unread,
+                // Popup de conquista: só as ainda NÃO lidas (o front as marca como lidas ao exibir, então não repetem).
+                // Só consulta quando há avisos não lidos (o contador acima já foi calculado).
+                'achievement_popups' => fn () => $actor instanceof User && $unread() > 0
+                    ? $actor->unreadNotifications()->where('type', \App\Notifications\AchievementUnlocked::class)->latest()->limit(3)->get()
+                        ->map(fn ($n) => ['id' => $n->id, ...\Illuminate\Support\Arr::only($n->data, ['slug', 'name', 'description', 'rarity', 'tier', 'icon'])])->all()
+                    : [],
             ],
             'flash' => [
                 'toast' => fn () => $request->session()->get('toast'),

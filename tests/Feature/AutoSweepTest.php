@@ -108,7 +108,7 @@ class AutoSweepTest extends TestCase
 
     public function test_the_sweep_command_is_scheduled_every_minute(): void
     {
-        $event = collect(app(Schedule::class)->events())->first(fn ($e) => str_contains((string) $e->command, 'games:sweep'));
+        $event = collect(app(Schedule::class)->events())->first(fn ($e) => str_contains((string) $e->command, 'games:sweep') || $e->description === 'games:sweep');
 
         $this->assertNotNull($event);
         $this->assertSame('* * * * *', $event->expression);

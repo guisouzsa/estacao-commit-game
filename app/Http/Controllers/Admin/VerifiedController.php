@@ -19,6 +19,13 @@ class VerifiedController extends Controller
         // forceFill: a coluna não é preenchível por formulário, só por esta rota protegida.
         $user->forceFill(['verified_at' => $data['verified'] ? ($user->verified_at ?? now()) : null])->save();
 
+        // Trilha de auditoria: quem concedeu ou removeu, e para quem (sem e-mails).
+        \App\Support\OpsLog::event('verified.changed', [
+            'actor' => $request->user()->getKey(),
+            'target' => $user->getKey(),
+            'verified' => (bool) $data['verified'],
+        ]);
+
         return back()->with('status', $data['verified']
             ? "@{$user->username} agora é verificado."
             : "Verificação de @{$user->username} removida.");

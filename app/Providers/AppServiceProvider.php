@@ -68,7 +68,9 @@ class AppServiceProvider extends ServiceProvider
                 ]);
         });
 
-        Gate::define('manage-verified', static function (User $user): bool {
+        // Só quem tem o e-mail CONFIRMADO em PROFILE_ADMIN_EMAILS. O nome de usuário nunca vale como
+        // credencial: ele pode ser trocado ou liberado e reaproveitado por outra pessoa.
+        Gate::define('manage-verified',static function (User $user): bool {
             return $user->isLeader();
         });
 

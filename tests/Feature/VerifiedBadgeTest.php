@@ -115,4 +115,31 @@ class VerifiedBadgeTest extends TestCase
 
         $this->assertFalse($admin->fresh()->isVerified());
     }
+
+    public function test_the_username_alone_never_grants_power(): void
+    {
+        config(['profiles.admin_emails' => ['dono@example.com']]);
+        $impostor = User::factory()->create(['username' => 'gui', 'email' => 'outro@example.com', 'email_verified_at' => now()]);
+        User::factory()->create(['username' => 'alvo']);
+
+        $this->actingAs($impostor)
+            ->patch('/admin/users/alvo/verified', ['verified' => true])
+            ->assertForbidden();
+        $this->actingAs($impostor)->get('/profile')->assertInertia(
+            fn ($page) => $page->where('canManageVerified', false),
+        );
+    }
+
+    public function test_changing_the_email_to_the_admin_one_does_not_keep_power(): void
+    {
+        config(['profiles.admin_emails' => ['dono@example.com']]);
+        $player = User::factory()->create(['username' => 'troca', 'email_verified_at' => now()]);
+
+        $this->actingAs($player)->patch('/profile', ['username' => 'troca', 'email' => 'dono@example.com']);
+
+        $this->assertNull($player->fresh()->email_verified_at);
+        $this->actingAs($player->fresh())
+            ->patch('/admin/users/troca/verified', ['verified' => true])
+            ->assertForbidden();
+    }
 }

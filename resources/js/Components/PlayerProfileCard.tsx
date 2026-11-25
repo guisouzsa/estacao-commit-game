@@ -266,27 +266,38 @@ export default function PlayerProfileCard({
                             'Este jogador ainda não escreveu uma biografia.'}
                     </p>
                     {featuredAchievements.length > 0 && (
-                        <ul
-                            aria-label="Conquistas em destaque"
-                            className="flex flex-wrap items-center gap-2"
-                        >
-                            {featuredAchievements.map((badge) => (
-                                <li key={badge.id}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpenBadge(badge)}
-                                        aria-label={`Conquista: ${badge.name}`}
-                                        className="block rounded-sm transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#464498] focus-visible:ring-offset-2"
-                                    >
-                                        <AchievementBadge
-                                            icon={(badge.icon ?? 'star') as BadgeIcon}
-                                            size="md"
-                                            tier={(badge.tier ?? 'starter') as BadgeTier}
-                                        />
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+                        <div className="border-t border-[#1d1d1b]/20 pt-3">
+                            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#68665f]">
+                                Conquistas
+                            </p>
+                            <ul
+                                aria-label="Conquistas em destaque"
+                                className="mt-2 flex flex-wrap items-center gap-2"
+                            >
+                                {featuredAchievements.map((badge) => (
+                                    <li key={badge.id}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setOpenBadge(badge)}
+                                            aria-label={`Conquista: ${badge.name}`}
+                                            className="block rounded-sm transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#464498] focus-visible:ring-offset-2"
+                                        >
+                                            <AchievementBadge
+                                                icon={
+                                                    (badge.icon ??
+                                                        'star') as BadgeIcon
+                                                }
+                                                size="md"
+                                                tier={
+                                                    (badge.tier ??
+                                                        'starter') as BadgeTier
+                                                }
+                                            />
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     )}
                     <Modal
                         show={openBadge !== null}
@@ -296,9 +307,14 @@ export default function PlayerProfileCard({
                         {openBadge && (
                             <div className="flex items-start gap-4 p-6 text-[#1d1d1b]">
                                 <AchievementBadge
-                                    icon={(openBadge.icon ?? 'star') as BadgeIcon}
+                                    icon={
+                                        (openBadge.icon ?? 'star') as BadgeIcon
+                                    }
                                     size="md"
-                                    tier={(openBadge.tier ?? 'starter') as BadgeTier}
+                                    tier={
+                                        (openBadge.tier ??
+                                            'starter') as BadgeTier
+                                    }
                                 />
                                 <div className="min-w-0">
                                     <h3 className="text-lg font-black">
@@ -346,9 +362,12 @@ export default function PlayerProfileCard({
         </article>
     );
 }
+import AchievementBadge, {
+    BadgeIcon,
+    BadgeTier,
+} from '@/Components/AchievementBadge';
 import CoverImage from '@/Components/CoverImage';
-import AchievementBadge, { BadgeIcon, BadgeTier } from '@/Components/AchievementBadge';
-import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
 import Modal from '@/Components/Modal';
+import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
 import { ReactNode, useState } from 'react';
 import PlayerAvatar from './PlayerAvatar';

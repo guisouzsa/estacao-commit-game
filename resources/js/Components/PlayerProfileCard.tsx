@@ -23,6 +23,8 @@ export interface PlayerProfile {
     developer_badge?: string | null;
     /** Tag "Líder"; decidida pelo servidor. */
     is_leader?: boolean;
+    /** Check azul ao lado do nome; concedido só pela conta administradora. */
+    is_verified?: boolean;
     created_at?: string | null;
     links?: ProfileLink[];
     badges?: ProfileBadge[];
@@ -110,6 +112,7 @@ export default function PlayerProfileCard({
     const featuredAchievements = (profile.badges ?? [])
         .filter((badge) => badge.unlocked && badge.displayed)
         .sort((a, b) => (a.featured_order ?? 99) - (b.featured_order ?? 99));
+    const [openBadge, setOpenBadge] = useState<ProfileBadge | null>(null);
     const title = profile.profile_title
         ? titleLabels[profile.profile_title]
         : null;
@@ -170,7 +173,7 @@ export default function PlayerProfileCard({
                         <h1 className="break-words text-3xl font-black leading-tight text-[#1d1d1b] sm:text-4xl">
                             @{profile.username}
                         </h1>
-                        {profile.developer_badge && (
+                        {profile.is_verified && (
                             <span
                                 className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[#168de2] text-white shadow-[0_0_0_2px_#fff] sm:size-7"
                                 title="Perfil verificado"
@@ -258,31 +261,68 @@ export default function PlayerProfileCard({
                             </span>
                         )}
                     </div>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-6 text-[#393833]">
+                        {profile.bio ||
+                            'Este jogador ainda não escreveu uma biografia.'}
+                    </p>
                     {featuredAchievements.length > 0 && (
                         <ul
                             aria-label="Conquistas em destaque"
                             className="flex flex-wrap items-center gap-2"
                         >
                             {featuredAchievements.map((badge) => (
-                                <li
-                                    className="flex items-center gap-1.5 border border-[#1d1d1b]/25 bg-white/70 py-1 pl-1 pr-2"
-                                    key={badge.id}
-                                    title={`${badge.name}: ${badge.description}`}
-                                >
-                                    <AchievementBadge
-                                        icon={(badge.icon ?? 'star') as BadgeIcon}
-                                        size="sm"
-                                        tier={(badge.tier ?? 'starter') as BadgeTier}
-                                    />
-                                    <span className="text-xs font-bold">{badge.name}</span>
+                                <li key={badge.id}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenBadge(badge)}
+                                        aria-label={`Conquista: ${badge.name}`}
+                                        className="block rounded-sm transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#464498] focus-visible:ring-offset-2"
+                                    >
+                                        <AchievementBadge
+                                            icon={(badge.icon ?? 'star') as BadgeIcon}
+                                            size="md"
+                                            tier={(badge.tier ?? 'starter') as BadgeTier}
+                                        />
+                                    </button>
                                 </li>
                             ))}
                         </ul>
                     )}
-                    <p className="whitespace-pre-wrap break-words text-sm leading-6 text-[#393833]">
-                        {profile.bio ||
-                            'Este jogador ainda não escreveu uma biografia.'}
-                    </p>
+                    <Modal
+                        show={openBadge !== null}
+                        maxWidth="sm"
+                        onClose={() => setOpenBadge(null)}
+                    >
+                        {openBadge && (
+                            <div className="flex items-start gap-4 p-6 text-[#1d1d1b]">
+                                <AchievementBadge
+                                    icon={(openBadge.icon ?? 'star') as BadgeIcon}
+                                    size="md"
+                                    tier={(openBadge.tier ?? 'starter') as BadgeTier}
+                                />
+                                <div className="min-w-0">
+                                    <h3 className="text-lg font-black">
+                                        {openBadge.name}
+                                    </h3>
+                                    <p className="mt-1 text-sm text-[#393833]">
+                                        {openBadge.description}
+                                    </p>
+                                    {openBadge.criterion && (
+                                        <p className="mt-2 font-mono text-xs font-bold uppercase text-[#464498]">
+                                            {openBadge.criterion}
+                                        </p>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenBadge(null)}
+                                        className="mt-4 min-h-9 border-2 border-[#1d1d1b] bg-[#b4da33] px-4 py-1 font-mono text-xs font-black uppercase"
+                                    >
+                                        Fechar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </Modal>
                     {profile.created_at && (
                         <div className="border-t border-[#1d1d1b]/20 pt-3">
                             <div>
@@ -309,5 +349,6 @@ export default function PlayerProfileCard({
 import CoverImage from '@/Components/CoverImage';
 import AchievementBadge, { BadgeIcon, BadgeTier } from '@/Components/AchievementBadge';
 import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
-import { ReactNode } from 'react';
+import Modal from '@/Components/Modal';
+import { ReactNode, useState } from 'react';
 import PlayerAvatar from './PlayerAvatar';

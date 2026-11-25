@@ -27,6 +27,7 @@ import DeleteUserForm from './Partials/DeleteUserForm';
 import GoogleAccountForm from './Partials/GoogleAccountForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+import VerifiedManager from './Partials/VerifiedManager';
 
 type Options = {
     frames: Record<string, string>;
@@ -141,6 +142,7 @@ export default function Edit({
     profileExtras = emptyExtras,
     googleConfigured = false,
     googleLinked = false,
+    canManageVerified = false,
     status,
 }: {
     appearanceOptions: Options;
@@ -148,6 +150,7 @@ export default function Edit({
     profileExtras: ProfileExtrasData;
     googleConfigured?: boolean;
     googleLinked?: boolean;
+    canManageVerified?: boolean;
     status?: string;
 }) {
     const page = usePage();
@@ -1246,6 +1249,11 @@ export default function Edit({
                                 <DeleteUserForm />
                             </div>
                         </section>
+                    )}
+                    {canManageVerified && !editing && (
+                        <div className="mt-6">
+                            <VerifiedManager />
+                        </div>
                     )}
                 </div>
             </main>

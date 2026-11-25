@@ -24,6 +24,7 @@ class ProfileController extends Controller
             'status' => session('status'),
             'avatarStyles' => config('players.selectable_avatar_styles'),
             'googleLinked' => filled($request->user()->google_id),
+            'canManageVerified' => $request->user()->can('manage-verified'),
             'googleConfigured' => filled(config('services.google.client_id'))
                 && filled(config('services.google.client_secret'))
                 && filled(config('services.google.redirect')),

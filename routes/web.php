@@ -81,6 +81,11 @@ Route::patch('/admin/users/{user}/developer-badge', [DeveloperBadgeController::c
     ->middleware(['auth', 'can:manage-developer-badges'])
     ->name('admin.users.developer-badge.update');
 
+Route::patch('/admin/users/{username}/verified', [\App\Http\Controllers\Admin\VerifiedController::class, 'update'])
+    ->where('username', '[A-Za-z0-9_-]{3,30}')
+    ->middleware(['auth', 'can:manage-verified', 'throttle:60,1'])
+    ->name('admin.users.verified.update');
+
 // Foto e capa como imagem cacheável (o JSON das páginas leva só a URL versionada).
 Route::get('/imagens/{kind}/{user}', ProfileImageController::class)->where('kind', 'avatar|cover')->whereUuid('user')->middleware('throttle:240,1')->name('profile.image');
 

@@ -38,7 +38,7 @@ export default function OptionPicker({
 
     return (
         <Listbox onChange={onChange} value={current?.value ?? ''}>
-            <div>
+            <div className="relative">
                 <Listbox.Label className="block text-sm font-bold">
                     {label}
                 </Listbox.Label>
@@ -81,9 +81,7 @@ export default function OptionPicker({
                 </ListboxButton>
 
                 <ListboxOptions
-                    anchor="bottom start"
-                    className="z-50 max-h-72 w-[var(--button-width)] overflow-y-auto border-2 border-[#1d1d1b] bg-white p-1 shadow-[4px_4px_0_#1d1d1b] [--anchor-gap:6px] focus:outline-none"
-                    transition
+                    className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-72 overflow-y-auto border-2 border-[#1d1d1b] bg-white p-1 shadow-[4px_4px_0_#1d1d1b] focus:outline-none"
                 >
                     {options.map((option) => (
                         <ListboxOption

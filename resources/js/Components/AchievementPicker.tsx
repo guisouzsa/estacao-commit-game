@@ -92,8 +92,7 @@ export default function AchievementPicker({
                         </ListboxButton>
 
                         <ListboxOptions
-                            anchor="bottom start"
-                            className="z-50 mt-1 max-h-72 w-[var(--button-width)] overflow-auto border-2 border-[#1d1d1b] bg-white p-1 shadow-[4px_4px_0_#1d1d1b] focus:outline-none"
+                            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto border-2 border-[#1d1d1b] bg-white p-1 shadow-[4px_4px_0_#1d1d1b] focus:outline-none"
                         >
                             {unlocked.map((badge) => {
                                 const isChosen = selected.includes(badge.id);

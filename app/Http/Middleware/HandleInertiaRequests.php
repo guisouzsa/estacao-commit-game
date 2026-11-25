@@ -110,7 +110,8 @@ class HandleInertiaRequests extends Middleware
         $authUser['cover'] = $actor->profile_cover && $request->routeIs('profile.*')
             ? AvatarUrl::forUser($actor, 'cover')
             : null;
-        $authUser['developer_badge'] = $actor->developer_badge
+        $authUser['is_verified'] = $actor->isVerified();
+        $authUser['developer_badge'] =$actor->developer_badge
             ? config('profiles.developer_badges.'.$actor->developer_badge)
             : null;
 

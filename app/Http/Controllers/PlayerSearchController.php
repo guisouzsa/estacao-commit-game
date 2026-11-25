@@ -24,13 +24,14 @@ class PlayerSearchController extends Controller
             })
             ->orderByRaw('LOWER(username)')
             ->limit(8)
-            ->get(['id', 'username', 'display_name', 'avatar', 'profile_frame', 'profile_title'])
+            ->get(['id', 'username', 'display_name', 'avatar', 'profile_frame', 'profile_title', 'verified_at'])
             ->map(fn (User $user) => [
                 'username' => $user->username,
                 'display_name' => $user->display_name ?: $user->username,
                 ...PlayerPresenter::avatarFields($user),
                 'profile_frame' => $user->profile_frame,
                 'profile_title' => $user->profile_title,
+                'is_verified' => $user->isVerified(),
             ]);
 
         return response()->json(['players' => $players]);

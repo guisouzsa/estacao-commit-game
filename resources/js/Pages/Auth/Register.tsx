@@ -38,7 +38,7 @@ export default function Register({
                 Prepare sua missão.
             </h1>
             <p className="text-ink/55 mt-3">
-                Seu username será sua identificação pública na estação.
+                Seu username é sua identidade pública.
             </p>
 
             {status && (
@@ -53,13 +53,10 @@ export default function Register({
                         href={route('google.redirect')}
                         className="border-ink mt-7 flex w-full items-center justify-center gap-3 border-2 bg-white px-4 py-3 font-bold shadow-[4px_4px_0_#464498] transition hover:-translate-y-0.5"
                     >
-                        <GoogleLogo className="size-5" /> <span>Continuar com Google</span>
+                        <GoogleLogo className="size-5" />{' '}
+                        <span>Continuar com Google</span>
                     </a>
-                    <p className="mt-3 text-xs leading-5 text-ink/55">
-                        Já tem conta com este e-mail? O Google entra direto nela. Não conseguiu? Use{' '}
-                        <Link href={route('login')} className="font-bold text-purple-700 hover:underline">e-mail e senha</Link>.
-                    </p>
-                    <Divider text="ou cadastre-se com e-mail" />
+                    <Divider text="ou com e-mail" />
                 </>
             )}
 
@@ -175,7 +172,7 @@ export default function Register({
                 </button>
             </form>
 
-            <p className="text-ink/55 mt-8 text-center text-sm">
+            <p className="text-ink/55 mt-5 text-center text-sm">
                 Já tem conta?{' '}
                 <Link
                     href={route('login')}

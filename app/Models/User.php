@@ -31,6 +31,12 @@ class User extends Authenticatable
             && in_array(strtolower((string) $this->email), config('profiles.admin_emails'), true);
     }
 
+    /** Selo de verificado (check azul). Concedido só pela conta administradora; não há campo de formulário. */
+    public function isVerified(): bool
+    {
+        return $this->verified_at !== null;
+    }
+
     protected static function booted(): void
     {
         static::creating(function (User $user): void {
@@ -81,6 +87,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'verified_at' => 'datetime',
             'email_code_expires_at' => 'datetime',
             'email_code_sent_at' => 'datetime',
             'email_code_attempts' => 'integer',

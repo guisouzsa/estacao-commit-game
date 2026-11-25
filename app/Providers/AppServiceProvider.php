@@ -68,6 +68,10 @@ class AppServiceProvider extends ServiceProvider
                 ]);
         });
 
+        Gate::define('manage-verified', static function (User $user): bool {
+            return $user->isLeader();
+        });
+
         Gate::define('manage-developer-badges', static function (User $user): bool {
             return $user->email_verified_at !== null
                 && in_array(strtolower($user->email), config('profiles.admin_emails'), true);

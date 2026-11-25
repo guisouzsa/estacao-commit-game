@@ -53,5 +53,6 @@ export type PageProps<
     };
     flash?: {
         toast?: ToastPayload | null;
+        auth_fallback?: boolean;
     };
 };

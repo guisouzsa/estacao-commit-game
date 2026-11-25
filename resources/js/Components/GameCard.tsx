@@ -82,6 +82,7 @@ export default function GameCard({
     dimmed = false,
     dataKey,
     onClick,
+    spare = false,
 }: {
     card: string;
     selected?: boolean;
@@ -92,6 +93,8 @@ export default function GameCard({
     /** Identifica a carta na mão (de onde a animação de jogada parte). */
     dataKey?: string;
     onClick?: () => void;
+    /** Seu percurso não usa mais esta carta (ou é uma cópia a mais): boa candidata para trocar. */
+    spare?: boolean;
 }) {
     const reduced = useReducedMotion();
     const meta = CARD_META[card] ?? { label: card, tone: '#464498' };
@@ -123,7 +126,7 @@ export default function GameCard({
             }
             transition={{ duration: 0.18 }}
             aria-pressed={selected}
-            aria-label={`${meta.label}${playable ? ', pode ser jogada' : ''}`}
+            aria-label={`${meta.label}${playable ? ', pode ser jogada' : ''}${spare ? ', sobrando: boa para trocar' : ''}`}
             className={`focus-visible:outline-3 relative shrink-0 overflow-hidden rounded-xl border-[3px] bg-[#f3f1ec] text-left shadow-[4px_5px_0_#10100f] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#b4da33] ${compact ? 'h-24 w-[4.25rem]' : 'aspect-[5/7] w-[min(5rem,var(--hand-w,5rem))] sm:w-[min(5.75rem,var(--hand-w,5.75rem))] lg:w-[min(calc(var(--hand-card-h,8.25rem)*0.715),var(--hand-w,99rem))]'} ${(onClick && !playable && !selected) || (dimmed && !selected) ? 'brightness-[.7]' : ''} ${selected ? 'border-[#b4da33]' : playable ? 'border-white' : 'border-[#1d1d1b]'} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
             style={{
                 transformOrigin: '50% 100%',
@@ -170,6 +173,15 @@ export default function GameCard({
                     className="absolute right-1 top-1 size-3 rounded-full border-2 border-[#1d1d1b] bg-[#b4da33]"
                     title="Jogada disponível"
                 />
+            )}
+            {spare && !playable && (
+                <span
+                    aria-hidden="true"
+                    className="absolute left-1 top-1 rounded-sm border border-[#1d1d1b] bg-[#f481c6] px-1 font-mono text-[7px] font-black uppercase leading-[12px] text-[#1d1d1b] sm:text-[8px]"
+                    title="Seu percurso não usa mais esta carta: boa para trocar"
+                >
+                    Sobrando
+                </span>
             )}
         </motion.button>
     );

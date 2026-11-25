@@ -155,6 +155,7 @@ Resumo da relação entre os provedores (implementação real em `config/mail.ph
 | `EMAIL_CODE_ATTEMPTS` | | `5` | `5` | tentativas antes de pedir um novo código |
 | `EMAIL_CODE_COOLDOWN` | | `60` | `60` | segundos entre reenvios |
 | `EMAIL_DNS_CHECK` | | `true` | `true` | rejeita domínios de e-mail que não recebem mensagens |
+| `MAIL_WELCOME` | | `true` | `true` | e-mails de boas-vindas e de Google vinculado (uma vez cada). `false` desliga os dois para poupar a cota |
 
 Presentes em `config/` mas **não usadas**: `POSTMARK_API_KEY`, `POSTMARK_MESSAGE_STREAM_ID`, `AWS_*` (SES/S3), `MAIL_URL`, `MAIL_LOG_CHANNEL`,
 `MAIL_EHLO_DOMAIN`, `MAIL_SENDMAIL_PATH`.

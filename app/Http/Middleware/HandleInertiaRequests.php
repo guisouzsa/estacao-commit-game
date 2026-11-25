@@ -66,6 +66,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'toast' => fn () => $request->session()->get('toast'),
+                // Entrada/cadastro falhou por erro inesperado: as telas oferecem um perfil temporário.
+                'auth_fallback' => fn () => (bool) $request->session()->get('auth_fallback'),
             ],
         ];
     }

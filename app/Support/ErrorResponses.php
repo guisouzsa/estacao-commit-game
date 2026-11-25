@@ -47,6 +47,29 @@ class ErrorResponses
             return $response;
         }
 
+        // Falha inesperada ao entrar ou se cadastrar (banco, provedor, bug...): ninguém fica parado sem
+        // caminho. Oferece um perfil temporário para jogar agora; a conta pode ser criada depois.
+        if ($status >= 500 && self::isAuthFlow($request) && ! self::isPlaying($request)) {
+            if (! $request->isMethod('GET')) {
+                return redirect()->route($request->is('login') ? 'login' : 'register')
+                    ->with('auth_fallback', true)
+                    ->with('toast', [
+                        'id' => (string) Str::uuid(),
+                        'tone' => 'error',
+                        'title' => 'Não conseguimos concluir agora',
+                        'message' => 'Tente de novo em instantes ou jogue já com um perfil temporário.',
+                    ]);
+            }
+
+            return Inertia::render('Error', [
+                'status' => $status,
+                'kind' => 'auth_unavailable',
+                'canDashboard' => false,
+                'message' => null,
+                'requestId' => $request->attributes->get('request_id'),
+            ])->toResponse($request)->setStatusCode($status);
+        }
+
         // Ação do Inertia (não é uma visita de página): aviso e volta.
         if ($request->header('X-Inertia') && ! $request->isMethod('GET')) {
             return back(fallback: route('dashboard'))->with('toast', [
@@ -156,6 +179,15 @@ class ErrorResponses
         }
 
         return $message;
+    }
+
+    /** Telas de entrada e cadastro (e-mail, código, Google, recuperação de senha). */
+    private static function isAuthFlow(Request $request): bool
+    {
+        return $request->is(
+            'login', 'register', 'verificar-email', 'verificar-email/*',
+            'auth/google', 'auth/google/*', 'forgot-password', 'reset-password', 'reset-password/*',
+        );
     }
 
     /** Há alguém jogando (conta ou visitante)? Define se oferecemos a Dashboard. */

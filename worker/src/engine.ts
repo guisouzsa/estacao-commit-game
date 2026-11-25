@@ -2,6 +2,8 @@
 // Puro (sem I/O): o Durable Object cuida de persistência, alarmes e avisos.
 // NÃO altera nenhuma regra: mesmas cartas, mesmo percurso, mesmos limites.
 
+import { chooseBotAction } from './bot.ts';
+
 export const MAX_PARTICIPANTS = 4;
 
 export const REQUIRED = [
@@ -153,22 +155,8 @@ export function botStep(m: MatchState, participants: Participant[], rng: Rng = c
   const bot = participants.find((p) => p.seat === m.current_seat && p.kind === 'bot');
   if (!bot) return false;
 
-  const player = m.players[String(bot.id)];
-  let action: ActionName = 'exchange';
-  let payload: ActionPayload = { card: player.hand[0] ?? '' };
-
-  if ((player.pending_discard ?? 0) > 0) {
-    action = 'discard_excess';
-  } else {
-    const required: string | undefined = REQUIRED[player.step];
-    if (required?.startsWith('block_')) {
-      action = 'play_block';
-      payload = {};
-    } else if (required !== undefined && player.hand.includes(required)) {
-      action = 'play_card';
-      payload = { card: required };
-    }
-  }
+  // A decisão usa só a mão do próprio bot e o estado público da mesa (ver bot.ts).
+  const { action, payload } = chooseBotAction(m, String(bot.id));
   act(m, bot.id, action, payload, rng, now);
 
   return true;

@@ -37,6 +37,27 @@ Regras de falha (iguais nos dois provedores):
 - No cadastro, se nada enviou, a tela de código diz isso e libera "Reenviar código" (espera curta de 10 s). Nada é afirmado como enviado sem confirmação do provedor.
 - O Resend gratuito, sem domínio verificado, só envia ao dono da conta. Para uso real é preciso verificar um domínio.
 
+#### E-mails de conta (cortesia)
+
+| E-mail | Classe | Quando | Quantas vezes |
+| --- | --- | --- | :-: |
+| Boas-vindas (versão e-mail ou Google) | `WelcomeMail` | evento `Registered`: conta criada por e-mail (com código, depois de confirmar) ou pelo Google | 1 por conta |
+| Conta Google vinculada | `GoogleLinkedMail` | `GoogleAuthController`: Google ligado pelo perfil, ou primeiro login com Google numa conta de e-mail | 1 por vínculo |
+
+- Quem envia é `App\Services\AccountEmails`: **uma tentativa**, só no **primeiro** provedor do `resilient` (o Brevo). Se ele falhar, o e-mail
+  não é enviado e o log registra `mail.welcome` ou `mail.google_linked` com `result: skipped` (sem endereço nem conteúdo). O Resend fica para o
+  essencial (código e recuperação de senha).
+- Nada aqui derruba o cadastro ou o login: o envio e as conquistas do cadastro ficam em `try/catch`.
+- Login comum, ou login com Google já vinculado, não envia nada. `MAIL_WELCOME=false` desliga os dois avisos (para poupar a cota diária).
+- Testes: `tests/Feature/WelcomeMailTest.php`.
+
+#### Falha inesperada ao entrar
+
+`App\Support\ErrorResponses`: um erro 5xx nas telas de entrada (login, cadastro, código, Google, recuperação de senha), para quem ainda não
+entrou, não vira um beco sem saída. Em ações (POST) a pessoa volta à tela com um aviso e o botão **"Jogar com perfil temporário"**
+(`flash.auth_fallback`, exibido pelo `GuestLayout`). Ao abrir a página (GET), aparece a página de erro `auth_unavailable` com o mesmo botão.
+Limite: se o próprio banco estiver fora do ar, a sessão também cai e o perfil temporário não consegue ser criado.
+
 Para trocar de provedor: ver `MANUTENCAO/GUIA-DE-MANUTENCAO.md`, seção 5.3.
 
 ## 2. Multiplayer
@@ -404,3 +425,34 @@ Nesta rodada: as etiquetas do perfil (título, selo principal, "Líder" e selo d
 - **Como usar:** página `/configuracoes` (engrenagem ao lado de "Sair"), caixa "Verificar jogadores": pesquisa pelo nome e concede ou remove. Cada alteração grava o evento `verified.changed` (quem e para quem, sem e-mails).
 - **Ligar a permissão (uma vez, no banco):** `update users set can_grant_verified = true, verified_at = now() where lower(username) = '<seu-usuario>';`
 - **Testes:** `tests/Feature/VerifiedBadgeTest.php` e `tests/Feature/Security/PrivacyAndTamperAuditTest.php` (vitórias não alteráveis, exclusão só da própria conta, nenhum dado privado em listagens, ninguém se concede selo).
+
+## 17. Equilíbrio entre humanos e bots (auditoria e simulações)
+
+**Ferramenta:** `worker/sim/balance.ts` roda partidas completas no motor real do Worker (com paridade provada com o PHP) e com semente fixa. Não roda em produção nem nos testes automáticos.
+`cd worker && node --experimental-transform-types sim/balance.ts 3000 20261128 bots` (grupos: `bots`, `draw`, `check`). Os números abaixo são de 3.000 partidas por cenário (IC95 de cerca de ±1,6 ponto).
+
+**Causa da baixa vitória humana:** o baralho e o motor são simétricos. Um humano que joga a carta da vez e troca uma carta qualquer vence **25,6%** contra três bots antigos (a parte justa em 1 contra 3). O que derrubava o humano era **perder a vez**: o tutorial abria a cada partida em cima da própria vez, com o relógio de 25 s correndo. Perdendo 3 vezes no início, a vitória cai para 14,1%; perdendo 10% das vezes por tempo, 16,3%; com os dois, 8,9%. Os bots nunca perdem a vez.
+
+**Bots:** antes, quem não tinha a carta da vez trocava sempre a carta mais antiga da mão (`hand[0]`) e nunca usava cartas especiais. Agora (`App\Services\BotBrain` e `worker/src/bot.ts`, espelhos exatos, cobertos por `tests/parity`):
+- trocam ou descartam a carta que o percurso não usa mais, ou a cópia além do que falta, e guardam a que vão usar antes;
+- usam Merge Conflict só contra o líder perto do fim (etapa 12 ou mais) e Limpar Credenciais só dentro da regra do Treinamento;
+- só olham a própria mão e o estado público (etapa e percurso de cada um, quem está bloqueado); nunca as mãos alheias, o baralho ou o descarte (`BotBrainTest::test_it_never_uses_hidden_information`). O desempate do alvo é "quem joga logo depois", e nenhum assento fixo é favorecido.
+
+Resultado: o bot novo vence 55,6% contra três bots antigos, e 4 bots novos dividem 25,1/24,8/25,9/24,3%.
+
+**Mesma informação para o humano:** a mão marca **Sobrando** nas cartas que o próprio percurso não usa mais (`resources/js/lib/cardAdvice.ts`, a mesma regra do bot, calculada só com a mão e a etapa de quem joga). Seguindo essa dica, o humano vence **25,5%** contra três bots novos (2 humanos contra 2 bots: 24,4/24,5 × 25,4/25,6). Quem troca ao acaso continua perdendo mais (7,7%): é diferença de jogada, não de regra.
+
+**Tutorial:** continua abrindo uma vez por partida, mas espera a vez da pessoa passar. Se a vez dela chegar com o tutorial aberto, aparece "É a sua vez · Ns · Jogar agora".
+
+**Distribuição de cartas (abordagens comparadas, aplicadas a todos igualmente):**
+
+| Abordagem | Mediana de turnos | Maior seca | Humano casual × 3 bots antigos | × 3 bots novos |
+| --- | :-: | :-: | :-: | :-: |
+| A — aleatória (atual) | 106 | 21–23 | 25,6% | 7,9% |
+| B — ponderada 25% (puxa a carta da etapa se estiver entre as 8 do topo) | 95 | 16–20 | 25,3% | 10,4% |
+| B — ponderada 50% | 85 | 14 | 24,4% | 13,4% |
+| C — adaptativa (só após 4 vezes sem progresso) | 102 | 13–16 | 23,4% | 8,3% |
+
+B e C não mudam o equilíbrio entre humano e bot (valem para todos); só encurtam a partida (B) ou as secas longas (C), em troca de manipular a ordem do baralho. **Decisão: manter A.** A desvantagem real vinha de vezes perdidas e da escolha da troca, e as duas foram tratadas sem mexer no baralho. Se no futuro a duração da partida incomodar, B com 25% é a opção com menor efeito colateral.
+
+**Pendências:** não existem níveis de dificuldade (todos os bots usam o mesmo cérebro). O prazo de 25 s por vez continua: é a maior fonte restante de vezes perdidas para quem é novo no jogo.

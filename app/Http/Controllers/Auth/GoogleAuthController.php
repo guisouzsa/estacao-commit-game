@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\GoogleLinkedMail;
 use App\Models\User;
+use App\Services\AccountEmails;
 use App\Support\OpsLog;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -136,6 +138,7 @@ class GoogleAuthController extends Controller
             $user->forceFill(['remember_token' => Str::random(60)]);
         }
 
+        $newlyLinked = $user->google_id === null;
         $user->google_id = $googleId;
         $user->email_verified_at ??= now();
 
@@ -147,6 +150,11 @@ class GoogleAuthController extends Controller
             }
 
             throw $exception;
+        }
+
+        // Aviso de segurança: este e-mail passou a entrar também pelo Google.
+        if ($newlyLinked) {
+            app(AccountEmails::class)->googleLinked($user, GoogleLinkedMail::HOW_SIGN_IN);
         }
 
         Auth::login($user);
@@ -178,6 +186,7 @@ class GoogleAuthController extends Controller
             );
         }
 
+        $newlyLinked = $user->google_id !== $googleId;
         $user->google_id = $googleId;
 
         if (Str::lower($user->email) === $email) {
@@ -192,6 +201,9 @@ class GoogleAuthController extends Controller
             }
 
             throw $exception;
+        }
+        if ($newlyLinked) {
+            app(AccountEmails::class)->googleLinked($user, GoogleLinkedMail::HOW_SETTINGS);
         }
         $request->session()->regenerate();
 

@@ -20,7 +20,8 @@ type Kind =
     | 'bad_gateway'
     | 'maintenance'
     | 'gateway_timeout'
-    | 'http_version';
+    | 'http_version'
+    | 'auth_unavailable';
 
 const COPY: Record<Kind, { title: string; body: string; retry?: boolean }> = {
     invite: {
@@ -103,6 +104,10 @@ const COPY: Record<Kind, { title: string; body: string; retry?: boolean }> = {
         body: 'Sua solicitação pode ainda estar sendo processada. Atualize para conferir o estado real antes de repetir a ação.',
         retry: true,
     },
+    auth_unavailable: {
+        title: 'Não conseguimos concluir sua entrada agora.',
+        body: 'Tivemos um problema inesperado do nosso lado. Enquanto isso, jogue com um perfil temporário, sem e-mail e sem senha. Depois é só criar sua conta.',
+    },
     http_version: {
         title: 'Seu navegador não conseguiu conversar com o servidor.',
         body: 'Atualize o navegador ou tente novamente usando uma versão mais recente.',
@@ -180,12 +185,19 @@ export default function Error({
                         </Link>
                     ) : (
                         <Link className={primary} href={route('guest.create')}>
-                            Jogar agora
+                            {kind === 'auth_unavailable'
+                                ? 'Jogar com perfil temporário'
+                                : 'Jogar agora'}
                         </Link>
                     )}
                     <Link className={secondary} href="/">
                         Voltar ao início
                     </Link>
+                    {kind === 'auth_unavailable' && (
+                        <Link className={secondary} href={route('login')}>
+                            Tentar entrar de novo
+                        </Link>
+                    )}
                     {canDashboard && kind === 'room' && (
                         <Link
                             className={secondary}

@@ -15,6 +15,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { AREAS, sideOf } from '@/lib/gameGeometry';
 import { startRoomSync } from '@/lib/roomSync';
 import { toast } from '@/lib/toast';
+import { spareCardIndexes } from '@/lib/cardAdvice';
 import { claimTutorial } from '@/lib/tutorialOnce';
 import { Head, router } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -153,6 +154,7 @@ export default function Show({
     }, []);
     const [leaving, setLeaving] = useState(false);
     const [tutorial, setTutorial] = useState(false);
+    const [tutorialPending, setTutorialPending] = useState(false);
     // "Como jogar" abre sozinho ao ENTRAR numa partida nova. A decisão é por id da partida
     // (lib/tutorialOnce): re-renderizações, reconexões e atualizações do estado multiplayer
     // nunca o reabrem; só o botão "Como jogar" abre de novo.
@@ -164,7 +166,7 @@ export default function Show({
             game.turn_number <= 6 &&
             claimTutorial(game.id)
         )
-            setTutorial(true);
+            setTutorialPending(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [game.id]);
     const [historyOpen, setHistoryOpen] = useState(false);
@@ -179,6 +181,14 @@ export default function Show({
     );
     const isTurn =
         game.status === 'active' && game.current_seat === viewer.seat;
+    // O relógio da vez (25 s) não para enquanto se lê o tutorial, e os bots não leem nada: abrir o
+    // tutorial em cima da SUA vez fazia perder rodadas logo no começo. Ele espera a sua vez passar.
+    useEffect(() => {
+        if (tutorialPending && !isTurn) {
+            setTutorialPending(false);
+            setTutorial(true);
+        }
+    }, [tutorialPending, isTurn]);
     const currentPlayer = participants.find(
         (participant) => participant.seat === game.current_seat,
     );
@@ -215,9 +225,13 @@ export default function Show({
                 (card === 'git_pull' && viewer.step < 3) ||
                 ['clear_credentials', 'merge_conflict'].includes(card),
         );
+    // Mesma informação que o bot usa para decidir o que trocar, só com a sua mão e a sua etapa.
+    const spare = spareCardIndexes(hand, viewer.step);
     const turnHint = canPlayNow
         ? 'Você tem cartas para jogar!'
-        : 'Sem jogada? Troque uma carta — conta como sua vez';
+        : spare.size > 0
+          ? 'Sem jogada? Troque uma carta marcada como Sobrando'
+          : 'Sem jogada? Troque uma carta — conta como sua vez';
     const isPlayable = (card: string) =>
         isTurn &&
         (card === requiredCard ||
@@ -848,6 +862,7 @@ export default function Show({
                                                 }
                                                 playable={isPlayable(card)}
                                                 selected={selected === index}
+                                                spare={spare.has(index)}
                                             />
                                         ))}
                                 </AnimatePresence>
@@ -950,6 +965,7 @@ export default function Show({
             <MissionTutorial
                 onClose={() => setTutorial(false)}
                 show={tutorial}
+                turnSecondsLeft={isTurn ? (secondsLeft ?? null) : null}
             />
             <FlightLayer flights={flights} onDone={finishFlight} />
 

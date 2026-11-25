@@ -40,7 +40,7 @@ class EmailCodeVerificationTest extends TestCase
         $this->assertFalse(EmailVerificationCode::enabled());
 
         $this->register()->assertRedirect(route('dashboard', absolute: false));
-        Mail::assertNothingSent();
+        Mail::assertNotSent(EmailCodeMail::class); // sem código; só as boas-vindas da conta criada
         $this->assertSame(1, User::count());
     }
 

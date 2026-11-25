@@ -134,7 +134,7 @@ Documento técnico completo: [`ARQUITETURA.md`](ARQUITETURA.md).
 | **Início da partida** | Laravel (`GameMatchController@start`): exige 4 participantes; motor PHP **ou** Worker, conforme `GAME_ENGINE` |
 | **Distribuição das cartas** | motor do jogo: cada jogador recebe o Git Login + 3 cartas comuns e o Bloco 1 |
 | **Turnos e ações** | uma ação por vez, na vez de quem joga: `POST` com `action_uuid` (idempotência) e `version` (concorrência) |
-| **Bots** | um passo por pedido, na vez do bot, no ritmo do cliente; nunca fora de ordem |
+| **Bots** | um passo por pedido, na vez do bot, no ritmo do cliente; nunca fora de ordem. Decidem com `BotBrain` (PHP) / `bot.ts` (Worker): só a própria mão e o estado público ([seção 17](ARQUITETURA.md#17-equilíbrio-entre-humanos-e-bots-auditoria-e-simulações)) |
 | **Timeout** | vez de humano de 25 s; 3 seguidos removem o jogador e um bot assume o lugar. Relógio do servidor, resolvido também pelo comando agendado |
 | **Vitória** | Pull Request válida encerra a partida; resultado gravado em `match_results` (idempotente) |
 | **Histórico e ranking** | ranking geral (estatísticas da conta) e semanal/mensal (de `match_results`); só quem tem vitórias aparece |

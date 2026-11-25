@@ -131,23 +131,8 @@ class GameEngine
             return false;
         }
 
-        $state = $match->state;
-        $player = $state['players'][(string) $bot->id];
-        $action = 'exchange';
-        $payload = ['card' => $player['hand'][0] ?? ''];
-
-        if (($player['pending_discard'] ?? 0) > 0) {
-            $action = 'discard_excess';
-        } else {
-            $required = self::REQUIRED[$player['step']] ?? null;
-            if (str_starts_with((string) $required, 'block_')) {
-                $action = 'play_block';
-                $payload = [];
-            } elseif ($required !== null && in_array($required, $player['hand'], true)) {
-                $action = 'play_card';
-                $payload = ['card' => $required];
-            }
-        }
+        // A decisão usa só a mão do próprio bot e o estado público da mesa (ver BotBrain).
+        ['action' => $action, 'payload' => $payload] = app(BotBrain::class)->decide($match->state, (string) $bot->id);
 
         $this->act($match, $bot, $action, $payload, (string) Str::uuid());
 

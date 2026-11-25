@@ -7,7 +7,7 @@
 | Documento | Para quê |
 | --- | --- |
 | [`PROJETO.md`](PROJETO.md) | visão geral: o que é, tecnologias, arquitetura, pastas, fluxo do jogo e segurança |
-| [`ARQUITETURA.md`](ARQUITETURA.md) | técnico: mapa de autenticação, multiplayer e timeouts, quedas de serviço, processos, paridade PHP × Worker, observabilidade, banco, baralho, conquistas, contas temporárias e padrão visual |
+| [`ARQUITETURA.md`](ARQUITETURA.md) | técnico: mapa de autenticação, e-mails de conta e falhas na entrada, multiplayer e timeouts, quedas de serviço, processos, paridade PHP × Worker, observabilidade, banco, baralho, conquistas, contas temporárias, padrão visual e **equilíbrio entre humanos e bots** (seção 17) |
 
 ## Deploy
 
@@ -24,6 +24,7 @@
 | --- | --- |
 | [`DESENVOLVIMENTO/INSTALACAO-LOCAL.md`](DESENVOLVIMENTO/INSTALACAO-LOCAL.md) | requisitos, instalação, comandos e testes |
 | [`../worker/README.md`](../worker/README.md) | detalhes técnicos do Worker (segurança, fases, limites) |
+| [`../worker/sim/balance.ts`](../worker/sim/balance.ts) | simulador de equilíbrio (partidas completas no motor real, com semente fixa) |
 
 ## Manutenção
 

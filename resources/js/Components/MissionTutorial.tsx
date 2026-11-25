@@ -262,9 +262,12 @@ function StepBody({ step }: { step: number }) {
 export default function MissionTutorial({
     show,
     onClose,
+    turnSecondsLeft = null,
 }: {
     show: boolean;
     onClose: () => void;
+    /** Segundos da SUA vez enquanto o tutorial está aberto (null = não é a sua vez). */
+    turnSecondsLeft?: number | null;
 }) {
     const [step, setStep] = useState(0);
     const closeRef = useRef<HTMLButtonElement>(null);
@@ -291,6 +294,17 @@ export default function MissionTutorial({
                             {STEPS[step].title}
                         </h2>
                     </div>
+                    {turnSecondsLeft !== null && (
+                        // O relógio da vez não para por causa do tutorial: avisa e deixa jogar na hora.
+                        <button
+                            className="ml-auto flex min-h-10 shrink-0 animate-pulse items-center gap-2 border-2 border-[#1d1d1b] bg-[#b4da33] px-3 font-mono text-[11px] font-black uppercase text-[#1d1d1b] motion-reduce:animate-none"
+                            onClick={finish}
+                            role="alert"
+                            type="button"
+                        >
+                            É a sua vez · {turnSecondsLeft}s · Jogar agora
+                        </button>
+                    )}
                     <button
                         aria-label="Fechar tutorial"
                         className="grid size-10 shrink-0 place-items-center border-2 border-white/40 font-mono text-xl hover:border-[#b4da33]"

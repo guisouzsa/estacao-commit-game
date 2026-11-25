@@ -1,5 +1,6 @@
 import BrandLogo from '@/Components/BrandLogo';
-import { Link } from '@inertiajs/react';
+import { PageProps } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren } from 'react';
 
 function AuthBrand({ dark = false }: { dark?: boolean }) {
@@ -14,6 +15,8 @@ export default function Guest({
     children,
     wide = false,
 }: PropsWithChildren<{ wide?: boolean }>) {
+    const fallback = usePage<PageProps>().props.flash?.auth_fallback;
+
     return (
         <main className="bg-ink min-h-[100dvh] p-2 text-white sm:p-4 lg:h-[100dvh] lg:overflow-hidden">
             <div className="relative mx-auto grid min-h-[calc(100dvh-1rem)] w-full max-w-[1500px] border-[3px] border-black bg-[#151515] shadow-[6px_6px_0_#464498] sm:min-h-[calc(100dvh-2rem)] lg:h-[calc(100dvh-2rem)] lg:min-h-0 lg:grid-cols-[.9fr_1.1fr]">
@@ -46,6 +49,28 @@ export default function Guest({
                         <div className="border-ink/15 mb-10 border-b-2 pb-6 lg:hidden">
                             <AuthBrand dark />
                         </div>
+                        {fallback && (
+                            <div
+                                className="mb-6 border-2 border-[#1d1d1b] bg-[#b4da33]/30 p-4 text-sm leading-6"
+                                role="alert"
+                            >
+                                <p className="font-black">
+                                    Não conseguimos concluir agora.
+                                </p>
+                                <p className="mt-1 text-[#393833]">
+                                    Foi um problema do nosso lado, não dos seus
+                                    dados. Tente de novo em instantes ou jogue já
+                                    com um perfil temporário, sem e-mail e sem
+                                    senha.
+                                </p>
+                                <Link
+                                    className="mt-3 inline-flex min-h-11 items-center border-2 border-[#1d1d1b] bg-[#b4da33] px-4 font-mono text-xs font-black uppercase shadow-[3px_3px_0_#1d1d1b]"
+                                    href={route('guest.create')}
+                                >
+                                    Jogar com perfil temporário
+                                </Link>
+                            </div>
+                        )}
                         {children}
                     </div>
                 </section>

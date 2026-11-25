@@ -20,7 +20,7 @@ Jogo de tabuleiro multiplayer para aprender e praticar o fluxo de trabalho com G
 ## Sumário
 
 1. [Sobre o projeto](#sobre-o-projeto)
-2. [Como jogar](#como-jogar): [tabuleiro](#o-tabuleiro), [cartas](#as-cartas), [turno](#como-é-um-turno) e [conflitos](#conflitos-entre-jogadores)
+2. [Como jogar](#como-jogar): [tabuleiro](#o-tabuleiro), [cartas](#as-cartas) (detalhe de cada uma), [turno](#como-é-um-turno) e [conflitos](#conflitos-entre-jogadores)
 3. [Funcionalidades](#funcionalidades)
 4. [Tecnologias e arquitetura](#tecnologias-e-arquitetura)
 5. [Instalação e execução](#instalação-e-execução)
@@ -31,6 +31,7 @@ Jogo de tabuleiro multiplayer para aprender e praticar o fluxo de trabalho com G
 10. [Deploy](#deploy)
 11. [Segurança](#segurança)
 12. [Contribuição](#contribuição)
+13. [Autoria e créditos](#autoria-e-créditos)
 
 > **Documentação:** o índice completo está em [`docs/README.md`](docs/README.md) (visão geral em [`docs/PROJETO.md`](docs/PROJETO.md),
 > deploy no Render, variáveis de ambiente, rotinas agendadas e Cloudflare em [`docs/DEPLOY/`](docs/DEPLOY/)).
@@ -56,7 +57,9 @@ infraestrutura em tempo real: **Laravel Reverb** (padrão, dentro do contêiner)
 
 ## Como jogar
 
-Cada partida tem **quatro participantes** (pessoas ou bots). Vence quem concluir primeiro o percurso de 18 etapas e jogar a **Pull Request**.
+Cada partida tem **quatro participantes** (pessoas ou bots) e é jogada **por turnos: um jogador de cada vez**, bots inclusive.
+Vence quem concluir primeiro o percurso de 18 etapas e jogar a **Pull Request**: a partida termina na hora, sem esperar os demais.
+As regras oficiais (PDF fechado, tabuleiro e cartas originais) estão em [`docs/JOGO/`](docs/JOGO/); a aplicação segue esse documento.
 
 ### O tabuleiro
 
@@ -77,86 +80,131 @@ O percurso de cada jogador é o mesmo, sempre nesta ordem:
 
 | Fase | Etapas | O que acontece |
 | --- | --- | --- |
-| **Treinamento** | `Git Login` → `Git Clone` → `Git Checkout` | primeiras 3 etapas; é a única fase em que `Limpar Credenciais` funciona e em que `Git Pull` é um curinga |
-| **Desenvolvimento** | `Bloco N` → `git add` → `git commit` (4 vezes) | os **Blocos de Código** são peças do tabuleiro: não são cartas e entram sozinhos entre os ciclos de `add` e `commit` |
-| **Entrega** | `git pull` → `git push` → `Pull Request` | a última etapa conclui a partida |
+| **Treinamento** (etapas 1 a 3) | `Git Login` → `git clone` → `git checkout -b` | é a única fase em que `Limpar Credenciais` funciona e em que `git pull` é um curinga |
+| **Desenvolvimento** (etapas 4 a 15) | `Bloco N` → `git add .` → `git commit`, quatro vezes | os **Blocos de Código** são peças do tabuleiro, não do baralho: entram sozinhos entre os ciclos |
+| **Entrega** (etapas 16 a 18) | `git pull` → `git push` → `Pull Request` | a última etapa conclui a partida |
 
-Ao todo são **18 etapas**. Cada jogador avança pela própria trilha, e o painel mostra o progresso de todos.
+Ao todo são **18 etapas** (3 + 4 × 3 + 3). Cada jogador avança pela própria trilha e o painel mostra o progresso de todos, com a etiqueta de quem está jogando.
+No computador o tabuleiro cabe na tela sem rolagem; no celular a partida tem layout próprio.
 
 ### As cartas
 
-O baralho tem 83 cartas no total (composição em `config/game.php`). As 4 cópias de `Git Login` são entregues uma a cada jogador (não entram no baralho de compra); sobram **67 cartas** para comprar. A matemática do baralho está em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 12.
+O baralho tem **83 cartas**. As 4 cópias de `Git Login` não entram na compra: cada jogador **começa a partida com uma**. Restam **67 cartas**
+para comprar, e a composição vem de [`config/game.php`](config/game.php) (chave `deck`). Por que esses números e quais chances eles dão:
+[`docs/ARQUITETURA.md`, seção 12](docs/ARQUITETURA.md#12-baralho-matemática-e-justiça).
 
-| Carta | Qtd. | Para que serve |
-| --- | :-: | --- |
-| **Git Login** | 4 | primeira etapa do percurso; **todos começam a partida com uma** |
-| **git clone** | 10 | segunda etapa do percurso |
-| **git checkout -b** | 10 | terceira etapa do percurso |
-| **git add .** | 18 | prepara as mudanças dentro de cada ciclo de desenvolvimento |
-| **git commit** | 18 | registra as mudanças e fecha o ciclo |
-| **git pull** | 6 | etapa de entrega; durante o **Treinamento** vira curinga e compra 2 cartas |
-| **git push** | 8 | envia o trabalho, logo depois do `pull` |
-| **Pull Request** | 5 | última etapa: jogá-la **vence a partida** |
-| **Limpar Credenciais** | 2 | ataque: manda um adversário **em Treinamento** de volta ao início |
-| **Merge Conflict** | 2 | ataque: o alvo **perde a próxima vez** |
+| Carta | Qtd. | Etapa | Detalhes |
+| --- | :-: | :-: | --- |
+| **Git Login** | 4 | 1 | primeira etapa; **uma por jogador, entregue na mão inicial**, fora do baralho de compra |
+| **git clone** | 10 | 2 | segunda etapa do Treinamento |
+| **git checkout -b** | 10 | 3 | terceira etapa do Treinamento; fecha a fase |
+| **git add .** | 18 | meio de cada ciclo | prepara as mudanças do bloco recém-encaixado |
+| **git commit** | 18 | fim de cada ciclo | registra as mudanças; depois dele chega o próximo bloco |
+| **git pull** | 6 | 16 | abre a Entrega. Durante o **Treinamento** vira **curinga** e compra 2 cartas |
+| **git push** | 8 | 17 | envia o trabalho; só vale depois do `pull` |
+| **Pull Request** | 5 | 18 | última etapa: jogá-la **vence a partida** |
+| **Limpar Credenciais** | 2 | ataque | manda um adversário **em Treinamento** de volta ao início |
+| **Merge Conflict** | 2 | ataque | o alvo **perde a próxima vez** |
+| **Blocos de Código 1 a 4** | 4 | peças | não são cartas de compra: o bloco da vez já fica na mão, e o seguinte chega ao jogar o atual |
+
+**Detalhes de cada carta**
+
+- **Git Login.** Todos começam com ela, então ninguém precisa "sortear" a primeira etapa. É a regra mais recente do jogo: antes, a abertura dependia do acaso.
+- **git clone e git checkout -b.** São as cartas mais disputadas do começo (10 cópias cada). Ficam no baralho de propósito em maior número para que o Treinamento não vire espera.
+- **git add . e git commit.** São 18 cópias de cada para 16 necessárias na mesa (4 jogadores × 4 ciclos), de modo que sempre há folga. O `commit` é o que libera o próximo bloco.
+- **git pull.** Tem dois papéis: etapa da Entrega e **curinga no Treinamento** (quem está no Treinamento pode usá-lo para comprar 2 cartas e acelerar).
+- **git push.** Só 8 cópias: são necessárias 4, e o excesso antigo (16) deixava o baralho cheio de cartas quase mortas.
+- **Pull Request.** Cinco cópias para quatro jogadores; cada carta tem arte própria. Quem a joga **na ordem certa** encerra a partida e aparece a tela de vitória.
+- **Limpar Credenciais.** Só alcança quem ainda está nas etapas 1 a 3. O alvo perde o que já jogou no Treinamento e volta ao início. O jogador escolhe o alvo no seletor de alvos.
+- **Merge Conflict.** O alvo **perde a próxima vez**. Não acumula: um jogador só pode ter um conflito marcado por vez.
+- **Blocos de Código.** São quatro (1 a 4), cada um com cor e arte próprias. Não podem ser trocados. Ao encaixar um, o seguinte é entregue; depois do Bloco 4, o jogador compra 1 carta comum.
+
+A arte das cartas está em [`public/images/estacao-commit/corrected/`](public/images/estacao-commit/corrected/) (PNG e WebP) e é desenhada pelo componente
+[`GameCard.tsx`](resources/js/Components/GameCard.tsx) (rótulo, imagem e cor de cada carta). As cartas originais impressas estão em
+[`docs/JOGO/cartas.pdf`](docs/JOGO/cartas.pdf) e [`docs/JOGO/extracartas.pdf`](docs/JOGO/extracartas.pdf).
 
 ### Como é um turno
 
-1. A mão inicial tem **4 cartas**: o `Git Login` e outras 3 sorteadas.
-2. Na sua vez, você faz **uma** destas ações:
-   - **Jogar a carta da próxima etapa** do percurso (se estiver na mão). Depois de jogar, você compra 1 carta.
+1. **Mão inicial: 5 cartas.** `Git Login`, 3 cartas comuns sorteadas e o **Bloco de Código** da vez.
+2. Na sua vez (**25 segundos** para quem é humano), você faz **uma** destas ações:
+   - **Jogar a carta da próxima etapa** do percurso, se estiver na mão. Depois de jogar, você compra 1 carta.
    - **Encaixar o Bloco de Código**, quando a próxima etapa é um bloco.
-   - **Trocar uma carta**: devolve uma carta da mão e compra outra. Isso encerra a vez. A carta nova **é sorteada**: o jogo evita devolver a mesma carta e evita formar trincas, mas não entrega a carta que você quer.
+   - **Trocar uma carta:** descarta exatamente 1 e compra 1. **Conta como a jogada do turno** e passa a vez. A carta nova é sorteada: o jogo evita devolver a mesma e evita formar trincas, mas não entrega a carta que você quer.
    - **Atacar** com `Limpar Credenciais` ou `Merge Conflict`, escolhendo o alvo.
-3. A mão tem **limite de 6 cartas**. Se passar disso, descarte o excesso antes de terminar a vez.
-4. Cada jogador, bots inclusive, joga a própria vez, uma jogada por vez. Se alguém ficar inativo, um bot assume o lugar.
+3. A mão aceita **no máximo 6 cartas comuns**. Se passar disso, descarte o excesso antes de terminar a vez.
+4. **Tempo e inatividade:** se os 25 s acabarem, a vez é pulada. Com **3 timeouts seguidos** (sem nenhuma jogada válida no meio), o jogador sai e **um bot assume o lugar** com a mesma mão e o mesmo percurso. Uma queda curta de rede não remove ninguém. Regras completas:
+   [`docs/ARQUITETURA.md`, seção 2](docs/ARQUITETURA.md#2-multiplayer).
+5. **Bots** jogam um passo por vez, na vez deles, sem prazo e sem nunca gerar timeout. Se todos os humanos saírem, a sala é destruída.
 
 ### Conflitos entre jogadores
 
-- **Limpar Credenciais:** só vale entre jogadores que ainda estão no **Treinamento** (etapas 1 a 3). O alvo perde o que já tinha jogado e volta ao início.
+- **Limpar Credenciais:** só vale contra jogadores ainda no **Treinamento** (etapas 1 a 3). O alvo perde o que já tinha jogado e volta ao início.
 - **Merge Conflict:** marca o alvo, que **perde a próxima vez**. Só um conflito por vez em cada jogador.
-- Ambos são descartados depois de usados, e você compra 1 carta.
+- Ambos são descartados depois de usados, e quem atacou compra 1 carta.
 
-O tutorial interativo dentro da aplicação é a referência visual completa para cartas, fases e conflitos.
+### Tutorial dentro do jogo
+
+O **tutorial narrativo "Você é um estagiário!"** (`MissionTutorial`) ensina o percurso, as cartas e os conflitos em uma pequena missão, e o botão
+"Como jogar" fica disponível a qualquer momento. É a referência visual completa para quem está começando.
 
 ---
-
 ## Funcionalidades
+
+Resumo de tudo o que foi construído, com o link para a parte da documentação que detalha cada assunto.
 
 ### Jogo multiplayer
 
-- Salas para exatamente quatro participantes, com bots preenchendo os lugares vazios.
-- Convites por código e por link.
-- Jogadas idempotentes (uma jogada repetida não conta duas vezes) e proteção contra jogadas fora de ordem.
-- Atualização em tempo real, com polling de reserva.
-- Substituição de jogador inativo por bot; tela de vitória; histórico de resultados.
-- Limpeza automática de salas vazias e encerradas.
+Detalhes técnicos: [`docs/ARQUITETURA.md`, seção 2](docs/ARQUITETURA.md#2-multiplayer).
+
+- **Salas para quatro participantes.** O anfitrião cria a sala por um **modal guiado** (`RoomCreationModal`), escolhendo amigos e bots; os lugares vazios são preenchidos por bots (até 3 por sala, catálogo em [`config/bots.php`](config/bots.php)).
+- **Convites** por código e por link. A busca de sala por código (`JoinByCodeForm`) pode ser **cancelada**, e o link de convite entra na sala automaticamente.
+- **Jogadas seguras.** Cada jogada leva um `action_uuid` (uma jogada repetida não conta duas vezes) e uma `version` (jogada fora de ordem recebe 409 e o cliente relê o estado). O servidor é a única autoridade: o navegador não decide nada.
+- **Um jogador por vez, com relógio do servidor.** 25 s por vez humana; 3 timeouts seguidos removem o jogador e um bot assume. O varredor `games:sweep` resolve vezes paradas **mesmo com todas as páginas fechadas**.
+- **Bots** que jogam um passo por pedido, com pausa de 700 ms para dar tempo de ver a jogada.
+- **Saída e anfitrião.** O anfitrião pode sair: o comando passa ao próximo humano (nunca a um bot). Sair no meio da partida entrega o lugar a um bot; sem humanos, a sala é destruída (`RoomLeaveService`).
+- **Interface de partida:** tabuleiro 3D, cartas animadas, carta voando do baralho, bloco novo entrando, etiqueta "quem está jogando", log da partida, seletor de alvo e tela de vitória (componentes em [`resources/js/Components/game/`](resources/js/Components/game/)). Respeita `prefers-reduced-motion`.
+- **Estado "jogando"** exibido no perfil e nas listas de quem está em partida.
+- **Limpeza automática** de salas vazias, expiradas e encerradas, sem perder resultados. Veja [Rotinas agendadas](#rotinas-agendadas).
 
 ### Contas e autenticação
 
-- Cadastro e login por **e-mail e senha**.
-- **Verificação de e-mail por código** de 6 dígitos (opcional, `EMAIL_VERIFICATION`): a conta só é criada depois de digitar o código.
-- Recuperação e alteração de senha, com e-mails personalizados com a identidade do jogo.
-- **Entrar com Google**: quem já tem conta com o mesmo e-mail entra direto, e novos jogadores escolhem o username.
-- **Conta temporária** sem cadastro (visitante), que expira após inatividade.
-- Trocar a senha encerra as outras sessões.
+Mapa completo de rotas, controllers e pontos de atenção: [`docs/ARQUITETURA.md`, seção 1 (Mapa da autenticação)](docs/ARQUITETURA.md#1-mapa-da-autenticação).
+
+- **Cadastro e login** por e-mail e senha, com limitação de tentativas (10/min), validação do nome (`PlayerNameAllowed`) e do domínio do e-mail, e unicidade sem diferenciar maiúsculas.
+- **Verificação por código de 6 dígitos** (opcional, `EMAIL_VERIFICATION`): a conta **só é criada depois do código**. O código é guardado apenas como hash, com validade, limite de tentativas e intervalo de reenvio.
+- **Recuperação e troca de senha** com e-mails da marca. A resposta é idêntica para e-mails existentes ou não (sem enumeração) e **trocar a senha encerra as outras sessões**.
+- **Entrar com Google:** quem já tem conta com o mesmo e-mail entra direto; novos jogadores escolhem o username.
+- **E-mail resiliente:** Brevo como principal e Resend como reserva **só se o Brevo estiver fora do ar**. Detalhes em [E-mail e resiliência](docs/ARQUITETURA.md#e-mail-e-resiliência).
+- **Contas temporárias (visitantes)** sem cadastro, por cookie HttpOnly com token em hash, com prazo de inatividade e teto absoluto de dias. Auditoria: [seção 14](docs/ARQUITETURA.md#14-contas-temporárias-auditoria).
 
 ### Perfis e comunidade
 
-- Perfil público com avatar, banner, bio, links, molduras, fundos, títulos e selos de programação.
-- Seguir e deixar de seguir, seguidores, busca e jogadores recomendados.
-- Notificações persistentes.
+- **Perfil público** com avatar, banner, bio, links, molduras, fundos, títulos e selos de programação, mais o estado de "jogando agora".
+- **Edição organizada em blocos:** Identidade | Avatar e Moldura | Banner e Fundo, com editor de imagem (`ProfileImageEditor`) e ícones gerados no próprio editor.
+- **Imagens no banco** (data URI) servidas como imagem cacheável em `/imagens/{tipo}/{usuário}?v=`, com cache longo e versão na URL.
+- **Seguir e deixar de seguir** (o botão vira "Deixar de seguir" quando já segue), seguidores, busca de jogadores e **jogadores recomendados**.
+- **Notificações persistentes** com sino em popover, central de notificações e avisos de conquistas.
 
 ### Conquistas
 
-- Insígnias quadradas em SVG com materiais (bronze, prata, ouro, platina, lenda), concedidas só pelo servidor: Estrela Inicial no cadastro, partidas, vitórias e sequência de vitórias.
-- Aviso persistido na central de notificações e popup quando desbloqueadas durante a sessão.
-- Até 3 conquistas em destaque no perfil. Detalhes na seção 13 da documentação de operação.
+Catálogo, critérios e regras de concessão: [`docs/ARQUITETURA.md`, seção 13](docs/ARQUITETURA.md#13-conquistas).
+
+- **11 conquistas** em SVG, de "Estrela Inicial" (no cadastro) a "Lenda da Estação" (100 vitórias), com materiais inicial, bronze, prata, ouro, platina e lenda.
+- Concedidas **só pelo servidor**, de forma idempotente, e nunca derrubam o fim de uma partida se falharem.
+- Aviso na central de notificações e **popup** quando desbloqueadas durante a sessão; até **3 conquistas em destaque** no perfil.
 
 ### Ranking
 
-- Classificação geral, semanal e mensal, baseada em resultados concluídos.
-- Contabilização idempotente de vitórias e partidas; histórico preservado mesmo após a sala ser removida.
+- **Geral, semanal e mensal**, no fuso `America/Sao_Paulo` ([`config/ranking.php`](config/ranking.php)). O geral usa os contadores da conta; semanal e mensal saem da tabela permanente `match_results`.
+- **Só aparece quem tem pelo menos 1 vitória.** A ordem é vitórias (maior primeiro), derrotas (menor primeiro) e nome.
+- Contabilização idempotente (um resultado por partida e jogador); o histórico é preservado mesmo depois de a sala ser removida.
+
+### Desempenho, erros e operação
+
+- **Echo/WebSocket só conecta quando a página precisa**; o Dashboard usa polling a cada 30 s, sem *prefetch*, com cache longo de arquivos e fontes que não bloqueiam. Contexto: [`docs/ARQUITETURA.md`, seção 5](docs/ARQUITETURA.md#5-processos-em-segundo-plano-render-um-único-contêiner).
+- **Páginas de erro e de espera** personalizadas (inclusive estáticas no Apache para 502/503/504), com mensagens em português e sem texto técnico; o modal de carregamento só aparece após 2 s.
+- **Log operacional** (`OpsLog`) e observabilidade: [seção 8](docs/ARQUITETURA.md#8-observabilidade).
+- **Histórico do que foi entregue**, por tema e data: [`docs/MANUTENCAO/HISTORICO-DE-ALTERACOES.md`](docs/MANUTENCAO/HISTORICO-DE-ALTERACOES.md).
 
 ---
 
@@ -388,7 +436,29 @@ mensagens ao jogador em português.
 
 ---
 
-## Autoria e licença
+## Autoria e créditos
 
-Desenvolvido e mantido por **Guilherme Rodrigues Souza ([@guisouzsa](https://github.com/guisouzsa))**.
+O **Estação Commit** nasceu como um jogo de tabuleiro físico. A versão online é a digitalização dele.
+
+### Larissa Félix ([@larissa-felixl](https://github.com/larissa-felixl)): idealização, regras, cartas e design
+
+**Idealizadora do jogo.** Criou as **regras**, as **cartas** e o **design** do Estação Commit, em parceria com outra pessoa que também fez parte
+da criação. Tudo o que o jogo online reproduz (o percurso de 18 etapas, o Treinamento, os Blocos de Código, os ataques e a identidade visual)
+vem do material dela, reunido em [`docs/JOGO/`](docs/JOGO/):
+
+- documento de regras fechado: [`docs/JOGO/`](docs/JOGO/) (PDF "Estação Commit — Documento de jogo (versão fechada)");
+- cartas: [`cartas.pdf`](docs/JOGO/cartas.pdf) e [`extracartas.pdf`](docs/JOGO/extracartas.pdf);
+- tabuleiro: [`TabuleiroPrincipal.pdf`](docs/JOGO/TabuleiroPrincipal.pdf).
+
+### Guilherme Rodrigues Souza ([@guisouzsa](https://github.com/guisouzsa)): digitalização, documentação e desenvolvimento do jogo online
+
+Pegou o jogo criado por Larissa e o transformou em uma aplicação web multiplayer, **seguindo os estilos, as regras e o design originais**:
+
+- **Digitalização:** extração e tratamento das artes das cartas e do tabuleiro (script em [`scripts/`](scripts/), arte em [`public/images/estacao-commit/`](public/images/estacao-commit/)), adaptadas para a tela sem mudar a identidade.
+- **Desenvolvimento do jogo online:** motor de partidas (turnos, bots, timeouts, ataques), salas e convites, contas e login, perfis, ranking, conquistas, notificações, tempo real (Reverb e Cloudflare opcional), Docker e deploy.
+- **Documentação:** este README e toda a pasta [`docs/`](docs/README.md) (arquitetura, deploy, variáveis de ambiente, rotinas, manutenção e histórico).
+- **Manutenção:** o repositório é mantido por ele. Veja [Contribuição](#contribuição).
+
+### Licença
+
 Distribuído sob a licença MIT (veja [`LICENSE`](LICENSE)); as dependências de terceiros conservam suas próprias licenças.

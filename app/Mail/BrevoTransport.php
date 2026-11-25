@@ -4,7 +4,7 @@ namespace App\Mail;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Support\OpsLog;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractTransport;
@@ -43,14 +43,14 @@ class BrevoTransport extends AbstractTransport
                     'textContent' => $email->getTextBody(),
                 ]));
         } catch (ConnectionException $e) {
-            Log::warning('mail.provider_failed', ['provider' => 'brevo', 'kind' => 'transient', 'reason' => 'connection']);
+            OpsLog::event('mail.provider_failed', ['provider' => 'brevo', 'kind' => 'transient', 'reason' => 'connection'], 'warning');
             throw new TransportException('Brevo indisponível (conexão).');
         }
 
         if ($response->failed()) {
             $status = $response->status();
             $transient = $status === 429 || $status >= 500;
-            Log::warning('mail.provider_failed', ['provider' => 'brevo', 'kind' => $transient ? 'transient' : 'permanent', 'status' => $status]);
+            OpsLog::event('mail.provider_failed', ['provider' => 'brevo', 'kind' => $transient ? 'transient' : 'permanent', 'status' => $status], 'warning');
 
             // Nunca inclui a chave nem o corpo do e-mail na mensagem.
             throw $transient
@@ -58,7 +58,7 @@ class BrevoTransport extends AbstractTransport
                 : new \RuntimeException("Brevo recusou o envio (HTTP {$status}).");
         }
 
-        Log::info('mail.sent', ['provider' => 'brevo', 'message_id' => $response->json('messageId')]);
+        OpsLog::event('mail.sent', ['provider' => 'brevo', 'message_id' => $response->json('messageId')]);
     }
 
     public function __toString(): string

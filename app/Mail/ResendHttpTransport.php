@@ -4,7 +4,7 @@ namespace App\Mail;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Support\OpsLog;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractTransport;
@@ -38,21 +38,21 @@ class ResendHttpTransport extends AbstractTransport
                 'text' => $email->getTextBody(),
             ]));
         } catch (ConnectionException $e) {
-            Log::warning('mail.provider_failed', ['provider' => 'resend', 'kind' => 'transient', 'reason' => 'connection']);
+            OpsLog::event('mail.provider_failed', ['provider' => 'resend', 'kind' => 'transient', 'reason' => 'connection'], 'warning');
             throw new TransportException('Resend indisponível (conexão).');
         }
 
         if ($response->failed()) {
             $status = $response->status();
             $transient = $status === 429 || $status >= 500;
-            Log::warning('mail.provider_failed', ['provider' => 'resend', 'kind' => $transient ? 'transient' : 'permanent', 'status' => $status]);
+            OpsLog::event('mail.provider_failed', ['provider' => 'resend', 'kind' => $transient ? 'transient' : 'permanent', 'status' => $status], 'warning');
 
             throw $transient
                 ? new TransportException("Resend indisponível (HTTP {$status}).")
                 : new \RuntimeException("Resend recusou o envio (HTTP {$status}).");
         }
 
-        Log::info('mail.sent', ['provider' => 'resend', 'message_id' => $response->json('id')]);
+        OpsLog::event('mail.sent', ['provider' => 'resend', 'message_id' => $response->json('id')]);
     }
 
     public function __toString(): string

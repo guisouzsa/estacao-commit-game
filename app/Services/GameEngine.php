@@ -72,6 +72,8 @@ class GameEngine
             ],
         ]);
 
+        \App\Support\OpsLog::event('game.created', ['room' => $room->id, 'match' => $match->id, 'engine' => 'php']);
+
         return $match;
     }
 

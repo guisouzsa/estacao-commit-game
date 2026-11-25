@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Mail\EmailCodeMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use App\Support\OpsLog;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -80,7 +80,7 @@ class EmailVerificationCode
         } catch (\Throwable $e) {
             // Falha (provedor fora do ar, chave inválida...): não finge que enviou. O cadastro espera na sessão
             // e a pessoa pode pedir o reenvio. A causa fica no log (sem o conteúdo do e-mail).
-            Log::error('verification.send_failed', ['error' => class_basename($e), 'message' => Str::limit($e->getMessage(), 160)]);
+            OpsLog::event('auth.email_verification', ['result' => 'send_failed', 'error' => class_basename($e), 'message' => Str::limit($e->getMessage(), 160)], 'error');
             $sent = false;
         }
 

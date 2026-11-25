@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\OpsLog;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,7 +64,20 @@ class GoogleAuthController extends Controller
         } catch (InvalidStateException) {
             $request->session()->forget('pending_google_user');
 
+            OpsLog::event('auth.google', ['result' => 'invalid_state'], 'warning');
+
             return $this->oauthError($request, 'Não foi possível validar a resposta do Google. Tente novamente.');
+        } catch (\Throwable $exception) {
+            // Google fora do ar, sem conexão, segredo/URI incorretos (invalid_client, redirect_uri_mismatch)...
+            // Nada de 500: a pessoa recebe um caminho alternativo e a causa fica no log (sem segredos).
+            $request->session()->forget('pending_google_user');
+            OpsLog::event('integration.failure', [
+                'service' => 'google_oauth',
+                'error' => class_basename($exception),
+                'message' => Str::limit($exception->getMessage(), 160),
+            ], 'error');
+
+            return $this->oauthError($request, 'Não conseguimos falar com o Google agora. Tente de novo em instantes ou entre com e-mail e senha.');
         }
 
         $rawUser = $googleUser->getRaw();

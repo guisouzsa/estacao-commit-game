@@ -10,6 +10,9 @@ Artisan::command('inspire', function () {
 
 Schedule::command('rooms:expire-waiting')->everyMinute();
 
+// Vezes paradas (humano que passou do prazo ou bot sem ninguém olhando). Uma consulta indexada por minuto.
+Schedule::command('games:sweep')->everyMinute()->withoutOverlapping(5);
+
 // Salas com partida concluída: exclusão 2 minutos depois da vitória.
 Schedule::command('rooms:purge-finished')->everyMinute();
 

@@ -181,6 +181,8 @@ O botão "Continuar com Google" só aparece quando as três estão preenchidas.
 | `GAME_TURN_TIMEOUT_SECONDS` | `25` | duração da vez de um humano (menos de 30 s); passou, a vez é pulada |
 | `GAME_MAX_CONSECUTIVE_TIMEOUTS` | `3` | timeouts seguidos até o jogador sair da sala |
 | `GAME_BOT_DELAY_MS` | `700` | pausa do bot antes de jogar |
+| `GAME_BOT_STALL_SECONDS` | `8` | vez de bot parada há mais que isso é jogada pelo servidor (`games:sweep`) |
+| `GAME_SWEEP_BATCH` | `50` | máximo de partidas verificadas por execução do `games:sweep` |
 | `FINISHED_ROOM_TTL_MINUTES` | `2` | quanto tempo a sala encerrada fica visível antes da limpeza |
 | `GUEST_TTL_HOURS` | `6` | validade da conta temporária (visitante) |
 | `UI_DEFER_LISTS` | `true` | listas de notificações/seguidores carregam depois, com esqueleto |
@@ -284,6 +286,7 @@ o Neon pode estar acordando). Depois o Supervisor mantém:
 | --- | --- | --- |
 | a cada minuto | `rooms:expire-waiting` | remove salas vazias após o prazo |
 | a cada minuto | `rooms:purge-finished` | remove salas encerradas, preservando resultados |
+| a cada minuto | `games:sweep` | resolve timeouts e vezes de bot paradas, mesmo sem ninguém na página |
 | a cada 15 min | `guests:prune` | remove visitantes inativos que não estão jogando |
 
 ---

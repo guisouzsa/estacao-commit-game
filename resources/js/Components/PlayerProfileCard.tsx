@@ -20,7 +20,7 @@ export interface PlayerProfile {
     primary_badge?: string | null;
     profile_title?: string | null;
     developer_badge?: string | null;
-    /** Criador do projeto; decidido pelo servidor. */
+    /** Tag "Líder"; decidida pelo servidor. */
     is_leader?: boolean;
     created_at?: string | null;
     links?: ProfileLink[];

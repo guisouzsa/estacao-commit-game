@@ -10,6 +10,12 @@ return [
     // Pausa do bot antes de jogar, em milissegundos (só para a mesa conseguir ver a jogada).
     'bot_delay_ms' => (int) env('GAME_BOT_DELAY_MS', 700),
 
+    // Varredura automática (comando games:sweep, a cada minuto): cuida das mesas em que NINGUÉM está com a
+    // página aberta. Uma vez de bot parada há mais de `bot_stall_seconds` é jogada pelo servidor.
+    'bot_stall_seconds' => (int) env('GAME_BOT_STALL_SECONDS', 8),
+    // Máximo de partidas verificadas por execução (protege a memória e o banco do plano gratuito).
+    'sweep_batch' => (int) env('GAME_SWEEP_BATCH', 50),
+
     // Minutos que uma sala com partida concluída continua existindo (tela de vitória).
     // Depois disso ela é excluída sozinha; o histórico de resultados fica em match_results.
     'finished_room_ttl_minutes' => (int) env('FINISHED_ROOM_TTL_MINUTES', 2),

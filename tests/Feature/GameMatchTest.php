@@ -332,6 +332,7 @@ class GameMatchTest extends TestCase
 
     public function test_the_page_tells_how_long_the_current_human_has_left_and_never_for_bots(): void
     {
+        $this->freezeTime(); // o relógio da vez é gravado em segundos inteiros: sem congelar, a virada do segundo deixaria o teste instável
         [$room, $users] = $this->humanRoom();
         $this->actingAs($users[0])->post(route('games.start', $room));
         GameMatch::firstOrFail()->forceFill(['current_seat' => 1])->save();

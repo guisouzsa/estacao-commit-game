@@ -21,7 +21,7 @@ class User extends Authenticatable
     protected $keyType = 'string';
 
     /**
-     * "Líder" (criador do projeto): decidido SÓ no servidor. Vale para a conta cujo e-mail está em
+     * "Líder": decidido SÓ no servidor. Vale para a conta cujo e-mail está em
      * PROFILE_ADMIN_EMAILS e já foi confirmado (código ou Google). Não existe coluna nem campo de formulário
      * que conceda isso, então ninguém consegue se atribuir a identificação pelo front ou por uma API.
      */

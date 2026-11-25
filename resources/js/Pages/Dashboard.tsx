@@ -290,13 +290,6 @@ export default function Dashboard({
                                                     </span>
                                                 ) : null}
                                             </span>
-                                            {index === 0 &&
-                                            player.username.toLowerCase() ===
-                                                'gui' ? (
-                                                <span className="shrink-0 border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase group-hover:bg-white">
-                                                    Criador
-                                                </span>
-                                            ) : null}
                                                 <span className="shrink-0 border border-[#1d1d1b] bg-[#464498] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase text-white">
                                                     Bot
                                                 </span>
@@ -325,13 +318,6 @@ export default function Dashboard({
                                                     </span>
                                                 ) : null}
                                             </span>
-                                            {index === 0 &&
-                                            player.username.toLowerCase() ===
-                                                'gui' ? (
-                                                <span className="shrink-0 border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase group-hover:bg-white">
-                                                    Criador
-                                                </span>
-                                            ) : null}
                                         </Link>
                                         )}
                                     </li>

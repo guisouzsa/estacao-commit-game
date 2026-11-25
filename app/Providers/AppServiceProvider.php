@@ -36,6 +36,13 @@ class AppServiceProvider extends ServiceProvider
         // Guard "visitor": quem é o visitante vem sempre do cookie HttpOnly.
         Auth::viaRequest('visitor-token', fn (Request $request) => app(GuestIdentity::class)->resolve($request));
 
+        // Eventos de autenticação no log operacional (sem e-mail, senha ou token): auth.login, auth.login_failed,
+        // auth.register, auth.password_reset. Ver App\Support\OpsLog.
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, fn ($e) => \App\Support\OpsLog::event('auth.login', ['user' => $e->user->getAuthIdentifier(), 'guard' => $e->guard]));
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Failed::class, fn ($e) => \App\Support\OpsLog::event('auth.login_failed', ['guard' => $e->guard], 'warning'));
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Registered::class, fn ($e) => \App\Support\OpsLog::event('auth.register', ['user' => $e->user->getAuthIdentifier()]));
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\PasswordReset::class, fn ($e) => \App\Support\OpsLog::event('auth.password_reset', ['user' => $e->user->getAuthIdentifier()]));
+
         // Envio de e-mail por API (Brevo): `MAIL_MAILER=brevo` + BREVO_API_KEY.
         \Illuminate\Support\Facades\Mail::extend('brevo', fn () => new \App\Mail\BrevoTransport((string) config('services.brevo.key'), (int) config('mail.http_timeout')));
         \Illuminate\Support\Facades\Mail::extend('resend-http', fn () => new \App\Mail\ResendHttpTransport((string) config('services.resend.key'), (int) config('mail.http_timeout')));

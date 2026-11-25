@@ -10,6 +10,8 @@ class MatchStatistics
 {
     public static function record(GameRoom $room, GameMatch $match): void
     {
+        \App\Support\OpsLog::event('game.finished', ['room' => $room->id, 'match' => $match->id, 'winner' => $match->winner_participant_id]);
+
         // O ciclo de vida da sala precisa terminar junto com a partida. A limpeza
         // de visitantes usa este estado para preservar apenas partidas em andamento.
         $room->forceFill([

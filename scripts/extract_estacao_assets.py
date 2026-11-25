@@ -7,7 +7,7 @@ import pymupdf as fitz
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCS = ROOT / "documentacao"
+DOCS = ROOT / "docs" / "JOGO"
 PUBLIC = ROOT / "public" / "images" / "estacao-commit"
 CORRECTED = PUBLIC / "corrected"
 LEGACY = PUBLIC / "legacy"

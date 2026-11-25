@@ -32,11 +32,14 @@ Jogo de tabuleiro multiplayer para aprender e praticar o fluxo de trabalho com G
 11. [Segurança](#segurança)
 12. [Contribuição](#contribuição)
 
+> **Documentação:** o índice completo está em [`docs/README.md`](docs/README.md) (visão geral em [`docs/PROJETO.md`](docs/PROJETO.md),
+> deploy no Render, variáveis de ambiente, rotinas agendadas e Cloudflare em [`docs/DEPLOY/`](docs/DEPLOY/)).
+>
 > **Fluxos e operação:** autenticação, multiplayer (tempo de jogada, timeouts, anfitrião) e o que fazer quando um serviço cai estão em
-> [`docs/ARQUITETURA-E-OPERACAO.md`](docs/ARQUITETURA-E-OPERACAO.md).
+> [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 >
 > **Documentação de manutenção:** tecnologias, **todas as variáveis de ambiente** e o passo a passo para trocar de
-> hospedagem, banco, e-mail ou Google estão em [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md).
+> hospedagem, banco, e-mail ou Google estão em [`docs/MANUTENCAO/GUIA-DE-MANUTENCAO.md`](docs/MANUTENCAO/GUIA-DE-MANUTENCAO.md).
 
 ---
 
@@ -82,18 +85,18 @@ Ao todo são **18 etapas**. Cada jogador avança pela própria trilha, e o paine
 
 ### As cartas
 
-O baralho tem 78 cartas no total. As 4 cópias de `Git Login` são entregues uma a cada jogador (não entram no baralho de compra); sobram **62 cartas** para comprar.
+O baralho tem 83 cartas no total (composição em `config/game.php`). As 4 cópias de `Git Login` são entregues uma a cada jogador (não entram no baralho de compra); sobram **67 cartas** para comprar. A matemática do baralho está em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seção 12.
 
 | Carta | Qtd. | Para que serve |
 | --- | :-: | --- |
 | **Git Login** | 4 | primeira etapa do percurso; **todos começam a partida com uma** |
-| **git clone** | 7 | segunda etapa do percurso |
-| **git checkout -b** | 7 | terceira etapa do percurso |
-| **git add .** | 16 | prepara as mudanças dentro de cada ciclo de desenvolvimento |
-| **git commit** | 16 | registra as mudanças e fecha o ciclo |
-| **git pull** | 4 | etapa de entrega; durante o **Treinamento** vira curinga e compra 2 cartas |
-| **git push** | 16 | envia o trabalho, logo depois do `pull` |
-| **Pull Request** | 4 | última etapa: jogá-la **vence a partida** |
+| **git clone** | 10 | segunda etapa do percurso |
+| **git checkout -b** | 10 | terceira etapa do percurso |
+| **git add .** | 18 | prepara as mudanças dentro de cada ciclo de desenvolvimento |
+| **git commit** | 18 | registra as mudanças e fecha o ciclo |
+| **git pull** | 6 | etapa de entrega; durante o **Treinamento** vira curinga e compra 2 cartas |
+| **git push** | 8 | envia o trabalho, logo depois do `pull` |
+| **Pull Request** | 5 | última etapa: jogá-la **vence a partida** |
 | **Limpar Credenciais** | 2 | ataque: manda um adversário **em Treinamento** de volta ao início |
 | **Merge Conflict** | 2 | ataque: o alvo **perde a próxima vez** |
 
@@ -144,6 +147,12 @@ O tutorial interativo dentro da aplicação é a referência visual completa par
 - Seguir e deixar de seguir, seguidores, busca e jogadores recomendados.
 - Notificações persistentes.
 
+### Conquistas
+
+- Insígnias quadradas em SVG com materiais (bronze, prata, ouro, platina, lenda), concedidas só pelo servidor: Estrela Inicial no cadastro, partidas, vitórias e sequência de vitórias.
+- Aviso persistido na central de notificações e popup quando desbloqueadas durante a sessão.
+- Até 3 conquistas em destaque no perfil. Detalhes na seção 13 da documentação de operação.
+
 ### Ranking
 
 - Classificação geral, semanal e mensal, baseada em resultados concluídos.
@@ -187,7 +196,7 @@ O tutorial interativo dentro da aplicação é a referência visual completa par
 - **React/Inertia:** interface responsiva sem uma API duplicada para as páginas.
 - **Tempo real:** só avisa para recarregar o estado (`room.state.changed`, `user.notices.changed`); o estado do jogo é do Laravel.
 
-A lista completa de tecnologias, serviços externos e variáveis está em [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md).
+A visão geral está em [`docs/PROJETO.md`](docs/PROJETO.md); tecnologias, serviços externos e troca de serviços em [`docs/MANUTENCAO/GUIA-DE-MANUTENCAO.md`](docs/MANUTENCAO/GUIA-DE-MANUTENCAO.md).
 
 ### Estrutura do repositório
 
@@ -204,7 +213,7 @@ config/                     # configurações (bots, perfis, verificação, jogo
 database/
 ├── migrations/             # esquema versionado
 └── manual-sql/             # scripts administrativos documentados
-docs/                       # documentação de manutenção
+docs/                       # documentação (índice em docs/README.md; regras do jogo em docs/JOGO)
 resources/
 ├── js/                     # componentes, layouts, páginas e bibliotecas do front
 └── views/emails/           # modelos dos e-mails
@@ -264,12 +273,12 @@ Os scripts em `database/manual-sql/` são ferramentas administrativas: leia cada
 ## Configuração e manutenção
 
 O arquivo `.env.example` lista os nomes aceitos. **A referência completa das variáveis** (para que serve cada uma, quais são
-segredos, onde configurar no Render, no Worker e no build) está em:
+segredos, onde configurar no Render, no Worker e no build, com um pacote para colar no Render) está em:
 
-### 👉 [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md)
+### 👉 [`docs/DEPLOY/VARIAVEIS-DE-AMBIENTE.md`](docs/DEPLOY/VARIAVEIS-DE-AMBIENTE.md)
 
-Ela também traz o passo a passo para **trocar de hospedagem, banco de dados, serviço de e-mail, domínio ou conta do Google**, como girar
-segredos vazados e uma tabela de solução de problemas.
+O passo a passo para **trocar de hospedagem, banco de dados, serviço de e-mail, domínio ou conta do Google**, girar segredos vazados
+e a tabela de solução de problemas estão em [`docs/MANUTENCAO/GUIA-DE-MANUTENCAO.md`](docs/MANUTENCAO/GUIA-DE-MANUTENCAO.md).
 
 Resumo do que é preciso para o site funcionar:
 
@@ -301,12 +310,13 @@ paridade `GAME_ENGINE_PARITY_ACK`; partidas iniciadas continuam no motor em que 
 
 ## Rotinas agendadas
 
-Em produção, o `scheduler` e o worker de fila ficam ativos (o Supervisor cuida disso no Docker):
+Em produção o `scheduler` (`schedule:work`) fica ativo no mesmo contêiner, mantido pelo Supervisor. **Não há worker de fila.** Detalhes, testes e recuperação em [`docs/DEPLOY/CRON-JOBS.md`](docs/DEPLOY/CRON-JOBS.md):
 
 | Frequência | Comando | Finalidade |
 | --- | --- | --- |
 | a cada minuto | `rooms:expire-waiting` | remove salas vazias após o prazo |
 | a cada minuto | `rooms:purge-finished` | remove salas encerradas, preservando resultados |
+| a cada minuto | `games:sweep` | resolve vezes paradas (timeout de humanos e bots), mesmo sem ninguém na página |
 | a cada 15 minutos | `guests:prune` | remove visitantes inativos que não estão jogando |
 
 ---
@@ -339,7 +349,7 @@ docker build -t estacao-commit .
 docker run --rm -p 10000:10000 --env-file .env estacao-commit
 ```
 
-No Render: Web Service com runtime Docker, variáveis conforme [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md), e `APP_URL` com a URL pública.
+No Render: Web Service com runtime Docker, variáveis conforme [`docs/DEPLOY/VARIAVEIS-DE-AMBIENTE.md`](docs/DEPLOY/VARIAVEIS-DE-AMBIENTE.md), e `APP_URL` com a URL pública. Passo a passo: [`docs/DEPLOY/RENDER.md`](docs/DEPLOY/RENDER.md).
 Depois de alterar qualquer `VITE_*`, faça um deploy com rebuild. O plano gratuito pode suspender o serviço, então o primeiro acesso
 pode demorar enquanto o Render e o Neon acordam.
 

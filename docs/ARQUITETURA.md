@@ -1,6 +1,6 @@
 # Arquitetura, autenticação, multiplayer e operação
 
-Complemento de [`MANUTENCAO.md`](MANUTENCAO.md) (tecnologias e variáveis). Aqui estão **os fluxos reais do código**, o que
+Complemento de [`MANUTENCAO/GUIA-DE-MANUTENCAO.md`](MANUTENCAO/GUIA-DE-MANUTENCAO.md) (tecnologias e variáveis). Aqui estão **os fluxos reais do código**, o que
 acontece quando um serviço cai e **como investigar** cada problema. Todos os caminhos abaixo existem no repositório.
 
 ## 1. Mapa da autenticação
@@ -37,7 +37,7 @@ Regras de falha (iguais nos dois provedores):
 - No cadastro, se nada enviou, a tela de código diz isso e libera "Reenviar código" (espera curta de 10 s). Nada é afirmado como enviado sem confirmação do provedor.
 - O Resend gratuito, sem domínio verificado, só envia ao dono da conta. Para uso real é preciso verificar um domínio.
 
-Para trocar de provedor: ver `MANUTENCAO.md`, seção 5.3.
+Para trocar de provedor: ver `MANUTENCAO/GUIA-DE-MANUTENCAO.md`, seção 5.3.
 
 ## 2. Multiplayer
 
@@ -288,3 +288,111 @@ da sua máquina sem decisão explícita.
 **Antes do deploy**: listar migrations novas (`git diff --stat main -- database/migrations`) e confirmar que só adicionam; conferir variáveis no Render (`MANUTENCAO.md` 3); conferir `npm run build`; ter o commit anterior à mão para reverter.
 
 **Depois do deploy**: logs sem erro; `GET /up` 200; entrar, sair, cadastrar com código; criar sala e jogar uma partida com bots; ver nos logs `Running [artisan games:sweep]`.
+
+---
+
+# Parte 3: baralho, conquistas, contas temporárias e padrões visuais
+
+## 12. Baralho: matemática e justiça
+
+### Como funciona (PHP: `app/Services/GameEngine.php`; Worker: `worker/src/engine.ts`)
+- A composição vem de `config/game.php` (`deck`). O Worker tem os mesmos números em `COMMON_COUNTS`; `DeckFairnessTest::test_the_php_and_worker_decks_are_the_same_numbers` falha se divergirem.
+- O embaralhamento é **Fisher-Yates uniforme**. No PHP agora usa `Random\Randomizer` (motor criptográfico do PHP 8.2); o Worker usa `crypto.getRandomValues`. Nada que o cliente envia entra no sorteio.
+- Cada jogador começa com 4 cartas: o `Git Login` (uma cópia por jogador, fora do baralho de compra) e 3 sorteadas.
+- Compra: 1 carta depois de jogar uma carta e 1 ao trocar. A compra olha as primeiras 8 cartas do baralho já embaralhado e pula só a que acabou de ser trocada ou que formaria trinca (`pickIndex`). Isso nunca procura a carta "útil" e vale igual para humanos e bots (o código não tem ramo por tipo de jogador; `test_humans_and_bots_draw_by_exactly_the_same_rule` confirma estatisticamente).
+- Descartes voltam ao baralho reembaralhados quando a pilha de compra acaba. Cartas jogadas no percurso saem de circulação (exceto as devolvidas por `Limpar Credenciais`).
+
+### Diagnóstico: a percepção de demora estava certa
+Chance de **pelo menos uma** cópia da carta necessária em k compras (sem reposição), ignorando as compras dos outros e a mão atual
+(`1 − C(N−K, k) / C(N, k)`):
+
+| Carta (antes: 62 no baralho de compra) | Cópias | 1 compra | 3 compras | 5 compras | 8 compras | Compras esperadas |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: |
+| git clone / checkout | 7 | 11,3% | 30,6% | **46,2%** | 64,0% | 7,9 |
+| git pull / Pull Request | 4 | 6,5% | 18,4% | 29,2% | 43,3% | **12,6** |
+| git add / commit / push | 16 | 25,8% | 59,9% | 78,8% | 92,3% | 3,7 |
+
+Ou seja: para o `git clone` ou o `checkout` (os dois primeiros passos úteis), **5 compras dão só 46%**: o "cinco rodadas" relatado é o esperado, e o `pull`
+e a `Pull Request` esperavam ~13 compras. Além disso, havia 16 `push` para apenas 4 necessários (um quarto do baralho em cartas quase mortas) e `add`/`commit` tinham
+exatamente 16 cópias para 16 necessárias (4 jogadores × 4 ciclos), sem folga.
+
+Medição com o motor real (60 partidas só de bots, trocas de carta até conseguir a etapa; mais trocas = mais espera):
+
+| Etapa | Antes (média de trocas) | Depois | Variação |
+| --- | :-: | :-: | :-: |
+| git clone | 4,11 | 2,24 | −45% |
+| git checkout | 3,55 | 2,32 | −35% |
+| git pull | 2,21 | 1,03 | −53% |
+| Pull Request | 2,00 | 1,03 | −49% |
+| git add | 1,09 | 0,94 | −14% |
+| git commit | ~0,8 | 0,77 | igual |
+| git push | 0,04 | 0,83 | + (era abundante demais) |
+| Turnos de uma partida (mediana) | 118 | 106 | −10% |
+
+### Mudança aplicada (regra de composição, decisão documentada)
+Baralho de **83 cartas** (antes 78): `clone 10, checkout 10, pull 6, add 18, commit 18, push 8, Pull Request 5, Limpar Credenciais 2, Merge Conflict 2` (+ 4 `Git Login`).
+O baralho de compra passa de 62 para **67** cartas. Nada favorece humanos ou bots; o que mudou foi a oferta de cada carta, de modo que as cartas de que todos precisam aparecem com frequência parecida.
+Chance depois (67 no baralho): clone/checkout em 5 compras **56,6%** (era 46,2%); pull 38,4% (era 29,2%); Pull Request 33,0% (era 29,2%).
+
+Como reverter: voltar `config/game.php` (`deck`) e `COMMON_COUNTS` no Worker aos valores antigos, regerar a fixture (`PARITY_UPDATE=1 php artisan test --filter=EngineParityTest`) e subir `PARITY_VERSION`.
+**Paridade:** o Worker já tem os novos números e a fixture foi regerada (PHP e Worker passam); `PARITY_VERSION` agora é `2026-11-27-3`. As regras de tempo continuam diferentes (seção 6).
+
+## 13. Conquistas
+
+Catálogo em `config/achievements.php` (fonte única); linhas sincronizadas em `badges` por `slug` (migration `2026_11_27_000000_achievements_catalog_and_featured`, idempotente).
+Concessão em `App\Services\Achievements`, sempre no servidor, a partir de dados que o servidor gravou:
+
+| Conquista | Critério | Raridade/material |
+| --- | --- | --- |
+| Estrela Inicial | concluir o cadastro (e-mail/senha ou Google) | comum / inicial |
+| Primeiros Passos | concluir 1 partida | comum / inicial |
+| Primeira Vitória | vencer 1 partida | incomum / bronze |
+| Frequentador | concluir 10 partidas | incomum / bronze |
+| Estrela de Bronze | vencer 5 | incomum / bronze |
+| Em Chamas | vencer 3 seguidas | rara / prata |
+| Estrela de Prata | vencer 10 | rara / prata |
+| Veterano | concluir 25 partidas | rara / prata |
+| Estrela de Ouro | vencer 25 | épica / ouro |
+| Estrela de Platina | vencer 50 | épica / platina |
+| Lenda da Estação | vencer 100 | lendária / lenda |
+
+Ritmo real: uma partida dura ~10 a 12 minutos e a chance de vencer em mesa de 4 é ~25%, então 5 vitórias ≈ 20 partidas e 50 ≈ 200. Os marcos 5 → 10 → 25 → 50 → 100 crescem com o esforço; a proposta
+inicial ("10 vitórias = ouro" antes de "50 = prata") não era uma progressão. `first-commit` e `contributor` (sem como obter) ficam **inativas**, não apagadas.
+
+- **Gatilhos:** evento `Registered` (cadastro/Google) e `MatchStatistics::record` (fim de partida). Uma falha na concessão é registrada (`achievement.error`) e **nunca** derruba o fim da partida (savepoint).
+- **Idempotência:** `badge_user` único (usuário, conquista) + `insertOrIgnore`; o aviso só nasce se a linha foi criada agora, na mesma transação.
+- **Aviso:** notificação `AchievementUnlocked` na tabela `notifications` (a mesma da central e do sino), mais o popup (`AchievementPopup`): vem de `auth.achievement_popups` (não lidas) e é marcado como lido ao exibir, então recarregar não repete. A consulta do popup só roda quando há não lidas.
+- **Perfil:** `AchievementsPanel` (destaques até 3 + todas, bloqueadas com critério, detalhe em modal). Destaques: `PUT /profile/conquistas/destaques`, validado no servidor (só as suas, desbloqueadas, no máximo `achievements.featured_limit`), guardado em `badge_user.featured_order`.
+- **Visual:** `AchievementBadge` é SVG + CSS (sem imagens nem bibliotecas): 6 materiais, 7 símbolos, brilho nas raridades altas e flutuação na lendária; `prefers-reduced-motion` desliga ambos.
+- **Custo:** 2 consultas pequenas ao montar o perfil; 1 consulta por evento de concessão; nenhuma tabela nova (só a coluna `featured_order`).
+
+## 14. Contas temporárias (auditoria)
+
+| Tema | Achado | Situação |
+| --- | --- | --- |
+| Token | 256 bits aleatórios, só o hash no banco, cookie HttpOnly, SameSite=Lax | seguro (já testado) |
+| Falsificação | token forjado, adivinhado, maiúsculas, vazio ou após sair é recusado | testado (`GuestLifecycleTest`) |
+| Renovação | janela deslizante **sem teto**: com requisições o perfil (e o nome) vivia para sempre | **corrigido**: teto absoluto `GUEST_MAX_DAYS` (3) contado da criação |
+| Isolamento | visitante não lê nem altera dados de outra pessoa; páginas de conta redirecionam | testado |
+| Conversão em conta | **não existe** (a coluna `converted_user_id` não é usada). Cadastrar com um cookie de visitante cria uma conta separada e não funde nem assume nada | decisão documentada; testado |
+| Exclusão e órfãos | apagar o visitante remove as participações (cascata) e **não** apaga a partida encerrada nem resultados (visitantes não entram em `match_results`) | testado |
+| Concorrência de nome | `GuestIdentity::create` serializa por nome e o índice único decide | já testado |
+| Limpeza | `guests:prune` (15 min) nunca apaga quem está em partida em andamento ou é anfitrião de sala com outros humanos | já testado |
+
+**Vulnerabilidades desta rodada:** uma de gravidade **baixa/média** (renovação sem teto permitia manter nome e perfil temporário indefinidamente, com um script que só fizesse requisições). Corrigida e testada. Login, cadastro, código de e-mail, Google e recuperação de senha foram cobertos nas rodadas
+anteriores (`Security/*`, `EmailCodeVerificationTest`, `GoogleAuthenticationTest`, `OpsLogAndGoogleFailureTest`) e continuam passando. Pontos aceitos: o cadastro informa quando um e-mail já existe (trade-off de usabilidade, protegido por `throttle`).
+
+## 15. Padrão visual de botões e etiquetas
+
+Regra aplicada: **o que é clicável parece clicável; o que é só informação não parece botão.**
+
+| Tipo | Aparência | Onde |
+| --- | --- | --- |
+| Primário | fundo verde-lima, borda 2–3 px e sombra dura, texto em caixa alta | ação principal da tela (`PrimaryButton`, `auth-submit`, "Criar sala") |
+| Secundário | fundo branco, borda escura, sombra dura menor | complementar (`SecondaryButton`, "Fechar") |
+| Roxo | fundo `#464498`, texto branco | ação de destaque do perfil (ex.: "Destacar no perfil") |
+| Destrutivo | vermelho | excluir/sair (`DangerButton`) |
+| Etiqueta/selo (não clicável) | **plana**: borda de 1 px, sem sombra e sem efeito de hover | título, selo, "Líder", selo de desenvolvedor no perfil |
+| Estados | `disabled:opacity-*`, foco com contorno visível (`focus-visible`), hover só em quem clica | todos os botões novos |
+
+Nesta rodada: as etiquetas do perfil (título, selo principal, "Líder" e selo de desenvolvedor) deixaram de usar a sombra dura e a borda grossa dos botões. **Não** foi feita uma substituição global de classes; os demais botões (login, cadastro, painel, sala, rankings) seguem como estavam e uma varredura completa fica como próxima etapa.

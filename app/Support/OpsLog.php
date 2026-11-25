@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
  * (ver Http/Middleware/AssignRequestId). Aqui acrescentamos o evento, o ambiente e o resultado.
  * Campos com nome sensível (senha, token, código, segredo, cookie...) são trocados por "[oculto]".
  *
- * Eventos em uso (ver docs/ARQUITETURA-E-OPERACAO.md, seção de logs):
+ * Eventos em uso (ver docs/ARQUITETURA.md, seção de logs):
  *   auth.login, auth.login_failed, auth.register, auth.google, auth.password_reset, auth.email_verification,
  *   mail.sent, mail.provider_failed, game.created, game.turn_timeout, game.player_inactive,
  *   game.host_transferred, game.bot_stalled, game.finished, integration.failure

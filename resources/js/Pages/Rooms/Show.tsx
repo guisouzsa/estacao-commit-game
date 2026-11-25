@@ -252,15 +252,13 @@ export default function Show({
                     </Link>
 
                     <header className="mt-3 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-4 shadow-[5px_5px_0_#464498] sm:p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-mono text-[10px] font-black uppercase tracking-[.16em] text-[#464498]">
-                                    Lobby privado
-                                </span>
-                                <span className="border-2 border-[#1d1d1b] bg-white px-2 py-1 font-mono text-xs font-black uppercase">
-                                    Sala {room.id.slice(0, 8)}
-                                </span>
-                            </div>
+                        <span className="font-mono text-[10px] font-black uppercase tracking-[.16em] text-[#464498]">
+                            Lobby privado
+                        </span>
+                        <div className="mt-2 flex flex-wrap items-stretch gap-2">
+                            <span className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-white px-3 font-mono text-[11px] font-black uppercase">
+                                Sala {room.id.slice(0, 8)}
+                            </span>
                             <button
                                 className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-[#b4da33] px-3 font-mono text-[11px] font-black uppercase shadow-[2px_2px_0_#1d1d1b]"
                                 onClick={() => setTutorial(true)}

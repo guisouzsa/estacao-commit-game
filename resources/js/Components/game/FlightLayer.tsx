@@ -45,7 +45,7 @@ export default function FlightLayer({
     return (
         <div
             aria-hidden="true"
-            className="pointer-events-none fixed inset-0 z-[55]"
+            className="pointer-events-none fixed inset-0 z-[45]"
         >
             {flights.map((flight) => {
                 const art = cardImageUrl(flight.card);

@@ -1,10 +1,10 @@
-import VerifiedBadge from '@/Components/VerifiedBadge';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import MissionTutorial, {
     hasSeenMissionTutorial,
 } from '@/Components/MissionTutorial';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import RoomCountdown from '@/Components/RoomCountdown';
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { preloadGameAssets } from '@/lib/preloadGame';
 import { startRoomSync } from '@/lib/roomSync';
@@ -252,14 +252,7 @@ export default function Show({
                     </Link>
 
                     <header className="mt-3 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-4 shadow-[5px_5px_0_#464498] sm:p-5">
-                        <button
-                            className="float-right inline-flex min-h-10 items-center gap-1.5 border-2 border-[#1d1d1b] bg-[#b4da33] px-3 font-mono text-[11px] font-black uppercase shadow-[2px_2px_0_#1d1d1b]"
-                            onClick={() => setTutorial(true)}
-                            type="button"
-                        >
-                            Aprenda a jogar
-                        </button>
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#1d1d1b]/15 pb-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-mono text-[10px] font-black uppercase tracking-[.16em] text-[#464498]">
                                     Lobby privado
@@ -268,48 +261,16 @@ export default function Show({
                                     Sala {room.id.slice(0, 8)}
                                 </span>
                             </div>
-                            {canDelete ? (
-                                <button
-                                    type="button"
-                                    aria-label="Excluir sala"
-                                    onClick={() => setConfirming(true)}
-                                    className="inline-flex min-h-10 items-center gap-2 border-2 border-transparent px-2 font-mono text-[11px] font-black uppercase text-[#d01600] hover:border-[#d01600] hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498]"
-                                >
-                                    <svg
-                                        aria-hidden="true"
-                                        viewBox="0 0 24 24"
-                                        className="size-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="square"
-                                    >
-                                        <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
-                                    </svg>
-                                    Excluir sala
-                                </button>
-                            ) : room.status === 'waiting' && !isHost ? (
-                                <button
-                                    type="button"
-                                    onClick={() => setConfirmingLeave(true)}
-                                    className="inline-flex min-h-10 items-center border-2 border-transparent px-2 font-mono text-[11px] font-black uppercase text-[#d01600] hover:border-[#d01600] hover:bg-white"
-                                >
-                                    Sair da sala
-                                </button>
-                            ) : null}
-                            {isHost &&
-                                room.status === 'waiting' &&
-                                hasOtherHumans && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmingLeave(true)}
-                                        className="inline-flex min-h-10 items-center border-2 border-transparent px-2 font-mono text-[11px] font-black uppercase text-[#d01600] hover:border-[#d01600] hover:bg-white"
-                                    >
-                                        Sair da sala
-                                    </button>
-                                )}
+                            <button
+                                className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-[#b4da33] px-3 font-mono text-[11px] font-black uppercase shadow-[2px_2px_0_#1d1d1b]"
+                                onClick={() => setTutorial(true)}
+                                type="button"
+                            >
+                                Aprenda a jogar
+                            </button>
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+
+                        <div className="mt-4 flex items-start justify-between gap-3 border-t-2 border-[#1d1d1b]/15 pt-4">
                             <div className="min-w-0">
                                 <h1 className="text-2xl font-black leading-tight sm:text-3xl">
                                     {roomTitle}
@@ -326,36 +287,46 @@ export default function Show({
                                 {room.participants.length}/4
                             </strong>
                         </div>
-                        {(room.bot_slots ?? 0) > 0 && (
-                            <p className="mt-3 inline-flex items-center gap-2 border-l-4 border-[#464498] bg-[#464498]/10 px-3 py-2 text-xs">
-                                <span className="border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase">
-                                    Bot
-                                </span>
-                                {room.bot_slots === 1
-                                    ? 'Você está jogando com um bot.'
-                                    : `Você está jogando com ${room.bot_slots} bots.`}
-                            </p>
-                        )}
-                        {hasWaitingDeadline && (
-                            <div className="mt-3 inline-flex flex-wrap items-center gap-x-2 gap-y-1 border-l-4 border-[#f0b429] bg-[#f0b429]/15 px-3 py-2 text-xs">
-                                <span>
-                                    A sala vazia é removida em 5 minutos.
-                                </span>
-                                <RoomCountdown expiresAt={expiresAt} />
+
+                        {((room.bot_slots ?? 0) > 0 ||
+                            hasWaitingDeadline ||
+                            room.status === 'expired') && (
+                            <div className="mt-3 space-y-2">
+                                {(room.bot_slots ?? 0) > 0 && (
+                                    <p className="flex items-center gap-2 border-l-4 border-[#464498] bg-[#464498]/10 px-3 py-2 text-xs">
+                                        <span className="border border-[#1d1d1b] bg-[#b4da33] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase">
+                                            Bot
+                                        </span>
+                                        {room.bot_slots === 1
+                                            ? 'Você está jogando com um bot.'
+                                            : `Você está jogando com ${room.bot_slots} bots.`}
+                                    </p>
+                                )}
+                                {hasWaitingDeadline && (
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-l-4 border-[#f0b429] bg-[#f0b429]/15 px-3 py-2 text-xs">
+                                        <span>
+                                            A sala vazia é removida em 5
+                                            minutos.
+                                        </span>
+                                        <RoomCountdown expiresAt={expiresAt} />
+                                    </div>
+                                )}
+                                {room.status === 'expired' && (
+                                    <p
+                                        className="border-l-4 border-[#d01600] bg-[#d01600]/10 px-3 py-2 font-mono text-xs font-black uppercase text-[#d01600]"
+                                        role="status"
+                                    >
+                                        Esta sala expirou e não aceita novos
+                                        jogadores.
+                                    </p>
+                                )}
                             </div>
                         )}
-                        {room.status === 'expired' && (
-                            <p
-                                className="mt-3 border-l-4 border-[#d01600] bg-[#d01600]/10 px-3 py-2 font-mono text-xs font-black uppercase text-[#d01600]"
-                                role="status"
-                            >
-                                Esta sala expirou e não aceita novos jogadores.
-                            </p>
-                        )}
+
                         {isHost &&
                             room.status === 'waiting' &&
                             room.participants.length === 4 && (
-                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t-2 border-[#1d1d1b]/15 pt-3">
+                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t-2 border-[#1d1d1b]/15 pt-4">
                                     <p className="text-sm font-semibold text-[#464498]">
                                         Os quatro lugares estão ocupados. A
                                         estação está pronta.
@@ -364,7 +335,7 @@ export default function Show({
                                         type="button"
                                         disabled={busy}
                                         onClick={() => setConfirmingStart(true)}
-                                        className="min-h-11 border-2 border-[#1d1d1b] bg-[#b4da33] px-5 font-mono text-xs font-black uppercase shadow-[4px_4px_0_#1d1d1b] disabled:opacity-60"
+                                        className="min-h-11 w-full border-2 border-[#1d1d1b] bg-[#b4da33] px-5 font-mono text-xs font-black uppercase shadow-[4px_4px_0_#1d1d1b] disabled:opacity-60 sm:w-auto"
                                     >
                                         {busy
                                             ? 'Preparando mesa…'
@@ -372,6 +343,46 @@ export default function Show({
                                     </button>
                                 </div>
                             )}
+
+                        {(canDelete ||
+                            (room.status === 'waiting' &&
+                                (!isHost || hasOtherHumans))) && (
+                            <div className="mt-4 flex flex-col gap-2 border-t-2 border-[#1d1d1b]/15 pt-4 sm:flex-row sm:justify-end">
+                                {room.status === 'waiting' &&
+                                    (!isHost || hasOtherHumans) && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setConfirmingLeave(true)
+                                            }
+                                            className="inline-flex min-h-11 w-full items-center justify-center border-2 border-[#1d1d1b] bg-[#d01600] px-5 font-mono text-xs font-black uppercase text-white shadow-[3px_3px_0_#1d1d1b] hover:bg-[#b01200] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498] sm:w-auto"
+                                        >
+                                            Sair da sala
+                                        </button>
+                                    )}
+                                {canDelete && (
+                                    <button
+                                        type="button"
+                                        aria-label="Excluir sala"
+                                        onClick={() => setConfirming(true)}
+                                        className="inline-flex min-h-11 w-full items-center justify-center gap-2 border-2 border-[#1d1d1b] bg-[#d01600] px-5 font-mono text-xs font-black uppercase text-white shadow-[3px_3px_0_#1d1d1b] hover:bg-[#b01200] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498] sm:w-auto"
+                                    >
+                                        <svg
+                                            aria-hidden="true"
+                                            viewBox="0 0 24 24"
+                                            className="size-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="square"
+                                        >
+                                            <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                                        </svg>
+                                        Excluir sala
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </header>
 
                     <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,0.85fr)]">
@@ -409,7 +420,13 @@ export default function Show({
                                                     />
                                                     <div className="min-w-0 flex-1">
                                                         <strong className="block truncate text-sm">
-                                                            @{player.username}{player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
+                                                            @{player.username}
+                                                            {player.is_verified && (
+                                                                <VerifiedBadge
+                                                                    className="ml-1"
+                                                                    size={15}
+                                                                />
+                                                            )}
                                                         </strong>
                                                         <div className="mt-1 flex flex-wrap gap-1">
                                                             {participant?.is_host && (

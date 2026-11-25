@@ -74,8 +74,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-developer-badges', static function (User $user): bool {
-            return $user->email_verified_at !== null
-                && in_array(strtolower($user->email), config('profiles.admin_emails'), true);
+            // Mesma regra do selo de verificado: permissão gravada no banco (por SQL) e e-mail confirmado.
+            return $user->canGrantVerified();
         });
     }
 }

@@ -339,9 +339,8 @@ class ProfileTest extends TestCase
         $this->assertSame($badge->id, $user->fresh()->achievement_badge_id);
     }
 
-    public function test_only_configured_verified_administrators_can_assign_developer_badges(): void
+    public function test_only_accounts_with_the_database_permission_can_assign_developer_badges(): void
     {
-        config(['profiles.admin_emails' => ['admin@example.com']]);
         $player = User::factory()->create();
         $ordinaryUser = User::factory()->create();
 
@@ -351,10 +350,8 @@ class ProfileTest extends TestCase
             ])
             ->assertForbidden();
 
-        $admin = User::factory()->create([
-            'email' => 'admin@example.com',
-            'email_verified_at' => now(),
-        ]);
+        $admin = User::factory()->create(['email_verified_at' => now()]);
+        $admin->forceFill(['can_grant_verified' => true])->save();
 
         $this->actingAs($admin)
             ->patch(route('admin.users.developer-badge.update', $player), [

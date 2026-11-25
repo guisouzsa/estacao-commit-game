@@ -234,6 +234,8 @@ export default function Edit({
 
     // Trocar o identificador libera o antigo: pede confirmação SÓ ao clicar em Salvar (nunca ao digitar).
     const [confirmRename, setConfirmRename] = useState(false);
+    // Cancelar a edição com alterações não salvas pede confirmação (mesmo visual dos outros avisos).
+    const [confirmDiscard, setConfirmDiscard] = useState(false);
     const renaming = data.username !== user.username;
 
     // Escolha das conquistas exibidas: editada junto com o resto do perfil e salva pelo mesmo botão.
@@ -1207,7 +1209,11 @@ export default function Edit({
                                 <div className="ml-auto flex gap-2">
                                     <button
                                         type="button"
-                                        onClick={cancelEditing}
+                                        onClick={() =>
+                                            hasChanges
+                                                ? setConfirmDiscard(true)
+                                                : cancelEditing()
+                                        }
                                         className="min-h-12 border-2 border-white/60 px-4 font-mono text-xs font-bold uppercase"
                                     >
                                         Cancelar
@@ -1225,6 +1231,22 @@ export default function Edit({
                             </div>
                         )}
                     </form>
+
+                    <ConfirmDialog
+                        show={confirmDiscard}
+                        title="Descartar as alterações?"
+                        eyebrow="Alterações não salvas"
+                        confirmLabel="Descartar alterações"
+                        cancelLabel="Continuar editando"
+                        onConfirm={() => {
+                            setConfirmDiscard(false);
+                            cancelEditing();
+                        }}
+                        onClose={() => setConfirmDiscard(false)}
+                    >
+                        Tudo o que você mudou neste perfil e ainda não salvou
+                        será perdido. Essa ação não poderá ser desfeita.
+                    </ConfirmDialog>
 
                     <ConfirmDialog
                         show={confirmRename}

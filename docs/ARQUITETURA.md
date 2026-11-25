@@ -281,7 +281,7 @@ da sua máquina sem decisão explícita.
 - [ ] Logs: buscar `integration.failure`, `mail.provider_failed` e `game.bot_stalled` frequentes.
 - [ ] Conferir no painel do Brevo a taxa de entrega e o limite diário.
 - [ ] Conferir o espaço do banco no Neon e a janela de backup/restauração do plano.
-- [ ] Revisar `PROFILE_ADMIN_EMAILS`.
+- [ ] Revisar quem tem `can_grant_verified` (`select username from users where can_grant_verified is true;`) e `PROFILE_ADMIN_EMAILS` (só a etiqueta "Líder").
 
 **Antes de alterar**: `git status`; confirmar a branch; ler esta documentação; escrever o teste; mudança pequena; rodar a suíte; revisar o `git diff`.
 
@@ -396,3 +396,11 @@ Regra aplicada: **o que é clicável parece clicável; o que é só informação
 | Estados | `disabled:opacity-*`, foco com contorno visível (`focus-visible`), hover só em quem clica | todos os botões novos |
 
 Nesta rodada: as etiquetas do perfil (título, selo principal, "Líder" e selo de desenvolvedor) deixaram de usar a sombra dura e a borda grossa dos botões. **Não** foi feita uma substituição global de classes; os demais botões (login, cadastro, painel, sala, rankings) seguem como estavam e uma varredura completa fica como próxima etapa.
+
+## 16. Selo de verificado e permissão de concedê-lo
+
+- **Selo:** `users.verified_at` (nulo = sem selo). O componente `VerifiedBadge` aparece sempre ao lado do `@usuário` (perfil, listas, ranking, busca, salas) e, ao clicar, explica o critério: idealizadores, mantenedores e colaboradores do projeto.
+- **Quem concede:** só contas com `users.can_grant_verified = true` **e** e-mail confirmado (`User::canGrantVerified`, gates `manage-verified` e `manage-developer-badges`). A coluna **não é preenchível**, não tem tela, rota nem campo de formulário: só muda por SQL, por quem administra o banco. O nome de usuário e `PROFILE_ADMIN_EMAILS` **não** concedem esse poder.
+- **Como usar:** página `/configuracoes` (engrenagem ao lado de "Sair"), caixa "Verificar jogadores": pesquisa pelo nome e concede ou remove. Cada alteração grava o evento `verified.changed` (quem e para quem, sem e-mails).
+- **Ligar a permissão (uma vez, no banco):** `update users set can_grant_verified = true, verified_at = now() where lower(username) = '<seu-usuario>';`
+- **Testes:** `tests/Feature/VerifiedBadgeTest.php` e `tests/Feature/Security/PrivacyAndTamperAuditTest.php` (vitórias não alteráveis, exclusão só da própria conta, nenhum dado privado em listagens, ninguém se concede selo).

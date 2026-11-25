@@ -255,12 +255,12 @@ export default function Show({
                         <span className="font-mono text-[10px] font-black uppercase tracking-[.16em] text-[#464498]">
                             Lobby privado
                         </span>
-                        <div className="mt-2 flex flex-wrap items-stretch gap-2">
-                            <span className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-white px-3 font-mono text-[11px] font-black uppercase">
+                        <div className="mt-2 grid w-fit max-w-full grid-cols-2 gap-2">
+                            <span className="inline-flex min-h-10 items-center justify-center whitespace-nowrap border-2 border-[#1d1d1b] bg-white px-4 font-mono text-[11px] font-black uppercase">
                                 Sala {room.id.slice(0, 8)}
                             </span>
                             <button
-                                className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-[#b4da33] px-3 font-mono text-[11px] font-black uppercase shadow-[2px_2px_0_#1d1d1b]"
+                                className="inline-flex min-h-10 items-center justify-center whitespace-nowrap border-2 border-[#1d1d1b] bg-[#b4da33] px-4 font-mono text-[11px] font-black uppercase shadow-[2px_2px_0_#1d1d1b]"
                                 onClick={() => setTutorial(true)}
                                 type="button"
                             >

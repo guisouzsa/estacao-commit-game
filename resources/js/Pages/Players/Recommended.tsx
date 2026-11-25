@@ -1,3 +1,4 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import type { PlayerSummary } from '@/Components/PlayerSearch';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -121,7 +122,7 @@ export default function Recommended({ people }: { people: PeoplePage }) {
                                         )}
                                     >
                                         <strong className="block truncate">
-                                            @{person.username}
+                                            @{person.username}{person.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                         </strong>
                                         {person.profile_title ? (
                                             <span className="block truncate font-mono text-[10px] font-bold uppercase text-[#68665f]">

@@ -100,7 +100,7 @@ const frameColors: Record<string, string> = {
 };
 
 /** Igual a config/achievements.php (featured_limit); o servidor valida de novo. */
-const ACHIEVEMENT_LIMIT = 5;
+const ACHIEVEMENT_LIMIT = 11;
 
 const emptyExtras: ProfileExtrasData = {
     links: [],

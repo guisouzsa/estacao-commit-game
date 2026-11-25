@@ -216,6 +216,7 @@ class AchievementsTest extends TestCase
 
     public function test_featuring_is_limited_and_only_for_unlocked_badges_of_the_same_person(): void
     {
+        config(['achievements.featured_limit' => 5]);
         $user = User::factory()->create(['matches_won' => 10, 'matches_played' => 30]);
         app(Achievements::class)->evaluate($user, ['matches_played', 'wins']);
         $mine = DB::table('badge_user')->where('user_id', $user->id)->pluck('badge_id')->values();

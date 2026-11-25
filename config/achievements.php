@@ -24,7 +24,7 @@
 
 return [
     // Quantas conquistas podem ser escolhidas individualmente para o perfil.
-    'featured_limit' => 5,
+    'featured_limit' => 11,
 
     // Conquistas antigas, sem como serem obtidas: ficam ocultas (não apagadas).
     'retired' => ['first-commit', 'contributor'],

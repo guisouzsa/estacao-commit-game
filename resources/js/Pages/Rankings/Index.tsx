@@ -1,3 +1,4 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Deferred, Head, Link, router } from '@inertiajs/react';
@@ -11,6 +12,7 @@ type Entry = {
         avatar?: string | null;
         avatar_style?: string;
         avatar_seed?: string;
+        is_verified?: boolean;
         profile_frame?: string;
     };
     played: number;
@@ -389,7 +391,7 @@ export default function Index({
                                                         entry.player.username,
                                                     )}
                                                 >
-                                                    @{entry.player.username}
+                                                    @{entry.player.username}{entry.player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                                 </Link>
                                                 <p className="mt-1 font-mono text-xs font-bold uppercase text-[#464498]">
                                                     {entry.won}{' '}
@@ -460,7 +462,7 @@ export default function Index({
                                                                 .username,
                                                         )}
                                                     >
-                                                        @{entry.player.username}
+                                                        @{entry.player.username}{entry.player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                                         {entry.user_id ===
                                                             viewerId && (
                                                             <span className="ml-2 font-mono text-[9px] uppercase text-[#464498]">

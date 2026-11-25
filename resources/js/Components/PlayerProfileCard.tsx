@@ -173,28 +173,7 @@ export default function PlayerProfileCard({
                         <h1 className="break-words text-3xl font-black leading-tight text-[#1d1d1b] sm:text-4xl">
                             @{profile.username}
                         </h1>
-                        {profile.is_verified && (
-                            <span
-                                className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[#168de2] text-white shadow-[0_0_0_2px_#fff] sm:size-7"
-                                title="Perfil verificado"
-                                aria-label="Perfil verificado"
-                            >
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    className="size-4 sm:size-[18px]"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        d="m7 12.5 3.1 3.1L17.5 8"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </span>
-                        )}
+                        {profile.is_verified && <VerifiedBadge size={22} />}
                         {title && (
                             <span className="inline-flex border border-[#464498] bg-white px-2.5 py-1 font-mono text-xs font-bold text-[#464498]">
                                 {title}
@@ -267,12 +246,12 @@ export default function PlayerProfileCard({
                     </p>
                     {featuredAchievements.length > 0 && (
                         <div className="border-t border-[#1d1d1b]/20 pt-3">
-                            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#68665f]">
+                            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#1d1d1b]">
                                 Conquistas
                             </p>
                             <ul
                                 aria-label="Conquistas em destaque"
-                                className="mt-2 flex flex-wrap items-center gap-2"
+                                className="mt-2 flex flex-wrap items-center gap-2 border-2 border-[#1d1d1b] bg-[#26253a] p-2 shadow-[3px_3px_0_#464498]"
                             >
                                 {featuredAchievements.map((badge) => (
                                     <li key={badge.id}>
@@ -368,6 +347,7 @@ import AchievementBadge, {
 } from '@/Components/AchievementBadge';
 import CoverImage from '@/Components/CoverImage';
 import Modal from '@/Components/Modal';
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
 import { ReactNode, useState } from 'react';
 import PlayerAvatar from './PlayerAvatar';

@@ -1,3 +1,4 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import PaginationNav from '@/Components/PaginationNav';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import type { PlayerProfile } from '@/Components/PlayerProfileCard';
@@ -115,7 +116,7 @@ export default function Connections({
                                             person.username,
                                         )}
                                     >
-                                        @{person.username}
+                                        @{person.username}{person.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                     </Link>
                                     {!person.is_me && (
                                         <button

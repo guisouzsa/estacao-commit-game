@@ -1,9 +1,11 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import { Link } from '@inertiajs/react';
 import axios from 'axios';
 import { useEffect, useId, useState } from 'react';
 import PlayerAvatar from './PlayerAvatar';
 
 export type PlayerSummary = {
+    is_verified?: boolean;
     username: string;
     display_name: string;
     avatar?: string | null;
@@ -156,7 +158,7 @@ export default function PlayerSearch() {
                                         {player.display_name}
                                     </strong>
                                     <span className="block truncate font-mono text-xs text-[#5b5953]">
-                                        @{player.username}
+                                        @{player.username}{player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                     </span>
                                 </span>
                             </Link>

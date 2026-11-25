@@ -73,6 +73,7 @@ class PlayerPresenter
             'primary_badge' => $user->primary_badge,
             'matches_won' => (int) ($user->matches_won ?? 0),
             'is_leader' => $user->isLeader(),
+            'is_verified' => $user->isVerified(),
         ];
     }
 

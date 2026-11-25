@@ -1,3 +1,4 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import JoinByCodeForm from '@/Components/JoinByCodeForm';
 import PlayerAvatar from '@/Components/PlayerAvatar';
@@ -280,7 +281,7 @@ export default function Dashboard({
                                                 />
                                                 <span className="min-w-0 flex-1">
                                                     <strong className="block truncate">
-                                                        @{player.username}
+                                                        @{player.username}{player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                                     </strong>
                                                     {player.profile_title ? (
                                                         <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">
@@ -308,7 +309,7 @@ export default function Dashboard({
                                                 />
                                                 <span className="min-w-0 flex-1">
                                                     <strong className="block truncate">
-                                                        @{player.username}
+                                                        @{player.username}{player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                                     </strong>
                                                     {player.profile_title ? (
                                                         <span className="block truncate font-mono text-[10px] uppercase text-[#68665f]">

@@ -1,3 +1,4 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import MissionTutorial, {
     hasSeenMissionTutorial,
@@ -12,6 +13,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 type Player = {
+    is_verified?: boolean;
     key: string;
     kind: 'user' | 'guest' | 'bot';
     is_bot: boolean;
@@ -407,7 +409,7 @@ export default function Show({
                                                     />
                                                     <div className="min-w-0 flex-1">
                                                         <strong className="block truncate text-sm">
-                                                            @{player.username}
+                                                            @{player.username}{player.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                                         </strong>
                                                         <div className="mt-1 flex flex-wrap gap-1">
                                                             {participant?.is_host && (

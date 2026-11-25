@@ -1,3 +1,4 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import { router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
@@ -7,25 +8,7 @@ interface Found {
     is_verified: boolean;
 }
 
-function Check() {
-    return (
-        <span
-            className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#168de2] text-white"
-            title="Verificado"
-        >
-            <svg viewBox="0 0 24 24" className="size-3.5" aria-hidden="true">
-                <path
-                    d="m7 12.5 3.1 3.1L17.5 8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-            </svg>
-        </span>
-    );
-}
+const Check = () => <VerifiedBadge size={18} />;
 
 /** Só aparece para a conta administradora: pesquisa um jogador e concede ou remove o selo de verificado. */
 export default function VerifiedManager() {

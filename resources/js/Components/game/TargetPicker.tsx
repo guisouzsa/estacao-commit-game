@@ -1,3 +1,4 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import { cardLabel } from '@/Components/GameCard';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import { PATH_LENGTH } from '@/lib/gameGeometry';
@@ -5,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
 export type TargetOption = {
+    is_verified?: boolean;
     id: number;
     username: string;
     is_bot: boolean;
@@ -80,7 +82,7 @@ export default function TargetPicker({
                         <PlayerAvatar profile={selected.profile} size="xs" />
                         <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-bold">
-                                @{selected.username}
+                                @{selected.username}{selected.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                             </span>
                             <span className="block font-mono text-[9px] uppercase text-white/55">
                                 Alvo escolhido · toque para trocar
@@ -169,7 +171,7 @@ export default function TargetPicker({
                                                 <span className="min-w-0 flex-1">
                                                     <span className="flex items-center gap-1.5">
                                                         <strong className="truncate">
-                                                            @{option.username}
+                                                            @{option.username}{option.is_verified && <VerifiedBadge className="ml-1" size={15} />}
                                                         </strong>
                                                         {option.is_bot && (
                                                             <span className="shrink-0 border border-[#1d1d1b] bg-[#b4da33] px-1 font-mono text-[8px] font-black uppercase">

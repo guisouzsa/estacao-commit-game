@@ -145,6 +145,6 @@ class RecommendedPlayers
     /** @return list<string> */
     private function columns(): array
     {
-        return ['id', 'username', 'avatar', 'profile_frame', 'profile_background', 'profile_title'];
+        return ['id', 'username', 'avatar', 'profile_frame', 'profile_background', 'profile_title', 'verified_at'];
     }
 }

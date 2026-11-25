@@ -1,3 +1,4 @@
+import VerifiedBadge from '@/Components/VerifiedBadge';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import type { PlayerProfile } from '@/Components/PlayerProfileCard';
 import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
@@ -111,7 +112,7 @@ export default function PreviewPopover({
                 <p className="mt-2 truncate text-base font-black leading-tight">
                     {target.is_viewer ? 'Você' : `@${player.username}`}
                 </p>
-                {target.is_viewer ? <p className="font-mono text-[11px] font-bold text-[#464498]">@{player.username}</p> : null}
+                {target.is_viewer ? <p className="font-mono text-[11px] font-bold text-[#464498]">@{player.username}{player.is_verified && <VerifiedBadge className="ml-1" size={15} />}</p> : null}
 
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {player.is_bot ? <Chip tone="lime">Bot</Chip> : null}

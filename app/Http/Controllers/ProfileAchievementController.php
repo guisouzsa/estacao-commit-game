@@ -14,26 +14,37 @@ class ProfileAchievementController extends Controller
     {
         $limit = max(1, (int) config('achievements.featured_limit'));
         $data = $request->validate([
+            'mode' => ['required', 'in:none,custom,all'],
             'featured' => ['present', 'array', "max:{$limit}"],
             'featured.*' => ['integer', 'distinct'],
         ], ['featured.max' => "Você pode destacar até {$limit} conquistas."]);
 
         $user = $request->user();
-        $ids = array_values($data['featured']);
+        $mode = $data['mode'];
+        $ids = $mode === 'custom' ? array_values($data['featured']) : [];
 
         // A autorização é do servidor: cada id precisa estar entre os desbloqueios DESTA pessoa.
-        $owned = DB::table('badge_user')->where('user_id', $user->getKey())->whereIn('badge_id', $ids ?: [0])->pluck('badge_id')->all();
-        if (count($owned) !== count($ids)) {
+        $owned = $ids === [] ? 0 : DB::table('badge_user')
+            ->join('badges', 'badges.id', '=', 'badge_user.badge_id')
+            ->where('user_id', $user->getKey())
+            ->whereRaw('badges.active IS TRUE AND badges.secret IS FALSE')
+            ->whereNotNull('unlocked_at')
+            ->whereIn('badge_id', $ids)->count();
+        if ($owned !== count($ids)) {
             throw ValidationException::withMessages(['featured' => 'Só é possível destacar conquistas já desbloqueadas.']);
         }
 
-        DB::transaction(function () use ($user, $ids): void {
-            DB::table('badge_user')->where('user_id', $user->getKey())->update(['featured_order' => null]);
+        DB::transaction(function () use ($user, $ids, $mode): void {
+            $user = $user->newQuery()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            DB::table('badge_user')->where('user_id', $user->getKey())->whereNotNull('featured_order')->update(['featured_order' => null]);
             foreach ($ids as $position => $badgeId) {
                 DB::table('badge_user')->where('user_id', $user->getKey())->where('badge_id', $badgeId)->update(['featured_order' => $position + 1]);
             }
             // Compatibilidade com o campo antigo (uma insígnia em destaque): espelha a primeira.
-            $user->forceFill(['achievement_badge_id' => $ids[0] ?? null])->save();
+            $user->forceFill([
+                'achievement_display_mode' => $mode,
+                'achievement_badge_id' => $ids[0] ?? null,
+            ])->save();
         });
 
         return back()->with('status', 'Destaques atualizados.');

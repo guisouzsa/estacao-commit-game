@@ -104,10 +104,10 @@ class RecommendedPlayersTest extends TestCase
         $this->assertNotContains('gui', $names->all());
     }
 
-    public function test_recommended_players_have_their_own_paginated_page(): void
+    public function test_recommendations_are_capped_and_stable_until_refreshed(): void
     {
         User::factory()->create(['username' => 'gui']);
-        User::factory()->count(25)->create();
+        User::factory()->count(49)->create();
         $viewer = User::factory()->create();
 
         $this->actingAs($viewer)->get(route('players.recommended'))
@@ -116,9 +116,17 @@ class RecommendedPlayersTest extends TestCase
                 ->component('Players/Recommended')
                 ->has('people.data', 20)
                 ->where('people.data.0.username', 'gui')
-                ->where('people.current_page', 1)
-                ->where('people.last_page', 2)
-                ->where('people.total', 26));
+                ->missing('people.next_page_url'));
+
+        $names = fn (array $query = []) => collect($this->get(route('players.recommended', $query))
+            ->original->getData()['page']['props']['people']['data'])->pluck('username')->all();
+        $first = $names();
+        $this->assertSame($first, $names(['page' => 2]));
+        $this->post(route('players.recommended.refresh'))->assertRedirect(route('players.recommended'));
+        $second = $names();
+        $this->assertCount(20, $second);
+        $this->assertNotSame($first, $second);
+        $this->assertSame($second, $names());
     }
 
     public function test_recommended_page_excludes_the_viewer_and_marks_followed_people(): void

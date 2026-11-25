@@ -19,9 +19,13 @@ final class AchievementPresenter
     public static function forUser(User $user): array
     {
         $rows = Badge::query()->whereRaw('active IS TRUE')->whereRaw('secret IS FALSE')->orderBy('sort_order')->get();
-        $mine = DB::table('badge_user')->where('user_id', $user->getKey())->get(['badge_id', 'unlocked_at', 'featured_order'])->keyBy('badge_id');
+        $mine = DB::table('badge_user')->where('user_id', $user->getKey())->whereNotNull('unlocked_at')->get(['badge_id', 'unlocked_at', 'featured_order'])->keyBy('badge_id');
 
-        return $rows->map(function (Badge $badge) use ($mine): array {
+        $mode = in_array($user->achievement_display_mode, ['none', 'custom', 'all'], true)
+            ? $user->achievement_display_mode
+            : 'none';
+
+        return $rows->map(function (Badge $badge) use ($mine, $mode): array {
             $definition = Achievements::definition($badge->slug) ?? [];
             $own = $mine->get($badge->id);
 
@@ -38,6 +42,7 @@ final class AchievementPresenter
                 'unlocked' => $own !== null,
                 'unlocked_at' => $own?->unlocked_at,
                 'featured_order' => $own?->featured_order,
+                'displayed' => $own !== null && ($mode === 'all' || ($mode === 'custom' && $own?->featured_order !== null)),
             ];
         })->values()->all();
     }

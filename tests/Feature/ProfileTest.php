@@ -6,6 +6,7 @@ use App\Models\Badge;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -21,6 +22,38 @@ class ProfileTest extends TestCase
             ->get('/profile');
 
         $response->assertOk();
+    }
+
+    public function test_profile_exposes_google_link_status_and_configuration(): void
+    {
+        config([
+            'services.google.client_id' => 'test-client-id',
+            'services.google.client_secret' => 'test-client-secret',
+            'services.google.redirect' => 'http://localhost/auth/google/callback',
+        ]);
+        $user = User::factory()->create(['google_id' => 'google-123']);
+
+        $this->actingAs($user)->get(route('profile.edit'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Profile/Edit')
+                ->where('googleConfigured', true)
+                ->where('googleLinked', true));
+    }
+
+    public function test_profile_disables_google_link_when_oauth_is_not_configured(): void
+    {
+        config([
+            'services.google.client_id' => null,
+            'services.google.client_secret' => null,
+            'services.google.redirect' => null,
+        ]);
+
+        $this->actingAs(User::factory()->create())->get(route('profile.edit'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('googleConfigured', false)
+                ->where('googleLinked', false));
     }
 
     public function test_profile_information_can_be_updated(): void

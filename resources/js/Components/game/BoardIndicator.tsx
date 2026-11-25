@@ -16,18 +16,30 @@ export default memo(function BoardIndicator({
     active,
     you,
     onSelect,
+    watching,
+    won,
+    reacted,
 }: {
     player: PanelPlayer;
     side: Side;
     active: boolean;
     you: boolean;
     onSelect: (id: number, element: HTMLElement) => void;
+    watching?: boolean;
+    won?: boolean;
+    reacted?: boolean;
 }) {
     const position = INDICATOR_POSITION[side];
     // Progresso REAL: etapas já cumpridas do percurso (estado do servidor), nunca inventado no front.
     const progress = Math.min(1, Math.max(0, player.step / PATH_LENGTH));
     const circumference = 2 * Math.PI * RING_RADIUS;
-    const ringColor = player.blocked ? '#d01600' : active ? '#f481c6' : '#b4da33';
+    const ringColor = won
+        ? '#f0b429'
+        : player.blocked
+          ? '#d01600'
+          : active
+            ? '#f481c6'
+            : '#b4da33';
 
     return (
         <button
@@ -35,7 +47,11 @@ export default memo(function BoardIndicator({
             className="group absolute -translate-x-1/2 -translate-y-1/2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b4da33]"
             data-panel={player.id}
             onClick={(event) => onSelect(player.id, event.currentTarget)}
-            style={{ left: `${position.left}%`, top: `${position.top}%`, width: 'max(2.35rem, 9.4%)' }}
+            style={{
+                left: `${position.left}%`,
+                top: `${position.top}%`,
+                width: 'max(2.35rem, 9.4%)',
+            }}
             title={you ? 'Você' : `@${player.username}`}
             type="button"
         >
@@ -44,8 +60,19 @@ export default memo(function BoardIndicator({
                 key={player.blocked ? 'blocked' : 'free'}
             >
                 {/* Anel de progresso: o arco cresce a cada etapa cumprida; rosa = jogando agora; vermelho = Merge Conflict. */}
-                <svg aria-hidden="true" className="absolute inset-0 size-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" fill="none" r={RING_RADIUS} stroke="rgba(255,255,255,.22)" strokeWidth="6" />
+                <svg
+                    aria-hidden="true"
+                    className="absolute inset-0 size-full -rotate-90"
+                    viewBox="0 0 100 100"
+                >
+                    <circle
+                        cx="50"
+                        cy="50"
+                        fill="none"
+                        r={RING_RADIUS}
+                        stroke="rgba(255,255,255,.22)"
+                        strokeWidth="6"
+                    />
                     <circle
                         className="transition-[stroke-dashoffset,stroke] duration-500 motion-reduce:transition-none"
                         cx="50"
@@ -60,8 +87,29 @@ export default memo(function BoardIndicator({
                     />
                 </svg>
                 <span className="absolute inset-[9%] block overflow-hidden rounded-full">
-                    <PlayerAvatar profile={player.profile} size="xs" className="!size-full" />
+                    <PlayerAvatar
+                        profile={player.profile}
+                        size="xs"
+                        className="!size-full"
+                    />
                 </span>
+                {!you && (
+                    <span
+                        aria-hidden="true"
+                        className={`pointer-events-none absolute inset-x-0 bottom-[12%] mx-auto flex w-fit gap-0.5 rounded-full bg-[#1d1d1b]/85 px-1 py-0.5 ${reacted || won || player.blocked ? 'seat-reaction' : ''}`}
+                    >
+                        {[0, 1].map((eye) => (
+                            <span
+                                key={eye}
+                                className="grid size-[5px] place-items-center rounded-full bg-white"
+                            >
+                                <span
+                                    className={`size-[2px] rounded-full bg-[#1d1d1b] transition-transform motion-reduce:transition-none ${watching ? 'translate-y-px' : ''} ${won ? 'bg-[#9b5900]' : ''}`}
+                                />
+                            </span>
+                        ))}
+                    </span>
+                )}
             </span>
 
             {/* Cartas na mão (discreto, no canto). */}
@@ -73,7 +121,6 @@ export default memo(function BoardIndicator({
             >
                 {player.hand_count}
             </span>
-
         </button>
     );
 });

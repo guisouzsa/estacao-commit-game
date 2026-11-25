@@ -22,6 +22,7 @@ export default function Authenticated({
     } = usePage().props.auth;
     // Visitante: joga sem conta. Rankings, busca e perfil são só de contas permanentes.
     const isGuest = kind === 'guest';
+    const signedIn = Boolean(user);
     const [leaving, setLeaving] = useState(false);
     const [leavingBusy, setLeavingBusy] = useState(false);
     const dashboard = route().current('dashboard');
@@ -39,7 +40,7 @@ export default function Authenticated({
                     <Link
                         aria-label="Estação Commit — início"
                         className="order-1 flex shrink-0 items-center gap-2"
-                        href={route('dashboard')}
+                        href={signedIn ? route('dashboard') : '/'}
                     >
                         <BrandLogo compact />
                     </Link>
@@ -56,7 +57,7 @@ export default function Authenticated({
 
                     {/* Desktop e celular usam os mesmos atalhos compactos (Inicial, Rankings, busca, avisos e perfil), sem a faixa de links de texto. */}
 
-                    {!isGuest && (
+                    {signedIn && !isGuest && (
                         <div
                             className={`order-3 min-w-0 max-w-[420px] basis-full max-md:order-[9] md:flex-1 md:basis-auto ${searchOpen ? '' : 'max-md:hidden'}`}
                         >
@@ -65,7 +66,7 @@ export default function Authenticated({
                     )}
 
                     {/* Conta no celular: linha 1 = logo + Sair; linha 2 = Inicial, Rankings, Busca, Avisos e, por último, o Perfil. */}
-                    {!isGuest && (
+                    {signedIn && !isGuest && (
                         <>
                             <div
                                 aria-hidden="true"
@@ -114,7 +115,7 @@ export default function Authenticated({
                                 : 'contents md:order-4 md:ml-auto md:flex md:shrink-0 md:items-center md:gap-2'
                         }
                     >
-                        {!isGuest && (
+                        {signedIn && !isGuest && (
                             <button
                                 aria-expanded={searchOpen}
                                 aria-label="Buscar jogadores"
@@ -136,7 +137,14 @@ export default function Authenticated({
                                 </svg>
                             </button>
                         )}
-                        {isGuest ? (
+                        {!user ? (
+                            <Link
+                                className="inline-flex min-h-11 items-center border-2 border-[#b4da33] px-3 font-mono text-xs font-bold uppercase text-[#b4da33]"
+                                href={route('login')}
+                            >
+                                Entrar
+                            </Link>
+                        ) : isGuest ? (
                             <>
                                 <div
                                     className="flex min-h-14 items-center gap-2 border-2 border-white/25 px-2"
@@ -233,10 +241,12 @@ export default function Authenticated({
                     </div>
                 </section>
             )}
-            <main className="flex min-h-0 w-full flex-1 flex-col">
+            <main
+                className={`flex min-h-0 w-full flex-1 flex-col ${immersive ? 'max-lg:overflow-y-auto' : ''}`}
+            >
                 {children}
             </main>
-            {!isGuest && <AchievementPopup />}
+            {signedIn && !isGuest && <AchievementPopup />}
         </div>
     );
 }

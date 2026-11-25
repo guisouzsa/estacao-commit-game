@@ -2,6 +2,7 @@ import PlayerProfileCard, {
     PlayerProfile,
 } from '@/Components/PlayerProfileCard';
 import ProfileExtras from '@/Components/ProfileExtras';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -66,6 +67,14 @@ function SocialBar({ username, social }: { username: string; social: Social }) {
                 )}
             </div>
             <div>
+                {social.is_me && (
+                    <Link
+                        className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-black uppercase"
+                        href={route('profile.edit')}
+                    >
+                        Editar perfil
+                    </Link>
+                )}
                 {social.can_follow && (
                     <button
                         type="button"
@@ -103,7 +112,7 @@ export default function Public({
     social: Social;
 }) {
     return (
-        <div className="min-h-screen bg-[#1d1d1b] px-3 py-8 text-white sm:px-4 sm:py-12 lg:px-6">
+        <AuthenticatedLayout>
             <Head title={`@${profile.username}`}>
                 <meta
                     name="description"
@@ -132,42 +141,30 @@ export default function Public({
                     content={profile.cover ? 'summary_large_image' : 'summary'}
                 />
             </Head>
-            <header className="mb-10 flex items-center justify-between border-b border-white/20 pb-4">
-                <Link
-                    href="/"
-                    className="font-mono text-sm font-bold uppercase tracking-[0.16em] text-[#b4da33]"
-                >
-                    Estação Commit
-                </Link>
-                <Link
-                    href={route('login')}
-                    className="font-mono text-xs uppercase tracking-wider text-white/75 underline decoration-[#f481c6] decoration-2 underline-offset-4 hover:text-white"
-                >
-                    Entrar na estação
-                </Link>
-            </header>
-            <main className="mx-auto w-full max-w-5xl">
-                <PlayerProfileCard
-                    profile={profile}
-                    headerActions={
-                        <SocialBar
+            <section className="w-full flex-1 bg-white px-3 py-6 sm:px-6 sm:py-10">
+                <div className="mx-auto w-full max-w-5xl">
+                    <PlayerProfileCard
+                        profile={profile}
+                        headerActions={
+                            <SocialBar
+                                username={profile.username}
+                                social={social}
+                            />
+                        }
+                    >
+                        <ProfileExtras
                             username={profile.username}
-                            social={social}
+                            links={profile.links}
+                            badges={profile.badges}
+                            achievementDisplayMode={
+                                profile.achievement_display_mode
+                            }
+                            statistics={profile.statistics ?? null}
+                            share
                         />
-                    }
-                >
-                    <ProfileExtras
-                        username={profile.username}
-                        links={profile.links}
-                        badges={profile.badges}
-                        statistics={profile.statistics ?? null}
-                        share
-                    />
-                </PlayerProfileCard>
-                <p className="mt-8 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
-                    Perfil público / estação commit
-                </p>
-            </main>
-        </div>
+                    </PlayerProfileCard>
+                </div>
+            </section>
+        </AuthenticatedLayout>
     );
 }

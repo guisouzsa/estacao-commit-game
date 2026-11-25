@@ -59,6 +59,7 @@ Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])
 
 Route::middleware('auth')->group(function () {
     Route::post('profile/google/link', [GoogleAuthController::class, 'link'])
+        ->middleware('throttle:10,1')
         ->name('google.link');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])

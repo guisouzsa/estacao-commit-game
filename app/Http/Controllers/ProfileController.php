@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\AchievementPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,11 +18,15 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
-        $user = $request->user()->load(['badges' => fn ($query) => $query->whereRaw('active IS TRUE'), 'profileLinks', 'achievementBadge']);
+        $user = $request->user()->load('profileLinks');
+
         return Inertia::render('Profile/Edit', [
             'status' => session('status'),
             'avatarStyles' => config('players.selectable_avatar_styles'),
             'googleLinked' => filled($request->user()->google_id),
+            'googleConfigured' => filled(config('services.google.client_id'))
+                && filled(config('services.google.client_secret'))
+                && filled(config('services.google.redirect')),
             'appearanceOptions' => [
                 'frames' => config('profiles.frames'),
                 'backgrounds' => config('profiles.backgrounds'),
@@ -29,9 +34,9 @@ class ProfileController extends Controller
                 'titles' => config('profiles.titles'),
             ],
             'profileExtras' => [
-                'links' => $user->profileLinks->map->only(['platform','label','url','is_public'])->values(),
-                'badges' => \App\Support\AchievementPresenter::forUser($user),
-                'achievement_badge_id' => $user->achievement_badge_id,
+                'links' => $user->profileLinks->map->only(['platform', 'label', 'url', 'is_public'])->values(),
+                'badges' => AchievementPresenter::forUser($user),
+                'achievement_display_mode' => $user->achievement_display_mode ?? 'none',
                 'statistics' => $user->historicalGameStatistics(),
             ],
         ]);

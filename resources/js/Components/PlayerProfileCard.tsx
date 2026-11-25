@@ -25,7 +25,7 @@ export interface PlayerProfile {
     created_at?: string | null;
     links?: ProfileLink[];
     badges?: ProfileBadge[];
-    achievement_badge?: ProfileBadge | null;
+    achievement_display_mode?: AchievementDisplayMode;
     statistics?: {
         matches: number | null;
         wins: number;
@@ -56,7 +56,10 @@ export interface ProfileBadge {
     icon?: string;
     criterion?: string;
     featured_order?: number | null;
+    displayed?: boolean;
 }
+
+export type AchievementDisplayMode = 'none' | 'custom' | 'all';
 
 const badgeLabels: Record<string, string> = {
     terminal: 'Terminal',
@@ -159,6 +162,28 @@ export default function PlayerProfileCard({
                         <h1 className="break-words text-3xl font-black leading-tight text-[#1d1d1b] sm:text-4xl">
                             @{profile.username}
                         </h1>
+                        {profile.developer_badge && (
+                            <span
+                                className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[#168de2] text-white shadow-[0_0_0_2px_#fff] sm:size-7"
+                                title="Perfil verificado"
+                                aria-label="Perfil verificado"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    className="size-4 sm:size-[18px]"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="m7 12.5 3.1 3.1L17.5 8"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2.8"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                </svg>
+                            </span>
+                        )}
                         {title && (
                             <span className="inline-flex border border-[#464498] bg-white px-2.5 py-1 font-mono text-xs font-bold text-[#464498]">
                                 {title}
@@ -200,12 +225,6 @@ export default function PlayerProfileCard({
                             )}
                         </div>
                     )}
-                    {profile.achievement_badge && (
-                        <p className="w-full font-mono text-xs font-bold uppercase text-[#d01600]">
-                            Conquista em destaque:{' '}
-                            {profile.achievement_badge.name}
-                        </p>
-                    )}
                 </div>
             </div>
 
@@ -228,17 +247,6 @@ export default function PlayerProfileCard({
                                 <span aria-hidden="true">✦</span>
                                 {badgeLabels[profile.primary_badge] ??
                                     profile.primary_badge}
-                            </span>
-                        )}
-                        {profile.developer_badge && (
-                            <span className="inline-flex items-center gap-1.5 border border-[#464498] bg-white px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-[#1d1d1b]">
-                                <span
-                                    className="text-[#464498]"
-                                    aria-hidden="true"
-                                >
-                                    &lt;/&gt;
-                                </span>
-                                {profile.developer_badge}
                             </span>
                         )}
                     </div>

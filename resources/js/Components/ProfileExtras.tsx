@@ -1,6 +1,10 @@
 import AchievementsPanel from '@/Components/AchievementsPanel';
 import { useState } from 'react';
-import type { ProfileBadge, ProfileLink } from './PlayerProfileCard';
+import type {
+    AchievementDisplayMode,
+    ProfileBadge,
+    ProfileLink,
+} from './PlayerProfileCard';
 
 const labels: Record<string, string> = {
     github: 'GitHub',
@@ -25,15 +29,15 @@ export default function ProfileExtras({
     username,
     links = [],
     badges = [],
+    achievementDisplayMode = 'none',
     share = false,
-    editableAchievements = false,
 }: {
     username: string;
     links?: ProfileLink[];
     badges?: ProfileBadge[];
+    achievementDisplayMode?: AchievementDisplayMode;
     statistics?: Statistics | null;
     share?: boolean;
-    editableAchievements?: boolean;
 }) {
     const [message, setMessage] = useState('');
     const shareProfile = async () => {
@@ -101,7 +105,7 @@ export default function ProfileExtras({
             </section>
             <AchievementsPanel
                 badges={badges}
-                editable={editableAchievements}
+                displayMode={achievementDisplayMode}
             />
         </div>
     );

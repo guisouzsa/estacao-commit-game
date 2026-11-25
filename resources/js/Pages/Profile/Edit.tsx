@@ -1,3 +1,4 @@
+import AchievementsPanel from '@/Components/AchievementsPanel';
 import AvatarPicker from '@/Components/AvatarPicker';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import InputError from '@/Components/InputError';
@@ -22,23 +23,9 @@ import {
     useState,
 } from 'react';
 import DeleteUserForm from './Partials/DeleteUserForm';
+import GoogleAccountForm from './Partials/GoogleAccountForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
-
-const RARITY_LABEL: Record<string, string> = {
-    common: 'Comum',
-    uncommon: 'Incomum',
-    rare: 'Rara',
-    epic: 'Épica',
-    legendary: 'Lendária',
-};
-const RARITY_COLOR: Record<string, string> = {
-    common: '#b4da33',
-    uncommon: '#f481c6',
-    rare: '#464498',
-    epic: '#d01600',
-    legendary: '#f0b429',
-};
 
 type Options = {
     frames: Record<string, string>;
@@ -51,7 +38,7 @@ type EditableLink = ProfileLink & { is_public: boolean };
 type ProfileExtrasData = {
     links: EditableLink[];
     badges: ProfileBadge[];
-    achievement_badge_id: number | null;
+    achievement_display_mode: 'none' | 'custom' | 'all';
     statistics: PlayerProfile['statistics'];
 };
 
@@ -74,7 +61,6 @@ type FormData = {
     profile_background: string | null;
     primary_badge: string;
     profile_title: string | null;
-    achievement_badge_id: number | null;
     links: EditableLink[];
 };
 
@@ -104,7 +90,7 @@ const frameColors: Record<string, string> = {
 const emptyExtras: ProfileExtrasData = {
     links: [],
     badges: [],
-    achievement_badge_id: null,
+    achievement_display_mode: 'none',
     statistics: null,
 };
 
@@ -130,7 +116,6 @@ function initialFormData(
         profile_background: (user.profile_background ?? null) as string | null,
         primary_badge: user.primary_badge ?? 'terminal',
         profile_title: user.profile_title ?? null,
-        achievement_badge_id: profileExtras.achievement_badge_id,
         links: profileExtras.links,
     };
 }
@@ -139,10 +124,16 @@ export default function Edit({
     appearanceOptions,
     avatarStyles = ['pixel', 'robot', 'terminal'],
     profileExtras = emptyExtras,
+    googleConfigured = false,
+    googleLinked = false,
+    status,
 }: {
     appearanceOptions: Options;
     avatarStyles?: string[];
     profileExtras: ProfileExtrasData;
+    googleConfigured?: boolean;
+    googleLinked?: boolean;
+    status?: string;
 }) {
     const page = usePage();
     const user = page.props.auth.user as PlayerProfile & { email: string };
@@ -165,6 +156,15 @@ export default function Edit({
         reset,
         isDirty,
     } = useForm<FormData>(initialFormData(user, profileExtras));
+
+    useEffect(() => {
+        if (!status) return;
+        if (status === 'Conta Google vinculada com sucesso.') {
+            toast.success(status, { key: 'google-account-linked' });
+        } else {
+            toast.info(status, { key: 'google-account-status' });
+        }
+    }, [status]);
 
     useEffect(() => {
         if (data.avatar) {
@@ -201,10 +201,6 @@ export default function Edit({
             cover: data.remove_cover ? null : coverUrl,
             badges: profileExtras.badges,
             statistics: profileExtras.statistics,
-            achievement_badge:
-                profileExtras.badges.find(
-                    (badge) => badge.id === data.achievement_badge_id,
-                ) ?? null,
         }),
         [
             user,
@@ -387,17 +383,14 @@ export default function Edit({
                                           badges: profileExtras.badges,
                                           statistics: profileExtras.statistics,
                                           links: profileExtras.links,
-                                          achievement_badge:
-                                              profileExtras.badges.find(
-                                                  (badge) =>
-                                                      badge.id ===
-                                                      profileExtras.achievement_badge_id,
-                                              ) ?? null,
                                       }
                             }
                         >
                             <ProfileExtras
                                 badges={profileExtras.badges}
+                                achievementDisplayMode={
+                                    profileExtras.achievement_display_mode
+                                }
                                 links={
                                     editing
                                         ? data.links.filter(
@@ -408,7 +401,6 @@ export default function Edit({
                                           )
                                 }
                                 share={!editing}
-                                editableAchievements={!editing}
                                 statistics={profileExtras.statistics}
                                 username={data.username}
                             />
@@ -534,59 +526,6 @@ export default function Edit({
                                                 })),
                                             ]}
                                             value={data.profile_title ?? ''}
-                                        />
-
-                                        <OptionPicker
-                                            hint="Só as conquistas que você já desbloqueou."
-                                            label="Conquista em destaque"
-                                            onChange={(value) =>
-                                                setData(
-                                                    'achievement_badge_id',
-                                                    value
-                                                        ? Number(value)
-                                                        : null,
-                                                )
-                                            }
-                                            options={[
-                                                {
-                                                    value: '',
-                                                    label: 'Sem destaque',
-                                                    description:
-                                                        'Nenhuma conquista em destaque.',
-                                                },
-                                                ...profileExtras.badges
-                                                    .filter(
-                                                        (badge) =>
-                                                            badge.unlocked,
-                                                    )
-                                                    .map((badge) => ({
-                                                        value: String(badge.id),
-                                                        label: badge.name,
-                                                        description:
-                                                            badge.description,
-                                                        tag:
-                                                            RARITY_LABEL[
-                                                                badge.rarity
-                                                            ] ?? badge.rarity,
-                                                        accent:
-                                                            RARITY_COLOR[
-                                                                badge.rarity
-                                                            ] ?? '#b4da33',
-                                                    })),
-                                            ]}
-                                            value={
-                                                data.achievement_badge_id ===
-                                                null
-                                                    ? ''
-                                                    : String(
-                                                          data.achievement_badge_id,
-                                                      )
-                                            }
-                                        />
-                                        <InputError
-                                            message={
-                                                errors.achievement_badge_id
-                                            }
                                         />
                                     </div>
 
@@ -1176,6 +1115,13 @@ export default function Edit({
                             </div>
                         )}
                     </form>
+                    <div className="mt-6 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-4 shadow-[6px_6px_0_#464498] sm:p-6">
+                        <AchievementsPanel
+                            badges={profileExtras.badges}
+                            displayMode={profileExtras.achievement_display_mode}
+                            editable
+                        />
+                    </div>
 
                     <ConfirmDialog
                         show={confirmRename}
@@ -1208,8 +1154,12 @@ export default function Edit({
                                     público.
                                 </p>
                             </div>
-                            <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                            <div className="grid items-stretch gap-4 lg:grid-cols-2">
                                 <UpdateProfileInformationForm className="h-full" />
+                                <GoogleAccountForm
+                                    configured={googleConfigured}
+                                    linked={googleLinked}
+                                />
                                 <UpdatePasswordForm />
                                 <DeleteUserForm />
                             </div>

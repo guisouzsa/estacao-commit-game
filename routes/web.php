@@ -39,6 +39,7 @@ Route::get('/convites/{token}', [GameRoomController::class, 'open'])->where('tok
 Route::middleware('auth:web,visitor')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/jogadores/recomendados', RecommendedPlayerController::class)->name('players.recommended');
+    Route::post('/jogadores/recomendados/atualizar', [RecommendedPlayerController::class, 'refresh'])->middleware('throttle:10,1')->name('players.recommended.refresh');
     Route::post('/salas', [GameRoomController::class, 'store'])->middleware('throttle:10,1')->name('rooms.store');
     Route::get('/salas/{room}', [GameRoomController::class, 'show'])->whereUuid('room')->name('rooms.show');
     Route::post('/salas/{room}/convite', [GameRoomController::class, 'invite'])->whereUuid('room')->middleware('throttle:10,1')->name('rooms.invite');

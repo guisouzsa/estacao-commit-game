@@ -22,6 +22,41 @@ class RecommendedPlayers
 {
     public const INITIAL = 5;
 
+    public const PAGE_LIMIT = 20;
+
+    /** @return Collection<int, User> */
+    public function forPage(?Authenticatable $actor): Collection
+    {
+        $key = $this->pageSessionKey($actor);
+        $ids = session($key);
+        if (! is_array($ids)) {
+            $gui = $this->gui($actor);
+            $users = $this->pick($actor, self::PAGE_LIMIT - ($gui ? 1 : 0), $gui ? [$gui->id] : []);
+            $users = $gui ? $users->prepend($gui)->values() : $users;
+            $ids = $users->pluck('id')->all();
+            session([$key => $ids]);
+            $this->remember($ids);
+
+            return $users;
+        }
+
+        $users = User::query()->whereIn('id', $ids)
+            ->when($this->viewerId($actor), fn ($query, $id) => $query->whereKeyNot($id))
+            ->get($this->columns())->keyBy('id');
+
+        return collect($ids)->map(fn ($id) => $users->get($id))->filter()->values();
+    }
+
+    public function refreshOnNextVisit(?Authenticatable $actor): void
+    {
+        session()->forget($this->pageSessionKey($actor));
+    }
+
+    private function pageSessionKey(?Authenticatable $actor): string
+    {
+        return 'recommended.page.'.($this->viewerId($actor) ?? 'guest');
+    }
+
     /** Quantos ids o sorteio considera (evita ordenar a tabela inteira nem carregar fotos à toa). */
     private const POOL = 120;
 

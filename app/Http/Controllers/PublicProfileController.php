@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Follow;
 use App\Models\User;
+use App\Support\AchievementPresenter;
 use App\Support\AvatarUrl;
 use App\Support\PlayerPresenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Support\AchievementPresenter;
 
 class PublicProfileController extends Controller
 {
@@ -17,11 +17,12 @@ class PublicProfileController extends Controller
     {
         $user = User::query()
             ->whereRaw('LOWER(username) = ?', [strtolower($username)])
-            ->with(['badges' => fn ($query) => $query->whereRaw('active IS TRUE'), 'profileLinks' => fn ($query) => $query->whereRaw('is_public IS TRUE'), 'achievementBadge'])
+            ->with(['profileLinks' => fn ($query) => $query->whereRaw('is_public IS TRUE')])
             ->firstOrFail();
 
         $viewer = $request->user();
         $isMe = $viewer instanceof User && $viewer->is($user);
+        $displayMode = $user->achievement_display_mode ?? 'none';
 
         return Inertia::render('Profile/Public', [
             'social' => [
@@ -53,9 +54,12 @@ class PublicProfileController extends Controller
                     ? config('profiles.developer_badges.'.$user->developer_badge)
                     : null,
                 'created_at' => $user->created_at,
-                'links' => $user->profileLinks->map->only(['platform','label','url'])->values(),
-                'badges' => AchievementPresenter::forUser($user),
-                'achievement_badge' => $user->achievementBadge?->only(['id','slug','name','description','rarity','image_path']),
+                'links' => $user->profileLinks->map->only(['platform', 'label', 'url'])->values(),
+                'badges' => $displayMode === 'none' ? [] : array_values(array_filter(
+                    AchievementPresenter::forUser($user),
+                    fn (array $badge) => $badge['displayed'],
+                )),
+                'achievement_display_mode' => $displayMode,
                 'statistics' => $user->historicalGameStatistics(),
             ],
         ]);

@@ -1,4 +1,3 @@
-import PaginationNav from '@/Components/PaginationNav';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import type { PlayerSummary } from '@/Components/PlayerSearch';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -13,11 +12,6 @@ type Person = PlayerSummary & {
 
 type PeoplePage = {
     data: Person[];
-    current_page: number;
-    last_page: number;
-    total: number;
-    prev_page_url: string | null;
-    next_page_url: string | null;
 };
 
 const TITLE_LABEL: Record<string, string> = {
@@ -38,6 +32,7 @@ const TITLE_LABEL: Record<string, string> = {
 
 export default function Recommended({ people }: { people: PeoplePage }) {
     const [busy, setBusy] = useState<string | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
 
     const toggleFollow = (person: Person) => {
         setBusy(person.username);
@@ -77,6 +72,28 @@ export default function Recommended({ people }: { people: PeoplePage }) {
                             acompanhe quem você quiser.
                         </p>
                     </header>
+
+                    <button
+                        className="mt-4 min-h-10 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold disabled:opacity-60"
+                        disabled={refreshing || busy !== null}
+                        onClick={() => {
+                            setRefreshing(true);
+                            router.post(
+                                route('players.recommended.refresh'),
+                                {},
+                                {
+                                    preserveState: true,
+                                    replace: true,
+                                    onFinish: () => setRefreshing(false),
+                                },
+                            );
+                        }}
+                        type="button"
+                    >
+                        {refreshing
+                            ? 'Atualizando…'
+                            : 'Atualizar recomendações'}
+                    </button>
 
                     {people.data.length ? (
                         <ul className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -140,8 +157,6 @@ export default function Recommended({ people }: { people: PeoplePage }) {
                             Ainda não há outros jogadores para recomendar.
                         </p>
                     )}
-
-                    <PaginationNav page={people} />
                 </div>
             </main>
         </AuthenticatedLayout>

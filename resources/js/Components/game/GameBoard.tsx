@@ -9,6 +9,9 @@ export type BoardIndicatorData = {
     side: Side;
     active: boolean;
     you: boolean;
+    watching?: boolean;
+    won?: boolean;
+    reacted?: boolean;
 };
 
 export type BoardPlayer = {
@@ -211,10 +214,15 @@ export default memo(function GameBoard({
                     <BoardIndicator
                         active={indicator.active}
                         key={indicator.player.id}
-                        onSelect={(id, element) => onSelectPlayer?.(id, element)}
+                        onSelect={(id, element) =>
+                            onSelectPlayer?.(id, element)
+                        }
                         player={indicator.player}
                         side={indicator.side}
                         you={indicator.you}
+                        watching={indicator.watching}
+                        won={indicator.won}
+                        reacted={indicator.reacted}
                     />
                 ))}
             </div>

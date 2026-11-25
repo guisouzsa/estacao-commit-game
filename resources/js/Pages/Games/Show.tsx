@@ -361,23 +361,20 @@ export default function Show({
         game.status === 'active' && currentPlayer?.player.is_bot === true;
     useEffect(() => {
         if (!botTurn) return;
-        const timer = window.setTimeout(
-            () => {
-                if (busyRef.current) return;
-                router.post(
-                    route('games.bots', room.id),
-                    { version: game.version },
-                    {
-                        preserveScroll: true,
-                        preserveState: true,
-                        only: PARTIAL,
-                    },
-                );
-            },
-            reduced ? Math.min(400, botDelay) : botDelay,
-        );
+        const timer = window.setTimeout(() => {
+            if (busyRef.current) return;
+            router.post(
+                route('games.bots', room.id),
+                { version: game.version },
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    only: PARTIAL,
+                },
+            );
+        }, botDelay);
         return () => window.clearTimeout(timer);
-    }, [botTurn, game.version, room.id, reduced, botDelay]);
+    }, [botTurn, game.version, room.id, botDelay]);
 
     // ---------- Cartas em voo ----------
     const [flights, setFlights] = useState<Flight[]>([]);
@@ -655,6 +652,12 @@ export default function Show({
         active:
             game.status === 'active' && game.current_seat === participant.seat,
         you: participant.is_viewer,
+        watching:
+            game.status === 'active' && game.current_seat !== participant.seat,
+        won:
+            game.status === 'finished' &&
+            game.winner_participant_id === participant.id,
+        reacted: freshSlot?.startsWith(`${participant.id}:`) ?? false,
     }));
     const previewTarget = preview
         ? participants.find((p) => p.id === preview.id)
@@ -671,7 +674,7 @@ export default function Show({
     return (
         <AuthenticatedLayout immersive>
             <Head title="Partida em andamento" />
-            <main className="game-stage relative flex-1 overflow-x-hidden text-white max-lg:flex max-lg:min-h-0 max-lg:flex-col max-lg:overflow-hidden">
+            <div className="game-stage relative flex-1 overflow-x-hidden text-white">
                 <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-black/40 px-3 py-1.5 backdrop-blur-sm max-lg:shrink-0 sm:px-5 lg:pointer-events-none lg:absolute lg:inset-x-0 lg:top-0 lg:z-30 lg:border-0 lg:bg-transparent lg:backdrop-blur-none [&>*]:lg:pointer-events-auto">
                     <div className="flex items-center gap-3">
                         <strong className="font-mono text-xs uppercase text-[#b4da33] max-sm:hidden">
@@ -691,9 +694,21 @@ export default function Show({
                             {online ? 'Sincronizado' : 'Reconectando…'}
                         </span>
                         <button
+                            aria-controls="game-history"
                             aria-expanded={historyOpen}
-                            className="relative min-h-11 border-2 border-[#464498] bg-[#464498] px-3 font-mono font-bold text-white shadow-[2px_2px_0_#f481c6] hover:bg-[#5553ad] sm:min-h-9 lg:hidden"
-                            onClick={() => setHistoryOpen((value) => !value)}
+                            className="relative min-h-11 border-2 border-[#464498] bg-[#464498] px-3 font-mono font-bold text-white shadow-[2px_2px_0_#f481c6] hover:bg-[#5553ad] sm:min-h-9 xl:hidden"
+                            onClick={() => {
+                                setHistoryOpen(!historyOpen);
+                                if (!historyOpen) {
+                                    requestAnimationFrame(() =>
+                                        document
+                                            .getElementById('game-history')
+                                            ?.scrollIntoView({
+                                                block: 'nearest',
+                                            }),
+                                    );
+                                }
+                            }}
                             type="button"
                         >
                             Registro
@@ -719,44 +734,12 @@ export default function Show({
                         >
                             Sair
                         </button>
-
-                        <AnimatePresence>
-                            {historyOpen && (
-                                <motion.aside
-                                    animate={{ opacity: 1, y: 0 }}
-                                    aria-label="Registro da partida"
-                                    className="absolute right-0 top-full z-40 mt-2 w-72 max-w-[85vw] rounded-lg border-2 border-white/20 bg-[#10100f]/95 p-3 normal-case shadow-xl lg:hidden"
-                                    exit={{ opacity: 0, y: -6 }}
-                                    initial={
-                                        reduced ? false : { opacity: 0, y: -6 }
-                                    }
-                                >
-                                    <h2 className="mb-2 font-mono text-[10px] font-black uppercase tracking-[.14em] text-[#f481c6]">
-                                        Registro da estação
-                                    </h2>
-                                    <GameLog
-                                        actors={logActors}
-                                        items={game.history}
-                                    />
-                                </motion.aside>
-                            )}
-                        </AnimatePresence>
                     </div>
                 </header>
 
-                <aside
-                    aria-label="Últimas jogadas"
-                    className="absolute left-3 top-12 z-20 hidden w-60 rounded-lg border-2 border-white/15 bg-[#10100f]/80 p-2.5 lg:block xl:w-64"
-                >
-                    <h2 className="mb-1.5 font-mono text-[10px] font-black uppercase tracking-[.14em] text-[#f481c6]">
-                        Últimas jogadas
-                    </h2>
-                    <GameLog actors={logActors} items={game.history} />
-                </aside>
-
-                <section className="mx-auto w-full max-w-[1280px] px-2 py-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:grid [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:max-w-[1680px] [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:grid-cols-[auto_minmax(22rem,1fr)] [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:pl-[16.5rem] [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:items-start [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:gap-x-6 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:gap-y-1 max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-1.5 max-lg:py-1 sm:px-4">
+                <section className="mx-auto grid w-full max-w-[1440px] gap-2 px-2 py-2 sm:px-4 xl:grid-cols-[minmax(12rem,1fr)_minmax(0,50rem)_minmax(0,1fr)]">
                     {/* Prioridade visual: 1) tabuleiro e cartas, 2) quem joga agora, 3) indicadores. */}
-                    <div className="relative z-20 shrink-0 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:col-start-1 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:row-start-1 lg:pt-2">
+                    <div className="min-w-0 xl:col-start-2">
                         <TurnBanner
                             current={
                                 currentPlayer
@@ -782,10 +765,10 @@ export default function Show({
                         />
                     </div>
 
-                    <div className="mx-auto w-full max-lg:min-h-0 max-lg:flex-1 max-lg:[container-type:size] lg:mt-1 lg:w-[max(18rem,min(calc(100vw_-_21rem),calc(100dvh_-_23rem),58rem))] [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:col-start-1 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:row-start-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:mx-0 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:w-[max(18rem,min(calc(100vw_-_44rem),calc(100dvh_-_12.5rem),60rem))]">
+                    <div className="mx-auto w-[min(100%,clamp(20rem,calc(100dvh-17rem),54rem))] xl:col-start-2">
                         {/* Celular: o tabuleiro ocupa o MAIOR quadrado que cabe no espaço livre (sem rolagem). */}
-                        <div className="max-lg:grid max-lg:size-full max-lg:place-items-center">
-                            <div className="w-full max-lg:w-[min(100cqw,100cqh)]">
+                        <div>
+                            <div className="w-full">
                                 <GameBoard
                                     deckCount={game.deck_count}
                                     discardCount={game.discard_count}
@@ -798,10 +781,10 @@ export default function Show({
                         </div>
                     </div>
 
-                    <div className="relative z-20 mt-1 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_#0006] max-lg:mt-0 max-lg:shrink-0 sm:p-3 lg:mt-1 lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:col-start-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:row-span-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:row-start-1 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:mt-0 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:grid-cols-1 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:items-stretch [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:self-center [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:p-4 [@media(min-width:1024px)_and_(max-height:1100px)]:sm:p-2">
+                    <div className="min-w-0 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 shadow-[0_-10px_30px_#0006] lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3 xl:col-start-2">
                         <div className="relative min-w-0">
                             <div
-                                className="flex min-h-[9.5rem] items-end gap-0 overflow-x-auto [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:!min-h-0 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:flex-wrap [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:items-start [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:justify-center [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:gap-3 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:overflow-visible [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:!pt-2 [@media(min-width:1280px)_and_(min-aspect-ratio:3/2)]:[&>*]:!m-0 px-1 pb-2 pt-7 [scrollbar-width:none] sm:gap-2 sm:[scrollbar-width:thin] max-sm:[&>*+*]:-ml-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto [@media(min-width:1024px)_and_(max-height:1100px)]:min-h-[7.25rem] [@media(min-width:1024px)_and_(max-height:1100px)]:pt-4"
+                                className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto"
                                 onScroll={measureHand}
                                 ref={handRef}
                             >
@@ -969,8 +952,18 @@ export default function Show({
                             )}
                         </div>
                     </div>
+                    <aside
+                        aria-label="Últimas jogadas"
+                        className={`min-w-0 rounded-lg border-2 border-white/15 bg-[#10100f] p-2.5 xl:col-start-1 xl:row-start-2 xl:block xl:self-start ${historyOpen ? 'block' : 'hidden'}`}
+                        id="game-history"
+                    >
+                        <h2 className="mb-1.5 font-mono text-[10px] font-black uppercase tracking-[.14em] text-[#f481c6]">
+                            Últimas jogadas
+                        </h2>
+                        <GameLog actors={logActors} items={game.history} />
+                    </aside>
                 </section>
-            </main>
+            </div>
 
             <MissionTutorial
                 onClose={() => setTutorial(false)}
@@ -987,8 +980,9 @@ export default function Show({
                 />
             ) : null}
 
-            {game.status === 'finished' && (
+            {game.status === 'finished' && winner && (
                 <VictoryScreen
+                    key={game.id}
                     cleanupAt={game.cleanup_at}
                     dashboardHref={route('dashboard')}
                     gameId={game.id}

@@ -37,7 +37,7 @@ class RoomJoinService
      * Só LÊ o estado do convite, sem entrar na sala nem reservar vaga. Serve para
      * mostrar a página certa antes de pedir qualquer coisa ao visitante.
      *
-     * @return array{state: string, room: ?GameRoom}
+     * @return array{state: string, room: ?GameRoom, participants: int}
      */
     public function inspect(string $token): array
     {
@@ -46,33 +46,39 @@ class RoomJoinService
             ->first();
 
         if (! $invitation) {
-            return ['state' => self::INVALID, 'room' => null];
+            return ['state' => self::INVALID, 'room' => null, 'participants' => 0];
         }
 
         if ($invitation->revoked_at) {
-            return ['state' => self::REVOKED, 'room' => null];
+            return ['state' => self::REVOKED, 'room' => null, 'participants' => 0];
         }
 
         if ($invitation->expires_at->isPast()) {
-            return ['state' => self::EXPIRED, 'room' => null];
+            return ['state' => self::EXPIRED, 'room' => null, 'participants' => 0];
         }
 
         $room = GameRoom::query()->find($invitation->room_id);
+        if (! $room) {
+            return ['state' => self::INVALID, 'room' => null, 'participants' => 0];
+        }
 
-        // Sala vazia e vencida é excluída agora (o scheduler pode estar atrasado).
-        if (! $room || app(RoomExpirationService::class)->expireIfEligible($room)) {
-            return ['state' => self::INVALID, 'room' => null];
+        // Sala vazia e vencida é excluída agora (o scheduler pode estar atrasado). A transação com trava só abre
+        // quando o prazo pode ter vencido (checagem em memória); antes ela rodava em toda abertura de convite.
+        $expiration = app(RoomExpirationService::class);
+        if ($expiration->mightBeOverdue($room) && $expiration->expireIfEligible($room)) {
+            return ['state' => self::INVALID, 'room' => null, 'participants' => 0];
         }
 
         if ($room->status !== 'waiting' || $room->started_at !== null) {
-            return ['state' => self::UNAVAILABLE, 'room' => null];
+            return ['state' => self::UNAVAILABLE, 'room' => null, 'participants' => 0];
         }
 
-        if ($room->participants()->count() >= GameRoom::MAX_PARTICIPANTS) {
-            return ['state' => self::FULL, 'room' => $room];
+        $participants = $room->participants()->count();
+        if ($participants >= GameRoom::MAX_PARTICIPANTS) {
+            return ['state' => self::FULL, 'room' => $room, 'participants' => $participants];
         }
 
-        return ['state' => self::OK, 'room' => $room];
+        return ['state' => self::OK, 'room' => $room, 'participants' => $participants];
     }
 
     /**
@@ -100,7 +106,8 @@ class RoomJoinService
             if ($room->hasParticipant($actor)) {
                 return [$room, false, false];
             }
-            if (app(RoomExpirationService::class)->expireIfEligible($room)) {
+            $expiration = app(RoomExpirationService::class);
+            if ($expiration->mightBeOverdue($room) && $expiration->expireIfEligible($room)) {
                 return [$room, true, false];
             }
             abort_if($room->status !== 'waiting', $room->status === 'expired' ? 410 : 409, 'A sala não está mais disponível.');
@@ -118,8 +125,11 @@ class RoomJoinService
                 'seat' => $seat,
                 'joined_at' => now(),
             ]);
-            // Entrou alguém além do anfitrião: a contagem de sala vazia é cancelada.
-            app(RoomExpirationService::class)->syncEmptiness($room);
+            // Entrou um humano que não é o anfitrião: a sala deixou de estar "vazia" e a contagem de 5 minutos para.
+            // (Mesmo efeito de syncEmptiness, sem a consulta extra: aqui já se sabe que há outro humano.)
+            if ($room->empty_since !== null) {
+                $room->forceFill(['empty_since' => null])->save();
+            }
 
             return [$room, false, true];
         }, 3);

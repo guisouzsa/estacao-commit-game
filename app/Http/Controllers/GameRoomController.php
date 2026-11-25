@@ -32,7 +32,7 @@ class GameRoomController extends Controller
 {
     public function open(Request $request, string $token, RoomJoinService $joins): Response|RedirectResponse
     {
-        ['state' => $state, 'room' => $room] = $joins->inspect($token);
+        ['state' => $state, 'participants' => $participants] = $joins->inspect($token);
         abort_if($state === RoomJoinService::INVALID, 404, 'Não encontramos uma sala com esse código.');
         abort_if($state === RoomJoinService::REVOKED, 410, 'Este convite foi revogado.');
         abort_if($state === RoomJoinService::EXPIRED, 410, 'Este convite expirou.');
@@ -46,9 +46,12 @@ class GameRoomController extends Controller
             return to_route('guest.create');
         }
 
+        // A página já entra sozinha (POST com CSRF, logo ao abrir): abrir o convite é a intenção de entrar.
+        // Assim o convite por link fica igual ao código digitado: sem clique a mais e com "Entrando na sala...".
         return Inertia::render('Invites/Show', [
             'code' => RoomJoinService::normalize($token),
-            'participants' => $room->participants()->count(),
+            'participants' => $participants,
+            'autoJoin' => true,
         ]);
     }
 

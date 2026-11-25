@@ -674,7 +674,7 @@ export default function Show({
     return (
         <AuthenticatedLayout immersive>
             <Head title="Partida em andamento" />
-            <div className="game-stage relative flex-1 overflow-x-hidden text-white">
+            <div className="game-stage relative flex-1 overflow-x-hidden text-white lg:flex lg:min-h-0 lg:flex-col lg:[--hand-card-h:clamp(6.5rem,16dvh,9.5rem)]">
                 <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-black/40 px-3 py-1.5 backdrop-blur-sm max-lg:shrink-0 sm:px-5 lg:pointer-events-none lg:absolute lg:inset-x-0 lg:top-0 lg:z-30 lg:border-0 lg:bg-transparent lg:backdrop-blur-none [&>*]:lg:pointer-events-auto">
                     <div className="flex items-center gap-3">
                         <strong className="font-mono text-xs uppercase text-[#b4da33] max-sm:hidden">
@@ -737,9 +737,12 @@ export default function Show({
                     </div>
                 </header>
 
-                <section className="mx-auto grid w-full max-w-[1440px] gap-2 px-2 py-2 sm:px-4 xl:grid-cols-[minmax(12rem,1fr)_minmax(0,50rem)_minmax(0,1fr)]">
+                <section className="mx-auto grid w-full max-w-[1440px] gap-2 px-2 py-2 sm:px-4 lg:min-h-0 lg:flex-1 lg:grid-rows-[auto_minmax(16rem,1fr)_auto] xl:grid-cols-[minmax(17rem,1fr)_minmax(0,50rem)_minmax(17rem,1fr)] xl:grid-rows-[minmax(16rem,1fr)_auto]">
                     {/* Prioridade visual: 1) tabuleiro e cartas, 2) quem joga agora, 3) indicadores. */}
-                    <div className="min-w-0 xl:col-start-2">
+                    {/* Telas largas: a vez de quem joga fica na coluna da direita, ao lado do tabuleiro,
+                        e a altura toda sobra para o tabuleiro e a mão. De 1024 a 1279 px ela ocupa o meio
+                        da faixa do cabeçalho, entre o título e os botões, sem encostar neles. */}
+                    <div className="min-w-0 lg:max-xl:mx-auto lg:max-xl:w-[calc(100%-40rem)] xl:col-start-3 xl:row-start-1 xl:mt-12 xl:self-start">
                         <TurnBanner
                             current={
                                 currentPlayer
@@ -765,9 +768,11 @@ export default function Show({
                         />
                     </div>
 
-                    <div className="mx-auto w-[min(100%,clamp(20rem,calc(100dvh-17rem),54rem))] xl:col-start-2">
-                        {/* Celular: o tabuleiro ocupa o MAIOR quadrado que cabe no espaço livre (sem rolagem). */}
-                        <div>
+                    <div className="mx-auto w-[min(100%,clamp(20rem,calc(100dvh-17rem),54rem))] lg:grid lg:size-full lg:min-h-0 lg:place-items-center lg:[container-type:size] xl:col-start-2 xl:row-start-1">
+                        {/* Celular: o tabuleiro ocupa o MAIOR quadrado que cabe no espaço livre (sem rolagem).
+                            Desktop: o maior quadrado que cabe na linha que sobra entre o topo e a mão
+                            (100cqw x 100cqh do contêiner), limitado pela coluna de 50rem. */}
+                        <div className="lg:w-[min(100cqw,100cqh)]">
                             <div className="w-full">
                                 <GameBoard
                                     deckCount={game.deck_count}
@@ -781,7 +786,7 @@ export default function Show({
                         </div>
                     </div>
 
-                    <div className="min-w-0 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 shadow-[0_-10px_30px_#0006] lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3 xl:col-start-2">
+                    <div className="min-w-0 rounded-xl border-2 border-white/15 bg-[#161615]/80 p-2 shadow-[0_-10px_30px_#0006] lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:items-end lg:gap-3 xl:col-start-2 xl:row-start-2">
                         <div className="relative min-w-0">
                             <div
                                 className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-5 [&>:first-child]:ml-auto [&>:last-child]:mr-auto"
@@ -954,7 +959,7 @@ export default function Show({
                     </div>
                     <aside
                         aria-label="Últimas jogadas"
-                        className={`min-w-0 rounded-lg border-2 border-white/15 bg-[#10100f] p-2.5 xl:col-start-1 xl:row-start-2 xl:block xl:self-start ${historyOpen ? 'block' : 'hidden'}`}
+                        className={`min-w-0 rounded-lg border-2 border-white/15 bg-[#10100f] p-2.5 lg:max-xl:absolute lg:max-xl:right-4 lg:max-xl:top-14 lg:max-xl:z-40 lg:max-xl:max-h-[60dvh] lg:max-xl:w-80 lg:max-xl:overflow-y-auto lg:max-xl:shadow-[0_10px_30px_#000a] xl:col-start-1 xl:row-start-1 xl:mt-12 xl:block xl:max-h-[calc(100%-3rem)] xl:self-start xl:overflow-y-auto ${historyOpen ? 'block' : 'hidden'}`}
                         id="game-history"
                     >
                         <h2 className="mb-1.5 font-mono text-[10px] font-black uppercase tracking-[.14em] text-[#f481c6]">

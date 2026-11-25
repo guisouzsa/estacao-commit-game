@@ -9,6 +9,7 @@ export interface User {
     cover?: string | null;
     cover_position_x?: number;
     cover_position_y?: number;
+    cover_zoom?: number;
     profile_frame?: string | null;
     profile_background?: string | null;
     primary_badge?: string | null;

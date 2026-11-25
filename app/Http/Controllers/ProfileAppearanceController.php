@@ -45,6 +45,7 @@ class ProfileAppearanceController extends Controller
         $user->avatar_zoom = $validated['avatar_zoom'] ?? $user->avatar_zoom ?? 100;
         $user->cover_position_x = $validated['cover_position_x'] ?? $user->cover_position_x ?? 50;
         $user->cover_position_y = $validated['cover_position_y'] ?? $user->cover_position_y ?? 50;
+        $user->cover_zoom = $validated['cover_zoom'] ?? $user->cover_zoom ?? 100;
         $user->profile_frame = $validated['profile_frame'];
         $user->profile_background = $validated['profile_background'] ?? null;
         $user->primary_badge = $validated['primary_badge'];

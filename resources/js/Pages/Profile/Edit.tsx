@@ -1,4 +1,4 @@
-import AchievementsPanel from '@/Components/AchievementsPanel';
+import AchievementPicker, { AchievementDraft } from '@/Components/AchievementPicker';
 import AvatarPicker from '@/Components/AvatarPicker';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import InputError from '@/Components/InputError';
@@ -13,10 +13,11 @@ import ProfileImageEditor from '@/Components/ProfileImageEditor';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
 import { toast } from '@/lib/toast';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ChangeEvent,
     FormEvent,
+    useCallback,
     useEffect,
     useMemo,
     useRef,
@@ -57,6 +58,7 @@ type FormData = {
     avatar_zoom: number;
     cover_position_x: number;
     cover_position_y: number;
+    cover_zoom: number;
     profile_frame: string;
     profile_background: string | null;
     primary_badge: string;
@@ -68,6 +70,15 @@ type EditorState = {
     kind: 'avatar' | 'cover';
     file?: File;
     src?: string;
+    /** Proporção real da capa no card (largura/altura), medida ao abrir o editor. */
+    coverAspect?: number;
+};
+
+/** Mede a faixa da capa do card nesta tela, para a prévia do editor ter exatamente a mesma proporção. */
+const measureCoverAspect = () => {
+    const frame = document.querySelector('[data-cover-frame]');
+    const box = frame?.getBoundingClientRect();
+    return box && box.width > 0 && box.height > 0 ? box.width / box.height : 5;
 };
 
 const frameColors: Record<string, string> = {
@@ -86,6 +97,9 @@ const frameColors: Record<string, string> = {
     ocean: 'border-[#464498] shadow-[0_0_0_3px_#7dd3fc,0_0_0_6px_#1d1d1b]',
     gold: 'border-[#f0b429] shadow-[0_0_0_3px_#1d1d1b,0_0_0_6px_#f0b429]',
 };
+
+/** Igual a config/achievements.php (featured_limit); o servidor valida de novo. */
+const ACHIEVEMENT_LIMIT = 5;
 
 const emptyExtras: ProfileExtrasData = {
     links: [],
@@ -112,6 +126,7 @@ function initialFormData(
         avatar_zoom: user.avatar_zoom ?? 100,
         cover_position_x: user.cover_position_x ?? 50,
         cover_position_y: user.cover_position_y ?? 50,
+        cover_zoom: user.cover_zoom ?? 100,
         profile_frame: user.profile_frame ?? 'standard',
         profile_background: (user.profile_background ?? null) as string | null,
         primary_badge: user.primary_badge ?? 'terminal',
@@ -219,6 +234,7 @@ export default function Edit({
         setCoverUrl(user.cover ?? null);
         setEditor(null);
         cropSnapshot.current = null;
+        resetAchievements();
         setEditing(false);
     };
 
@@ -226,9 +242,74 @@ export default function Edit({
     const [confirmRename, setConfirmRename] = useState(false);
     const renaming = data.username !== user.username;
 
+    // Escolha das conquistas exibidas: editada junto com o resto do perfil e salva pelo mesmo botão.
+    const savedAchievementMode = profileExtras.achievement_display_mode;
+    const savedAchievementIds = useMemo(() => {
+        const unlocked = profileExtras.badges.filter((badge) => badge.unlocked);
+        if (savedAchievementMode === 'all') return unlocked.slice(0, ACHIEVEMENT_LIMIT).map((badge) => badge.id);
+        return unlocked
+            .filter((badge) => badge.featured_order)
+            .sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0))
+            .map((badge) => badge.id);
+    }, [profileExtras.badges, savedAchievementMode]);
+    const [achievementsOn, setAchievementsOn] = useState(savedAchievementMode !== 'none');
+    const [achievementIds, setAchievementIds] = useState<number[]>(savedAchievementIds);
+    const [achievementsTouched, setAchievementsTouched] = useState(false);
+    const resetAchievements = useCallback(() => {
+        setAchievementsOn(savedAchievementMode !== 'none');
+        setAchievementIds(savedAchievementIds);
+        setAchievementsTouched(false);
+    }, [savedAchievementMode, savedAchievementIds]);
+    useEffect(resetAchievements, [resetAchievements]);
+    const achievementDraft: AchievementDraft = {
+        mode: achievementsOn ? 'custom' : 'none',
+        featured: achievementsOn ? achievementIds : [],
+        dirty:
+            achievementsTouched &&
+            ((achievementsOn ? 'custom' : 'none') !== savedAchievementMode ||
+                (achievementsOn && achievementIds.join(',') !== savedAchievementIds.join(','))),
+    };
+    const achievementsDirty = achievementDraft.dirty;
+    // Prévia do card durante a edição: só as conquistas escolhidas, na ordem escolhida.
+    const previewBadges = profileExtras.badges.map((badge) => {
+        const position = achievementsOn ? achievementIds.indexOf(badge.id) : -1;
+
+        return { ...badge, displayed: position >= 0, featured_order: position >= 0 ? position + 1 : null };
+    });
+    const hasChanges = isDirty || achievementsDirty;
+
+    const saveAchievements = (draft: AchievementDraft, onDone: () => void) => {
+        router.put(
+            route('profile.achievements.featured'),
+            { mode: draft.mode, featured: draft.featured },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setAchievementsTouched(false);
+                    onDone();
+                },
+                onError: (errs: Record<string, string>) =>
+                    toast.error(String(errs.featured ?? errs.mode ?? 'Não foi possível salvar as conquistas agora.'), {
+                        id: 'profile:achievements',
+                    }),
+            },
+        );
+    };
+
+    const finishSaved = () => {
+        setEditor(null);
+        setEditing(false);
+        toast.success('Perfil atualizado com sucesso!', { id: 'profile:saved' });
+    };
+
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        if (processing) return;
+        if (processing || !hasChanges) return;
+        if (!isDirty && achievementDraft.dirty) {
+            saveAchievements(achievementDraft, finishSaved);
+
+            return;
+        }
         if (renaming) {
             setConfirmRename(true);
 
@@ -255,11 +336,9 @@ export default function Edit({
                 setDefaults(saved);
                 setAvatarUrl(props.auth.user.avatar ?? null);
                 setCoverUrl(props.auth.user.cover ?? null);
-                setEditor(null);
-                setEditing(false);
-                toast.success('Perfil atualizado com sucesso!', {
-                    id: 'profile:saved',
-                });
+                const pendingAchievements = achievementDraft.dirty ? achievementDraft : null;
+                if (pendingAchievements) saveAchievements(pendingAchievements, finishSaved);
+                else finishSaved();
             },
         });
     };
@@ -268,9 +347,10 @@ export default function Edit({
         cropSnapshot.current = { ...data };
         setEditor(
             file
-                ? { kind, file }
+                ? { kind, file, coverAspect: measureCoverAspect() }
                 : {
                       kind,
+                      coverAspect: measureCoverAspect(),
                       src:
                           kind === 'avatar'
                               ? (avatarUrl ?? undefined)
@@ -302,7 +382,7 @@ export default function Edit({
                 remove_cover: false,
             }));
         }
-        setEditor({ kind, file });
+        setEditor({ kind, file, coverAspect: measureCoverAspect() });
     };
 
     const cancelCrop = () => {
@@ -324,6 +404,7 @@ export default function Edit({
                 ...current,
                 cover_position_x: Math.round(crop.x),
                 cover_position_y: Math.round(crop.y),
+                cover_zoom: Math.round(crop.zoom),
             }));
         }
         cropSnapshot.current = null;
@@ -377,7 +458,7 @@ export default function Edit({
                         <PlayerProfileCard
                             profile={
                                 editing
-                                    ? preview
+                                    ? { ...preview, badges: previewBadges }
                                     : {
                                           ...user,
                                           badges: profileExtras.badges,
@@ -387,10 +468,6 @@ export default function Edit({
                             }
                         >
                             <ProfileExtras
-                                badges={profileExtras.badges}
-                                achievementDisplayMode={
-                                    profileExtras.achievement_display_mode
-                                }
                                 links={
                                     editing
                                         ? data.links.filter(
@@ -419,7 +496,7 @@ export default function Edit({
                                             ao salvar.
                                         </p>
                                     </div>
-                                    {isDirty && (
+                                    {hasChanges && (
                                         <span className="border-2 border-[#d01600] bg-white px-2 py-1 font-mono text-xs font-bold uppercase text-[#d01600]">
                                             Alterações não salvas
                                         </span>
@@ -526,6 +603,18 @@ export default function Edit({
                                                 })),
                                             ]}
                                             value={data.profile_title ?? ''}
+                                        />
+
+                                        <AchievementPicker
+                                            badges={profileExtras.badges}
+                                            enabled={achievementsOn}
+                                            limit={ACHIEVEMENT_LIMIT}
+                                            onChange={({ enabled, selected }) => {
+                                                setAchievementsOn(enabled);
+                                                setAchievementIds(selected);
+                                                setAchievementsTouched(true);
+                                            }}
+                                            selected={achievementIds}
                                         />
                                     </div>
 
@@ -715,7 +804,7 @@ export default function Edit({
                                                         }
                                                         type="button"
                                                     >
-                                                        Reposicionar
+                                                        Ajustar enquadramento
                                                     </button>
                                                 )}
                                                 <button
@@ -1090,7 +1179,7 @@ export default function Edit({
                                 >
                                     {Object.keys(errors).length
                                         ? 'Revise os campos destacados antes de salvar.'
-                                        : isDirty
+                                        : hasChanges
                                           ? 'Existem alterações não salvas.'
                                           : 'Seu perfil está atualizado.'}
                                 </p>
@@ -1104,7 +1193,7 @@ export default function Edit({
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={processing || !isDirty}
+                                        disabled={processing || !hasChanges}
                                         className="min-h-12 border-2 border-white bg-[#b4da33] px-6 font-mono text-sm font-black uppercase text-[#1d1d1b] shadow-[3px_3px_0_#f481c6] disabled:opacity-50"
                                     >
                                         {processing
@@ -1115,13 +1204,6 @@ export default function Edit({
                             </div>
                         )}
                     </form>
-                    <div className="mt-6 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-4 shadow-[6px_6px_0_#464498] sm:p-6">
-                        <AchievementsPanel
-                            badges={profileExtras.badges}
-                            displayMode={profileExtras.achievement_display_mode}
-                            editable
-                        />
-                    </div>
 
                     <ConfirmDialog
                         show={confirmRename}
@@ -1183,8 +1265,13 @@ export default function Edit({
                             editor.kind === 'avatar'
                                 ? data.avatar_position_y
                                 : data.cover_position_y,
-                        zoom: data.avatar_zoom,
+                        zoom:
+                            editor.kind === 'avatar'
+                                ? data.avatar_zoom
+                                : data.cover_zoom,
                     }}
+                    coverAspect={editor.coverAspect}
+                    freshCover={editor.kind === 'cover' && Boolean(editor.file)}
                     kind={editor.kind}
                     onCancel={cancelCrop}
                     onConfirm={confirmCrop}

@@ -50,10 +50,10 @@ export default function TurnBanner({
                         </>
                     )}
                 </p>
-                <p className="truncate text-lg font-black leading-tight">
+                <p className="truncate text-lg font-black leading-tight xl:whitespace-normal xl:break-words">
                     {finished ? (current ? `@${current.username} venceu` : 'Fim de jogo') : isTurn ? 'Você está jogando' : `@${current?.username ?? '…'}`}
                 </p>
-                <p className="truncate text-[11px] font-bold leading-4 text-[#1d1d1b]/75">{hint}</p>
+                <p className="truncate text-[11px] font-bold leading-4 text-[#1d1d1b]/75 xl:whitespace-normal">{hint}</p>
             </div>
 
             <div className="shrink-0 text-right font-mono text-[10px] font-black uppercase leading-4">

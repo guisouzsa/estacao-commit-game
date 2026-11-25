@@ -95,7 +95,7 @@ export default memo(function GameLog({
             {hidden > 0 && (
                 <button
                     aria-expanded={expanded}
-                    className="mt-1.5 w-full rounded-md border border-white/15 py-1 font-mono text-[10px] font-bold uppercase text-white/70 hover:border-[#b4da33] hover:text-white"
+                    className="mt-1.5 min-h-9 w-full rounded-md border border-white/15 py-1 font-mono text-[10px] font-bold uppercase text-white/70 hover:border-[#b4da33] hover:text-white"
                     onClick={() => setExpanded((value) => !value)}
                     type="button"
                 >

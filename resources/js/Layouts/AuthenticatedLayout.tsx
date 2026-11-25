@@ -31,7 +31,7 @@ export default function Authenticated({
 
     return (
         <div
-            className={`flex min-h-[100dvh] w-full flex-col bg-[#e8e5dc] ${immersive ? 'max-lg:h-[100dvh] max-lg:overflow-hidden' : ''}`}
+            className={`flex min-h-[100dvh] w-full flex-col bg-[#e8e5dc] ${immersive ? 'h-[100dvh] overflow-hidden' : ''}`}
         >
             <header
                 className={`sticky top-0 z-30 border-b-[3px] border-[#b4da33] bg-[#1d1d1b] text-white shadow-[0_4px_0_rgba(29,29,27,.12)] ${immersive ? 'max-lg:hidden' : ''}`}
@@ -242,7 +242,7 @@ export default function Authenticated({
                 </section>
             )}
             <main
-                className={`flex min-h-0 w-full flex-1 flex-col ${immersive ? 'max-lg:overflow-y-auto' : ''}`}
+                className={`flex min-h-0 w-full flex-1 flex-col ${immersive ? 'overflow-y-auto' : ''}`}
             >
                 {children}
             </main>

@@ -196,6 +196,41 @@ class ProfileTest extends TestCase
         $this->assertSame(35, $user->cover_position_x);
         $this->assertSame(70, $user->cover_position_y);
         $this->assertSame(125, $user->avatar_zoom);
+        $this->assertSame(100, $user->cover_zoom); // sem zoom enviado: mantém o enquadramento "preencher"
+    }
+
+    public function test_cover_zoom_is_persisted_and_validated(): void
+    {
+        $user = User::factory()->create();
+        $payload = [
+            'avatar_position_x' => 50, 'avatar_position_y' => 50,
+            'cover_position_x' => 20, 'cover_position_y' => 80, 'cover_zoom' => 45,
+            'profile_frame' => 'standard', 'primary_badge' => 'terminal', 'profile_title' => 'explorer',
+        ];
+
+        $this->actingAs($user)->patch('/profile/appearance', $payload)->assertSessionHasNoErrors();
+        $user->refresh();
+        $this->assertSame(45, $user->cover_zoom);
+        $this->assertSame(20, $user->cover_position_x);
+        $this->assertSame(80, $user->cover_position_y);
+
+        // Salvar outra coisa sem mandar o zoom não apaga o enquadramento.
+        $this->actingAs($user)->patch('/profile/appearance', array_diff_key($payload, ['cover_zoom' => 1]))->assertSessionHasNoErrors();
+        $this->assertSame(45, $user->refresh()->cover_zoom);
+
+        foreach ([5, 301, 'abc'] as $invalid) {
+            $this->actingAs($user)->patch('/profile/appearance', ['cover_zoom' => $invalid] + $payload)->assertSessionHasErrors('cover_zoom');
+        }
+        $this->assertSame(45, $user->refresh()->cover_zoom);
+    }
+
+    public function test_existing_profiles_get_the_fill_framing_by_default(): void
+    {
+        $user = User::factory()->create();
+
+        $this->assertSame(100, $user->fresh()->cover_zoom);
+        $this->actingAs($user)->get(route('profile.public', $user->username))
+            ->assertInertia(fn ($page) => $page->where('profile.cover_zoom', 100));
     }
 
     public function test_profile_appearance_rejects_unavailable_cosmetics(): void

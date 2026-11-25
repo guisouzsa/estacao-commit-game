@@ -1,3 +1,4 @@
+import GoogleLogo from '@/Components/GoogleLogo';
 import InputError from '@/Components/InputError';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
@@ -23,7 +24,7 @@ export default function GoogleUsername({
         <GuestLayout>
             <Head title="Escolha seu username" />
 
-            <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">Identificação do agente</p>
+            <p className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700"><GoogleLogo className="size-4" /> Cadastro com Google</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight">Defina seu nickname.</h1>
             <p className="mt-3 text-ink/55">
                 {displayName

@@ -59,8 +59,15 @@ class ProfileMediaPayloadTest extends TestCase
         $editor = file_get_contents(base_path('resources/js/Components/ProfileImageEditor.tsx'));
         $public = file_get_contents(base_path('resources/js/Pages/Profile/Public.tsx'));
 
+        $edit = file_get_contents(base_path('resources/js/Pages/Profile/Edit.tsx'));
+
         $this->assertStringContainsString('aspect-[5/1]', $card);
-        $this->assertStringContainsString('aspect-[5/1]', $editor);
+        // O editor usa a proporção MEDIDA da faixa do card nesta tela (padrão 5:1) e o mesmo componente de exibição.
+        $this->assertStringContainsString('data-cover-frame', $card);
+        $this->assertStringContainsString('[data-cover-frame]', $edit);
+        $this->assertStringContainsString('coverAspect = 5', $editor);
+        $this->assertStringContainsString('<CoverImage', $card);
+        $this->assertStringContainsString('<CoverImage', $editor);
         $this->assertStringNotContainsString('relative h-40 overflow-hidden', $card, 'sem altura fixa no banner');
         $this->assertStringContainsString('max-w-5xl', $public, 'o cartão não se estica pela tela inteira');
     }

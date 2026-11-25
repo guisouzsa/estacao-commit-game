@@ -90,6 +90,7 @@ class User extends Authenticatable
             'avatar_zoom' => 'integer',
             'cover_position_x' => 'integer',
             'cover_position_y' => 'integer',
+            'cover_zoom' => 'integer',
             'onboarding_completed_at' => 'datetime',
             'password_set' => 'boolean',
             'matches_played' => 'integer',

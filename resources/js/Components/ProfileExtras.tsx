@@ -1,10 +1,5 @@
-import AchievementsPanel from '@/Components/AchievementsPanel';
 import { useState } from 'react';
-import type {
-    AchievementDisplayMode,
-    ProfileBadge,
-    ProfileLink,
-} from './PlayerProfileCard';
+import type { ProfileLink } from './PlayerProfileCard';
 
 const labels: Record<string, string> = {
     github: 'GitHub',
@@ -28,14 +23,10 @@ type Statistics = {
 export default function ProfileExtras({
     username,
     links = [],
-    badges = [],
-    achievementDisplayMode = 'none',
     share = false,
 }: {
     username: string;
     links?: ProfileLink[];
-    badges?: ProfileBadge[];
-    achievementDisplayMode?: AchievementDisplayMode;
     statistics?: Statistics | null;
     share?: boolean;
 }) {
@@ -103,10 +94,6 @@ export default function ProfileExtras({
                     )}
                 </div>
             </section>
-            <AchievementsPanel
-                badges={badges}
-                displayMode={achievementDisplayMode}
-            />
         </div>
     );
 }

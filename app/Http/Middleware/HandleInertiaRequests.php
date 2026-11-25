@@ -91,6 +91,7 @@ class HandleInertiaRequests extends Middleware
             'avatar_zoom',
             'cover_position_x',
             'cover_position_y',
+            'cover_zoom',
             'profile_frame',
             'profile_background',
             'primary_badge',

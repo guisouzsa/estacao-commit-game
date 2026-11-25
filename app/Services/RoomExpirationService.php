@@ -128,6 +128,18 @@ class RoomExpirationService
             ->where('empty_since', '<=', $this->cutoff());
     }
 
+    /**
+     * Teste barato, em memória (sem consulta): a sala PODE estar vencida? Só então vale abrir a transação com trava
+     * de expireIfEligible, que confirma de verdade. Evita uma ida ao banco em toda entrada por convite.
+     */
+    public function mightBeOverdue(GameRoom $room): bool
+    {
+        return $room->status === 'waiting'
+            && $room->started_at === null
+            && $room->empty_since !== null
+            && $room->empty_since->lte($this->cutoff());
+    }
+
     private function isOverdue(GameRoom $room): bool
     {
         return $room->status === 'waiting'

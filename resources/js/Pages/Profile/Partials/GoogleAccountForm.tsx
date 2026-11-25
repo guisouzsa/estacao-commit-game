@@ -1,3 +1,4 @@
+import GoogleLogo from '@/Components/GoogleLogo';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -7,9 +8,7 @@ function GoogleMark() {
             aria-hidden="true"
             className="grid size-10 shrink-0 place-items-center border-2 border-[#1d1d1b] bg-white text-lg font-black shadow-[2px_2px_0_#f0b429]"
         >
-            <span className="bg-gradient-to-r from-[#4285f4] via-[#34a853] to-[#ea4335] bg-clip-text text-transparent">
-                G
-            </span>
+            <GoogleLogo className="size-6" />
         </span>
     );
 }

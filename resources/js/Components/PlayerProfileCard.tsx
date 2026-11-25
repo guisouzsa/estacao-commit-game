@@ -14,6 +14,7 @@ export interface PlayerProfile {
     cover?: string | null;
     cover_position_x?: number;
     cover_position_y?: number;
+    cover_zoom?: number;
     profile_frame?: string | null;
     /** Fundo escolhido (preset); vazio = visual antigo. */
     profile_background?: string | null;
@@ -105,6 +106,10 @@ export default function PlayerProfileCard({
     headerActions?: ReactNode;
     children?: ReactNode;
 }) {
+    // Só as conquistas que a pessoa escolheu exibir (decidido no servidor: `displayed`), na ordem escolhida.
+    const featuredAchievements = (profile.badges ?? [])
+        .filter((badge) => badge.unlocked && badge.displayed)
+        .sort((a, b) => (a.featured_order ?? 99) - (b.featured_order ?? 99));
     const title = profile.profile_title
         ? titleLabels[profile.profile_title]
         : null;
@@ -116,15 +121,18 @@ export default function PlayerProfileCard({
                 <span className="text-[#b4da33]">Perfil do jogador</span>
             </div>
 
-            <div className="relative aspect-[5/1] min-h-[7rem] overflow-hidden bg-[#464498]">
+            <div
+                className="relative aspect-[5/1] min-h-[7rem] overflow-hidden bg-[#464498]"
+                data-cover-frame
+            >
                 {profile.cover ? (
-                    <img
-                        src={profile.cover}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        style={{
-                            objectPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
+                    <CoverImage
+                        framing={{
+                            x: profile.cover_position_x ?? 50,
+                            y: profile.cover_position_y ?? 50,
+                            zoom: profile.cover_zoom ?? 100,
                         }}
+                        src={profile.cover}
                     />
                 ) : profileBackgroundStyle(profile.profile_background) ? (
                     <div
@@ -250,6 +258,27 @@ export default function PlayerProfileCard({
                             </span>
                         )}
                     </div>
+                    {featuredAchievements.length > 0 && (
+                        <ul
+                            aria-label="Conquistas em destaque"
+                            className="flex flex-wrap items-center gap-2"
+                        >
+                            {featuredAchievements.map((badge) => (
+                                <li
+                                    className="flex items-center gap-1.5 border border-[#1d1d1b]/25 bg-white/70 py-1 pl-1 pr-2"
+                                    key={badge.id}
+                                    title={`${badge.name}: ${badge.description}`}
+                                >
+                                    <AchievementBadge
+                                        icon={(badge.icon ?? 'star') as BadgeIcon}
+                                        size="sm"
+                                        tier={(badge.tier ?? 'starter') as BadgeTier}
+                                    />
+                                    <span className="text-xs font-bold">{badge.name}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                     <p className="whitespace-pre-wrap break-words text-sm leading-6 text-[#393833]">
                         {profile.bio ||
                             'Este jogador ainda não escreveu uma biografia.'}
@@ -277,6 +306,8 @@ export default function PlayerProfileCard({
         </article>
     );
 }
+import CoverImage from '@/Components/CoverImage';
+import AchievementBadge, { BadgeIcon, BadgeTier } from '@/Components/AchievementBadge';
 import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
 import { ReactNode } from 'react';
 import PlayerAvatar from './PlayerAvatar';

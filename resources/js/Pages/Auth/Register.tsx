@@ -1,3 +1,4 @@
+import GoogleLogo from '@/Components/GoogleLogo';
 import InputError from '@/Components/InputError';
 import PasswordVisibilityToggle from '@/Components/PasswordVisibilityToggle';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -52,7 +53,7 @@ export default function Register({
                         href={route('google.redirect')}
                         className="border-ink mt-7 flex w-full items-center justify-center gap-3 border-2 bg-white px-4 py-3 font-bold shadow-[4px_4px_0_#464498] transition hover:-translate-y-0.5"
                     >
-                        G <span>Continuar com Google</span>
+                        <GoogleLogo className="size-5" /> <span>Continuar com Google</span>
                     </a>
                     <p className="mt-3 text-xs leading-5 text-ink/55">
                         Já tem conta com este e-mail? O Google entra direto nela. Não conseguiu? Use{' '}

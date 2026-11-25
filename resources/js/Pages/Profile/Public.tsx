@@ -155,10 +155,6 @@ export default function Public({
                         <ProfileExtras
                             username={profile.username}
                             links={profile.links}
-                            badges={profile.badges}
-                            achievementDisplayMode={
-                                profile.achievement_display_mode
-                            }
                             statistics={profile.statistics ?? null}
                             share
                         />

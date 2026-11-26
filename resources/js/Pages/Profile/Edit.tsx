@@ -431,6 +431,17 @@ export default function Edit({
         ],
     );
 
+    // A capa enviada fica por cima dos fundos: escolher um fundo do site troca a capa por ele (na prévia já;
+    // de verdade só ao salvar, e "Manter banner" desfaz). Sem isso o card não mudava ao escolher um fundo.
+    const pickBackground = (key: string | null) =>
+        setData((current) => ({
+            ...current,
+            profile_background: key,
+            ...((coverUrl || current.cover) && !current.remove_cover
+                ? { cover: null, remove_cover: true }
+                : {}),
+        }));
+
     const cancelEditing = () => {
         reset();
         setAvatarUrl(user.avatar ?? null);
@@ -1059,11 +1070,7 @@ export default function Edit({
                                                             Fundo do perfil
                                                         </legend>
                                                         <p className="mb-2 text-xs text-[#5b5953]">
-                                                            A pré-visualização
-                                                            acima muda ao
-                                                            escolher. São fundos
-                                                            leves, sem imagem
-                                                            para baixar.
+                                                            O card lá em cima mostra na hora. Se você tem uma imagem de capa, escolher um fundo troca a capa por ele (só vale ao salvar).
                                                         </p>
                                                         <div
                                                             aria-label="Fundos de perfil"
@@ -1080,8 +1087,7 @@ export default function Edit({
                                                                         : 'border-[#1d1d1b]/25'
                                                                 }`}
                                                                 onClick={() =>
-                                                                    setData(
-                                                                        'profile_background',
+                                                                    pickBackground(
                                                                         null,
                                                                     )
                                                                 }
@@ -1122,8 +1128,7 @@ export default function Edit({
                                                                             key
                                                                         }
                                                                         onClick={() =>
-                                                                            setData(
-                                                                                'profile_background',
+                                                                            pickBackground(
                                                                                 key,
                                                                             )
                                                                         }
@@ -1171,8 +1176,7 @@ export default function Edit({
                                                                     onPick={(
                                                                         key,
                                                                     ) =>
-                                                                        setData(
-                                                                            'profile_background',
+                                                                        pickBackground(
                                                                             key,
                                                                         )
                                                                     }

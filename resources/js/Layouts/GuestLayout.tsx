@@ -1,3 +1,4 @@
+import BackLink from '@/Components/BackLink';
 import BrandLogo from '@/Components/BrandLogo';
 import { PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
@@ -14,7 +15,12 @@ function AuthBrand({ dark = false }: { dark?: boolean }) {
 export default function Guest({
     children,
     wide = false,
-}: PropsWithChildren<{ wide?: boolean }>) {
+    back,
+}: PropsWithChildren<{
+    wide?: boolean;
+    /** Botão "Voltar" no topo do formulário (padrão: início do site). */
+    back?: { href: string; label?: string } | false;
+}>) {
     const fallback = usePage<PageProps>().props.flash?.auth_fallback;
 
     return (
@@ -49,6 +55,13 @@ export default function Guest({
                         <div className="border-ink/15 mb-10 border-b-2 pb-6 lg:hidden">
                             <AuthBrand dark />
                         </div>
+                        {back !== false && (
+                            <BackLink
+                                className="mb-6"
+                                href={back?.href ?? '/'}
+                                label={back?.label}
+                            />
+                        )}
                         {fallback && (
                             <div
                                 className="mb-6 border-2 border-[#1d1d1b] bg-[#b4da33]/30 p-4 text-sm leading-6"

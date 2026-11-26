@@ -1,3 +1,4 @@
+import BackLink from '@/Components/BackLink';
 import VerifiedBadge from '@/Components/VerifiedBadge';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -113,10 +114,13 @@ function RankingSkeleton() {
 export default function Index({
     periods,
     rankings,
+    mine: mineByScope,
     viewerId,
 }: {
     periods: RankingPeriods;
     rankings?: Record<Scope, Entry[]>;
+    /** Posição de quem está vendo, calculada no servidor (vale mesmo fora do top 10). */
+    mine?: Record<Scope, Entry | null>;
     viewerId: string;
 }) {
     const [periodType, setPeriodType] = useState<Scope>('weekly');
@@ -133,7 +137,7 @@ export default function Index({
                 month: scope === 'monthly' ? key : periods.monthly.key,
             },
             {
-                only: ['periods', 'rankings'],
+                only: ['periods', 'rankings', 'mine'],
                 preserveScroll: true,
                 preserveState: true,
                 replace: true,
@@ -150,7 +154,10 @@ export default function Index({
         .filter((entry) => entry.won > 0)
         .map((entry, index) => ({ ...entry, position: index + 1 }));
     const podium = entries.slice(0, 3);
-    const mine = entries.find((entry) => entry.user_id === viewerId);
+    const mine =
+        entries.find((entry) => entry.user_id === viewerId) ??
+        mineByScope?.[periodType] ??
+        undefined;
     const label =
         periodType === 'weekly'
             ? 'Semanal'
@@ -163,6 +170,7 @@ export default function Index({
             <Head title="Rankings" />
             <main className="min-h-[calc(100vh-4.25rem)] bg-[#e8e5dc] px-3 py-8 text-[#1d1d1b] sm:px-4 lg:px-6 lg:py-12">
                 <div className="w-full">
+                    <BackLink className="mb-4" href={route('dashboard')} />
                     <header className="relative overflow-hidden border-[3px] border-[#1d1d1b] bg-[#1d1d1b] p-6 text-white shadow-[8px_8px_0_#464498] sm:p-9">
                         <div
                             aria-hidden="true"

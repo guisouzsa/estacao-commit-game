@@ -45,6 +45,15 @@ class RankingController extends Controller
         ];
         $rankings = config('ranking.defer') ? Inertia::defer($build) : $build();
 
+        // Posição de quem está vendo, mesmo fora do topo exibido.
+        $viewer = $request->user();
+        $buildMine = fn () => [
+            'weekly' => $this->viewerInPeriod($viewer, $weekStart, $weekStart->addWeek()),
+            'monthly' => $this->viewerInPeriod($viewer, $monthStart, $monthStart->addMonthNoOverflow()),
+            'overall' => $this->viewerOverall($viewer),
+        ];
+        $mine = config('ranking.defer') ? Inertia::defer($buildMine) : $buildMine();
+
         $currentWeek = $now->startOfWeek(CarbonImmutable::MONDAY)->startOfDay();
         $currentMonth = $now->startOfMonth();
         $firstWeek = $firstAt?->startOfWeek(CarbonImmutable::MONDAY)->startOfDay();
@@ -83,6 +92,7 @@ class RankingController extends Controller
             ],
             'timezone' => $tz,
             'rankings' => $rankings,
+            'mine' => $mine,
             'viewerId' => $request->user()->id,
         ]);
     }
@@ -156,6 +166,76 @@ class RankingController extends Controller
             'played' => (int) $user->matches_played,
             'won' => (int) $user->matches_won,
         ]));
+    }
+
+    /** Posição de quem está vendo num período (null se não venceu nesse período). @return array<string, mixed>|null */
+    private function viewerInPeriod(User $viewer, CarbonImmutable $from, CarbonImmutable $to): ?array
+    {
+        $rows = DB::table('match_results')
+            ->where('finished_at', '>=', $from->utc()->format('Y-m-d H:i:s'))
+            ->where('finished_at', '<', $to->utc()->format('Y-m-d H:i:s'))
+            ->groupBy('user_id')
+            ->selectRaw('user_id, count(*) as played, sum(case when is_winner then 1 else 0 end) as won')
+            ->havingRaw('sum(case when is_winner then 1 else 0 end) > 0')
+            ->get()
+            ->map(fn ($row) => ['user_id' => $row->user_id, 'played' => (int) $row->played, 'won' => (int) $row->won]);
+
+        return $this->viewerEntry($viewer, $rows);
+    }
+
+    /** Posição de quem está vendo no geral (null se ainda não venceu). @return array<string, mixed>|null */
+    private function viewerOverall(User $viewer): ?array
+    {
+        $won = (int) $viewer->matches_won;
+        if ($won <= 0) {
+            return null;
+        }
+        $lost = (int) $viewer->matches_lost;
+
+        // Só quem está à frente ou empatado entra na conta (consulta pequena, não a tabela toda).
+        $rows = User::query()
+            ->where('matches_won', '>', 0)
+            ->where(fn ($q) => $q->where('matches_won', '>', $won)
+                ->orWhere(fn ($q) => $q->where('matches_won', $won)->where('matches_lost', '<=', $lost)))
+            ->get(['id', 'matches_played', 'matches_won'])
+            ->map(fn ($user) => ['user_id' => $user->id, 'played' => (int) $user->matches_played, 'won' => (int) $user->matches_won]);
+
+        if (! $rows->contains('user_id', $viewer->id)) {
+            $rows->push(['user_id' => $viewer->id, 'played' => (int) $viewer->matches_played, 'won' => $won]);
+        }
+
+        return $this->viewerEntry($viewer, $rows);
+    }
+
+    /**
+     * Mesma ordem da classificação (vitórias, depois menos derrotas, depois nome): posição = quem está à frente + 1.
+     *
+     * @param  Collection<int, array{user_id: string, played: int, won: int}>  $rows
+     * @return array<string, mixed>|null
+     */
+    private function viewerEntry(User $viewer, Collection $rows): ?array
+    {
+        $me = $rows->firstWhere('user_id', $viewer->id);
+        if (! $me) {
+            return null;
+        }
+        $lost = fn (array $row) => $row['played'] - $row['won'];
+        $ahead = $rows->filter(fn ($row) => $row['won'] > $me['won']
+            || ($row['won'] === $me['won'] && $lost($row) < $lost($me)))->count();
+        $tied = $rows->filter(fn ($row) => $row['user_id'] !== $me['user_id']
+            && $row['won'] === $me['won'] && $lost($row) === $lost($me))->pluck('user_id');
+        $tiedAhead = $tied->isEmpty() ? 0 : User::query()->whereIn('id', $tied)->pluck('username')
+            ->filter(fn ($name) => strcasecmp($name, $viewer->username) < 0)->count();
+
+        return [
+            'position' => $ahead + $tiedAhead + 1,
+            'user_id' => $viewer->id,
+            'player' => PlayerPresenter::user($viewer),
+            'played' => $me['played'],
+            'won' => $me['won'],
+            'lost' => max(0, $lost($me)),
+            'win_rate' => $me['played'] > 0 ? (int) round($me['won'] / $me['played'] * 100) : 0,
+        ];
     }
 
     /**

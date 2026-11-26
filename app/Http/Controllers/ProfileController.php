@@ -47,6 +47,17 @@ class ProfileController extends Controller
             'status' => session('status'),
             'googleLinked' => filled($request->user()->google_id),
             'canManageVerified' => $request->user()->can('manage-verified'),
+            // Quem já tem o selo (fora a própria conta, que tem linha própria). Só para quem pode gerenciar.
+            'verifiedPlayers' => $request->user()->can('manage-verified')
+                ? \App\Models\User::query()
+                    ->whereNotNull('verified_at')
+                    ->whereKeyNot($request->user()->id)
+                    ->orderByDesc('verified_at')
+                    ->limit(200)
+                    ->get(['username', 'display_name'])
+                    ->map(fn ($user) => ['username' => $user->username, 'display_name' => $user->display_name, 'is_verified' => true])
+                    ->values()
+                : [],
             'googleConfigured' => filled(config('services.google.client_id'))
                 && filled(config('services.google.client_secret'))
                 && filled(config('services.google.redirect')),

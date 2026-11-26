@@ -1,3 +1,4 @@
+import BackLink from '@/Components/BackLink';
 import AchievementPicker, {
     AchievementDraft,
 } from '@/Components/AchievementPicker';
@@ -669,6 +670,7 @@ export default function Edit({
             <Head title="Meu perfil" />
             <main className="min-h-screen overflow-x-hidden bg-[#e8e5dc] px-3 py-6 text-[#1d1d1b] sm:px-4 sm:py-10 lg:px-6">
                 <div className="w-full">
+                    <BackLink className="mb-4" href={route('dashboard')} />
                     <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-[#464498]">

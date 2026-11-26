@@ -1,3 +1,4 @@
+import BackLink from '@/Components/BackLink';
 import VerifiedBadge from '@/Components/VerifiedBadge';
 import PlayerAvatar from '@/Components/PlayerAvatar';
 import type { PlayerSummary } from '@/Components/PlayerSearch';
@@ -54,12 +55,7 @@ export default function Recommended({ people }: { people: PeoplePage }) {
             <Head title="Jogadores recomendados" />
             <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 text-[#1d1d1b] sm:px-5 lg:px-8">
                 <div className="mx-auto w-full max-w-5xl">
-                    <Link
-                        href={route('dashboard')}
-                        className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-black uppercase shadow-[2px_2px_0_#b4da33] hover:bg-[#b4da33]"
-                    >
-                        ← Voltar ao início
-                    </Link>
+                    <BackLink href={route('dashboard')} />
 
                     <header className="mt-4 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-5 shadow-[5px_5px_0_#464498] sm:p-7">
                         <p className="font-mono text-[10px] font-black uppercase tracking-[.18em] text-[#464498]">

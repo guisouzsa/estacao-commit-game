@@ -21,7 +21,7 @@ export default function GoogleUsername({
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout back={{ href: route('login'), label: 'Cancelar e voltar' }}>
             <Head title="Escolha seu username" />
 
             <p className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700"><GoogleLogo className="size-4" /> Cadastro com Google</p>

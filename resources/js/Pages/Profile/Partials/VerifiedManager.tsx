@@ -11,7 +11,12 @@ interface Found {
 const Check = () => <VerifiedBadge size={18} />;
 
 /** Só aparece para a conta administradora: pesquisa um jogador e concede ou remove o selo de verificado. */
-export default function VerifiedManager() {
+export default function VerifiedManager({
+    verified = [],
+}: {
+    /** Jogadores que já têm o selo (vem do servidor e atualiza depois de cada mudança). */
+    verified?: Found[];
+}) {
     const me = usePage().props.auth.user as {
         username: string;
         is_verified?: boolean;
@@ -60,7 +65,9 @@ export default function VerifiedManager() {
             {
                 preserveScroll: true,
                 preserveState: true,
-                onSuccess: () => search(query.trim()),
+                onSuccess: () => {
+                    if (query.trim().length >= 2) search(query.trim());
+                },
                 onFinish: () => setBusy(null),
             },
         );
@@ -72,8 +79,8 @@ export default function VerifiedManager() {
                 <Check /> Verificar jogadores
             </h2>
             <p className="mt-1 text-sm text-[#5b5953]">
-                Pesquise pelo nome e conceda ou remova o selo de verificado. Só
-                a sua conta vê esta caixa.
+                Veja quem já tem o selo, ou pesquise pelo nome para conceder.
+                Só a sua conta vê esta caixa.
             </p>
             <div className="mt-4 flex items-center justify-between gap-3 border-2 border-[#1d1d1b]/15 px-3 py-2">
                 <span className="flex min-w-0 items-center gap-2 font-bold">
@@ -97,13 +104,48 @@ export default function VerifiedManager() {
                     {me.is_verified ? 'Tirar o meu' : 'Verificar o meu'}
                 </button>
             </div>
+            <h3 className="mt-5 font-mono text-[10px] font-black uppercase tracking-[.14em] text-[#464498]">
+                Verificados ({verified.length})
+            </h3>
+            {verified.length === 0 ? (
+                <p className="mt-2 text-sm text-[#5b5953]">
+                    Ninguém além de você tem o selo ainda.
+                </p>
+            ) : (
+                <ul className="mt-2 max-h-72 divide-y divide-[#1d1d1b]/10 overflow-y-auto border-2 border-[#1d1d1b]/15">
+                    {verified.map((player) => (
+                        <li
+                            className="flex items-center justify-between gap-3 px-3 py-2"
+                            key={player.username}
+                        >
+                            <span className="flex min-w-0 items-center gap-2 font-bold">
+                                <span className="truncate">
+                                    @{player.username}
+                                </span>
+                                <Check />
+                            </span>
+                            <button
+                                className="min-h-9 shrink-0 border-2 border-[#1d1d1b] bg-white px-3 py-1 font-mono text-xs font-black uppercase disabled:opacity-50"
+                                disabled={busy === player.username}
+                                onClick={() => toggle(player)}
+                                type="button"
+                            >
+                                Remover
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <h3 className="mt-5 font-mono text-[10px] font-black uppercase tracking-[.14em] text-[#464498]">
+                Verificar outro jogador
+            </h3>
             <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar jogador pelo nome…"
                 aria-label="Buscar jogador para verificar"
-                className="mt-4 min-h-11 w-full border-2 border-[#1d1d1b] bg-white px-3 py-2"
+                className="mt-2 min-h-11 w-full border-2 border-[#1d1d1b] bg-white px-3 py-2"
             />
             {searched && results.length === 0 && (
                 <p className="mt-3 text-sm text-[#5b5953]">

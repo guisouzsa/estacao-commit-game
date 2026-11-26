@@ -28,7 +28,7 @@ export default function ResetPassword({
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout back={{ href: route('login') }}>
             <Head title="Redefinir senha" />
 
             <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">Chave de acesso</p>

@@ -31,7 +31,7 @@ export default function VerifyEmailCode({
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout back={{ href: route('register') }}>
             <Head title="Confirmar e-mail" />
 
             <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">Verificação de e-mail</p>

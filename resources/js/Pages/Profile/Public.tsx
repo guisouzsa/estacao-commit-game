@@ -1,3 +1,4 @@
+import BackLink from '@/Components/BackLink';
 import PlayerProfileCard, {
     PlayerProfile,
 } from '@/Components/PlayerProfileCard';
@@ -143,6 +144,7 @@ export default function Public({
             </Head>
             <section className="w-full flex-1 bg-white px-3 py-6 sm:px-6 sm:py-10">
                 <div className="mx-auto w-full max-w-5xl">
+                    <BackLink className="mb-4" href={route('dashboard')} />
                     <PlayerProfileCard
                         profile={profile}
                         headerActions={

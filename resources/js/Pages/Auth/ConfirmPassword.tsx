@@ -19,7 +19,7 @@ export default function ConfirmPassword() {
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout back={{ href: route('profile.edit') }}>
             <Head title="Confirmar senha" />
 
             <p className="font-mono text-xs font-bold uppercase tracking-[.18em] text-purple-700">Área restrita</p>

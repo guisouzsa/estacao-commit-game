@@ -128,4 +128,31 @@ class RankingTest extends TestCase
             ->has('rankings.weekly', 1)
             ->where('rankings.weekly.0.user_id', $viewer->id));
     }
+
+    public function test_the_list_shows_only_the_top_ten_but_the_viewer_still_sees_their_position(): void
+    {
+        $this->assertSame(10, config('ranking.limit'));
+        foreach (range(1, 12) as $n) {
+            User::factory()->create(['username' => "top{$n}", 'matches_played' => 100, 'matches_won' => 100 - $n, 'matches_lost' => $n]);
+        }
+        $me = User::factory()->create(['username' => 'eu', 'matches_played' => 10, 'matches_won' => 5, 'matches_lost' => 5]);
+
+        $this->actingAs($me)->get(route('rankings'))->assertInertia(fn ($page) => $page
+            ->has('rankings.overall', 10)
+            ->where('rankings.overall.9.player.username', 'top10')
+            ->where('mine.overall.position', 13)
+            ->where('mine.overall.won', 5)
+            ->where('mine.weekly', null));
+    }
+
+    public function test_viewer_position_breaks_ties_like_the_list(): void
+    {
+        User::factory()->create(['username' => 'ana', 'matches_played' => 6, 'matches_won' => 3, 'matches_lost' => 3]);
+        User::factory()->create(['username' => 'zeca', 'matches_played' => 6, 'matches_won' => 3, 'matches_lost' => 3]);
+        $me = User::factory()->create(['username' => 'bia', 'matches_played' => 6, 'matches_won' => 3, 'matches_lost' => 3]);
+
+        $this->actingAs($me)->get(route('rankings'))->assertInertia(fn ($page) => $page
+            ->where('mine.overall.position', 2) // ana, bia, zeca
+            ->where('rankings.overall.1.player.username', 'bia'));
+    }
 }

@@ -3,12 +3,16 @@ import './bootstrap';
 
 import LoadingHost from '@/Components/LoadingHost';
 import ToastHost from '@/Components/ToastHost';
+import { trackInAppNavigation } from '@/lib/inAppHistory';
 import { friendlyHttpMessage, toast } from '@/lib/toast';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+// Antes de montar: conta inclusive a primeira página (o botão Voltar precisa saber se há tela anterior).
+trackInAppNavigation((event, callback) => router.on(event, callback));
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

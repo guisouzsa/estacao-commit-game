@@ -141,4 +141,22 @@ class VerifiedBadgeTest extends TestCase
 
         $this->assertFalse($admin->fresh()->isVerified());
     }
+
+    public function test_the_admin_sees_the_list_of_verified_players_without_searching(): void
+    {
+        $admin = $this->admin();
+        $admin->forceFill(['verified_at' => now()])->save();
+        $oficial = User::factory()->create(['username' => 'estacaocommit_oficial']);
+        $oficial->forceFill(['verified_at' => now()->subDay()])->save();
+        User::factory()->create(['username' => 'comum']);
+
+        $this->actingAs($admin)->get('/configuracoes')->assertInertia(fn ($page) => $page
+            ->has('verifiedPlayers', 1) // a própria conta tem linha separada
+            ->where('verifiedPlayers.0.username', 'estacaocommit_oficial')
+            ->where('verifiedPlayers.0.is_verified', true));
+
+        // Quem não pode gerenciar não recebe a lista.
+        $this->actingAs(User::factory()->create())->get('/configuracoes')->assertInertia(fn ($page) => $page
+            ->has('verifiedPlayers', 0));
+    }
 }

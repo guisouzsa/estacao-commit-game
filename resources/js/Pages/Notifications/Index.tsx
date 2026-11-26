@@ -1,3 +1,4 @@
+import BackLink from '@/Components/BackLink';
 import AchievementBadge, {
     BadgeIcon,
     BadgeTier,
@@ -63,6 +64,7 @@ export default function Index({
             <Head title="Notificações" />
             <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 text-[#1d1d1b] sm:px-4 lg:px-6">
                 <div className="mx-auto w-full max-w-3xl">
+                    <BackLink className="mb-4" href={route('dashboard')} />
                     <header className="flex flex-wrap items-end justify-between gap-3 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-5 shadow-[5px_5px_0_#464498]">
                         <div>
                             <p className="font-mono text-[10px] font-black uppercase tracking-[.16em] text-[#464498]">

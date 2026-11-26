@@ -11,8 +11,6 @@ import PlayerProfileCard, {
     ProfileLink,
 } from '@/Components/PlayerProfileCard';
 import ProfileExtras from '@/Components/ProfileExtras';
-import CoverImage from '@/Components/CoverImage';
-import PlayerAvatar from '@/Components/PlayerAvatar';
 import ProfileImageEditor from '@/Components/ProfileImageEditor';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { checkImage } from '@/lib/imageSafety';
@@ -238,52 +236,6 @@ function PremiumBackgrounds({
                 })}
             </div>
         </div>
-    );
-}
-
-/**
- * Prévia ao vivo do topo do perfil (capa + foto com moldura + nome), mostrada dentro das seções de foto e de
- * banner para a pessoa ver o resultado sem rolar até o card. Usa o rascunho: nada é salvo até "Salvar".
- */
-function HeaderPreview({ profile }: { profile: PlayerProfile }) {
-    const background = profileBackgroundStyle(profile.profile_background);
-
-    return (
-        <figure className="mb-5 overflow-hidden border-2 border-[#1d1d1b] bg-white">
-            <div
-                className="relative aspect-[5/1] min-h-[4.5rem] overflow-hidden bg-[#464498]"
-                data-profile-background={
-                    profile.cover ? undefined : (profile.profile_background ?? undefined)
-                }
-                style={profile.cover ? undefined : background}
-            >
-                {profile.cover ? (
-                    <CoverImage
-                        framing={{
-                            x: profile.cover_position_x ?? 50,
-                            y: profile.cover_position_y ?? 50,
-                            zoom: profile.cover_zoom ?? 100,
-                        }}
-                        src={profile.cover}
-                    />
-                ) : (
-                    !background && (
-                        <div className="absolute inset-0 bg-[linear-gradient(135deg,#464498_0_52%,#b4da33_52%_56%,#1d1d1b_56%)]" />
-                    )
-                )}
-            </div>
-            <figcaption className="flex items-end gap-3 px-3 pb-2">
-                <PlayerAvatar className="-mt-8" profile={profile} size="md" />
-                <span className="min-w-0 pb-1">
-                    <strong className="block truncate text-sm font-black">
-                        @{profile.username}
-                    </strong>
-                    <span className="font-mono text-[10px] font-bold uppercase text-[#5b5953]">
-                        Prévia · ainda não salvo
-                    </span>
-                </span>
-            </figcaption>
-        </figure>
     );
 }
 
@@ -875,7 +827,6 @@ export default function Edit({
                                     </EditSection>
 
                                     <EditSection id="foto" number={2} title="Foto do perfil" hint="Envie uma foto ou use um ícone gerado. A moldura vale para os dois.">
-                                        <HeaderPreview profile={preview} />
                                         <div className="grid gap-6 lg:grid-cols-2">
                                             <div>
                                                 <h4 className="text-sm font-bold">
@@ -1033,7 +984,6 @@ export default function Edit({
                                     </EditSection>
 
                                     <EditSection id="banner" number={3} title="Banner e fundo" hint="Uma imagem sua no topo do perfil ou um dos fundos da Estação.">
-                                        <HeaderPreview profile={preview} />
                                         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
                                             <div>
                                                 <h4 className="text-sm font-bold">

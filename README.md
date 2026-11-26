@@ -225,7 +225,7 @@ Dá para desligar esses dois com `MAIL_WELCOME=false`. Detalhes: [`docs/ARQUITET
 - **Edição em 5 seções numeradas** (Identidade · Foto · Banner e fundo · Conquistas, selo e título · Links), com atalhos no topo.
 - **Fundos:** degradês e desenhos leves, incluindo fundos de espaço, e **fundos animados** em três níveis: **Premium** (10 vitórias),
   **Elite** (20) e **Lendário** (50). Só CSS: o banco guarda apenas o nome do fundo.
-- **Prévia ao vivo** da capa e da foto dentro das seções de edição, e o botão *Editar perfil* leva direto à edição.
+- **O card do topo é a prévia:** foto, capa, fundo e ícone mudam nele na hora, sem salvar; o botão *Editar perfil* leva direto à edição.
 - **Compartilhar perfil:** painel com a prévia de um **story 9:16** (você escolhe o fundo e o que aparece), copiar link, baixar a imagem,
   compartilhar no celular, WhatsApp e X.
 - **Foto e capa seguras:** checagem de conteúdo +18 no navegador (modelo aberto NSFWJS, baixado só quando alguém escolhe uma imagem)

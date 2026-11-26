@@ -11,7 +11,7 @@ registra o **estado funcional** do projeto para quem não quer ler commit a comm
 - **Fundos animados em níveis** (`premium_background_tiers`, `App\Support\PremiumBackgrounds`): Premium com 10 vitórias (6 fundos),
   Elite com 20 (chuva de meteoros, cometa, nebulosa pulsante, grade synthwave) e Lendário com 50 (buraco negro, supernova, galáxia
   dourada, arco-íris cósmico). Conferido no servidor; cada fundo tem desenho e animação (teste `ProfileBackgroundTest`).
-- **Edição do perfil:** "Editar perfil" rola até a edição; prévia ao vivo (capa + foto + nome) no topo das seções de foto e banner.
+- **Edição do perfil:** "Editar perfil" rola até a edição; a prévia é só o card do topo (sem cópias dentro das seções).
 
 - **Bots com desvantagem calibrada:** com pessoas na mesa os bots às vezes hesitam (67% / 50% / 40% com 1 / 2 / 3 pessoas), para o jogador
   real vencer ~90% das partidas. Sorteio determinístico, igual no PHP e no Worker; `PARITY_VERSION` `2026-11-29-1`. Medições em

@@ -53,8 +53,8 @@ export default function Connections({
     return (
         <AuthenticatedLayout>
             <Head title={`${title} de @${profile.username}`} />
-            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 text-[#1d1d1b] sm:px-4 lg:px-6">
-                <div className="mx-auto w-full max-w-3xl">
+            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 sm:px-4 sm:py-10 lg:px-6 text-[#1d1d1b]">
+                <div className="w-full">
                     <Link
                         href={route('profile.public', profile.username)}
                         className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase shadow-[2px_2px_0_#b4da33]"
@@ -102,11 +102,11 @@ export default function Connections({
 
                     <Deferred data="people" fallback={<ListSkeleton label="Carregando pessoas" />}>
                     {people && people.data.length ? (
-                        <ul className="mt-4 border-[3px] border-[#1d1d1b] bg-white shadow-[4px_4px_0_#1d1d1b]">
+                        <ul className="mt-4 grid border-[3px] border-[#1d1d1b] bg-white shadow-[4px_4px_0_#1d1d1b] md:grid-cols-2 xl:grid-cols-3">
                             {people.data.map((person) => (
                                 <li
                                     key={person.username}
-                                    className="flex items-center gap-3 border-b border-[#1d1d1b]/15 p-3 last:border-0"
+                                    className="flex items-center gap-3 border-b border-r border-[#1d1d1b]/15 p-3"
                                 >
                                     <PlayerAvatar profile={person} size="sm" />
                                     <Link

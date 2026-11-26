@@ -142,8 +142,8 @@ export default function Public({
                     content={profile.cover ? 'summary_large_image' : 'summary'}
                 />
             </Head>
-            <section className="w-full flex-1 bg-white px-3 py-6 sm:px-6 sm:py-10">
-                <div className="mx-auto w-full max-w-5xl">
+            <section className="w-full flex-1 bg-white px-3 py-6 sm:px-4 sm:py-10 lg:px-6">
+                <div className="w-full">
                     <BackLink className="mb-4" href={route('dashboard')} />
                     <PlayerProfileCard
                         profile={profile}

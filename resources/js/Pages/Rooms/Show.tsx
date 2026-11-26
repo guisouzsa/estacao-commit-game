@@ -243,7 +243,7 @@ export default function Show({
         <AuthenticatedLayout>
             <Head title={`Sala ${room.id.slice(0, 8)}`} />
             <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-4 text-[#1d1d1b] sm:px-4 sm:py-5 lg:px-6">
-                <div className="mx-auto w-full max-w-7xl">
+                <div className="w-full">
                     <Link
                         href={route('dashboard')}
                         className="inline-flex min-h-10 items-center border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase shadow-[2px_2px_0_#b4da33] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#464498]"

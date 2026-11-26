@@ -25,8 +25,8 @@ export default function Settings({
     return (
         <AuthenticatedLayout>
             <Head title="Configurações" />
-            <main className="min-h-screen overflow-x-hidden bg-[#e8e5dc] px-3 py-6 text-[#1d1d1b] sm:px-4 sm:py-10 lg:px-6">
-                <div className="mx-auto w-full max-w-5xl">
+            <main className="min-h-screen overflow-x-hidden bg-[#e8e5dc] px-3 py-6 sm:px-4 sm:py-10 lg:px-6 text-[#1d1d1b]">
+                <div className="w-full">
                     <BackLink className="mb-4" href={route('profile.edit')} />
                     <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -43,7 +43,7 @@ export default function Settings({
                         </div>
                     </header>
 
-                    <div className="grid items-stretch gap-4 lg:grid-cols-2">
+                    <div className="grid items-stretch gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                         <UpdateProfileInformationForm className="h-full" />
                         <GoogleAccountForm
                             configured={googleConfigured}

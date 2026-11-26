@@ -53,8 +53,8 @@ export default function Recommended({ people }: { people: PeoplePage }) {
     return (
         <AuthenticatedLayout>
             <Head title="Jogadores recomendados" />
-            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 text-[#1d1d1b] sm:px-5 lg:px-8">
-                <div className="mx-auto w-full max-w-5xl">
+            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 sm:px-4 sm:py-10 lg:px-6 text-[#1d1d1b]">
+                <div className="w-full">
                     <BackLink href={route('dashboard')} />
 
                     <header className="mt-4 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-5 shadow-[5px_5px_0_#464498] sm:p-7">
@@ -93,7 +93,7 @@ export default function Recommended({ people }: { people: PeoplePage }) {
                     </button>
 
                     {people.data.length ? (
-                        <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+                        <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                             {people.data.map((person) => (
                                 <li
                                     key={person.username}

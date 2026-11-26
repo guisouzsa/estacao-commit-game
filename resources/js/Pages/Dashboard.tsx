@@ -128,7 +128,7 @@ export default function Dashboard({
         <AuthenticatedLayout>
             <Head title="Vamos jogar?" />
             {auth.kind === 'user' && <WelcomeTutorial />}
-            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-8 text-[#1d1d1b] sm:px-4 lg:px-6">
+            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 sm:px-4 sm:py-10 lg:px-6 text-[#1d1d1b]">
                 <div className="w-full">
                     <header className="border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-6 shadow-[8px_8px_0_#1d1d1b]">
                         <div className="flex flex-wrap items-start justify-between gap-3">

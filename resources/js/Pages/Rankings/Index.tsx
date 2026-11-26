@@ -168,7 +168,7 @@ export default function Index({
     return (
         <AuthenticatedLayout>
             <Head title="Rankings" />
-            <main className="min-h-[calc(100vh-4.25rem)] bg-[#e8e5dc] px-3 py-8 text-[#1d1d1b] sm:px-4 lg:px-6 lg:py-12">
+            <main className="min-h-[calc(100vh-4.25rem)] bg-[#e8e5dc] px-3 py-6 sm:px-4 sm:py-10 lg:px-6 text-[#1d1d1b]">
                 <div className="w-full">
                     <BackLink className="mb-4" href={route('dashboard')} />
                     <header className="relative overflow-hidden border-[3px] border-[#1d1d1b] bg-[#1d1d1b] p-6 text-white shadow-[8px_8px_0_#464498] sm:p-9">

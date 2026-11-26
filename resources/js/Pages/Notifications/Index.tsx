@@ -62,8 +62,8 @@ export default function Index({
     return (
         <AuthenticatedLayout>
             <Head title="Notificações" />
-            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 text-[#1d1d1b] sm:px-4 lg:px-6">
-                <div className="mx-auto w-full max-w-3xl">
+            <main className="min-h-[calc(100vh-4rem)] bg-[#e8e5dc] px-3 py-6 sm:px-4 sm:py-10 lg:px-6 text-[#1d1d1b]">
+                <div className="w-full">
                     <BackLink className="mb-4" href={route('dashboard')} />
                     <header className="flex flex-wrap items-end justify-between gap-3 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-5 shadow-[5px_5px_0_#464498]">
                         <div>
@@ -105,11 +105,11 @@ export default function Index({
                         }
                     >
                         {notifications && notifications.data.length ? (
-                            <ul className="mt-4 border-[3px] border-[#1d1d1b] bg-white shadow-[4px_4px_0_#1d1d1b]">
+                            <ul className="mt-4 grid border-[3px] border-[#1d1d1b] bg-white shadow-[4px_4px_0_#1d1d1b] lg:grid-cols-2">
                                 {notifications.data.map((item) => (
                                     <li
                                         key={item.id}
-                                        className={`flex items-center gap-3 border-b border-[#1d1d1b]/15 p-3 last:border-0 ${item.read ? '' : 'bg-[#b4da33]/15'}`}
+                                        className={`flex items-center gap-3 border-b border-[#1d1d1b]/15 p-3 lg:odd:border-r ${item.read ? '' : 'bg-[#b4da33]/15'}`}
                                     >
                                         {item.achievement ? (
                                             <AchievementBadge

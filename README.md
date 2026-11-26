@@ -486,10 +486,11 @@ O **Estação Commit** nasceu como um jogo de tabuleiro físico. A versão onlin
     </td>
     <td width="50%" valign="top">
       <h3>💻 Guilherme Rodrigues Souza</h3>
-      <a href="https://github.com/guisouzsa">@guisouzsa</a> · digitalização, desenvolvimento e documentação<br><br>
-      Transformou o jogo em uma aplicação web multiplayer seguindo as regras e o design originais: digitalização das artes, motor de
-      partidas e bots, salas e convites, contas e e-mails, perfis, ranking, conquistas, tempo real, Docker, deploy, este README e toda a
-      pasta <a href="docs/README.md">docs/</a>. Mantém o repositório.
+      <a href="https://github.com/guisouzsa">@guisouzsa</a> · design do front-end, digitalização, desenvolvimento e documentação<br><br>
+      Transformou o jogo em uma aplicação web multiplayer seguindo as regras e a identidade originais. Fez o <b>design de todo o
+      front-end</b>: telas, layout da partida, perfis, componentes, animações e responsividade. Também cuidou da digitalização das artes,
+      do motor de partidas e bots, de salas e convites, contas e e-mails, perfis, ranking, conquistas, tempo real, Docker, deploy, deste
+      README e de toda a pasta <a href="docs/README.md">docs/</a>. Mantém o repositório.
     </td>
   </tr>
 </table>

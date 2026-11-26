@@ -33,6 +33,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\AuthenticateAccountSession::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            // Uso real do site (o /up do monitor externo não passa por aqui): libera as rotinas com banco.
+            \App\Http\Middleware\RecordSiteActivity::class,
         ]);
 
         // Callback do Worker da Cloudflare: autenticado por assinatura HMAC, sem sessão/CSRF.

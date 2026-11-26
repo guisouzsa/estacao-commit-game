@@ -14,15 +14,16 @@ Voltar ao [índice](../README.md). Visão dos processos do contêiner: [`../ARQU
 | --- | --- |
 | **Implementado no código** | rotinas em [`routes/console.php`](../../routes/console.php) (rodam **dentro** do `schedule:run`); executor/log em [`app/Support/ScheduledJob.php`](../../app/Support/ScheduledJob.php); serviços em `app/Services`; comandos manuais em [`app/Console/Commands/`](../../app/Console/Commands/); testes (`CronSchedulerTest`, `AutoSweepTest`, `RealtimeInfrastructureTest`) |
 | **Configurado na imagem Docker** | [`docker/supervisor/scheduler-loop.sh`](../../docker/supervisor/scheduler-loop.sh) (copiado pelo `Dockerfile`) e o `[program:scheduler]` em [`supervisord.conf`](../../docker/supervisor/supervisord.conf). As migrations (inclusive o índice do `games:sweep`) rodam no [`docker-entrypoint.sh`](../../docker-entrypoint.sh) |
-| **Depende de ação manual no Render** | **nada obrigatório.** Opcional: variáveis `SCHEDULER_*` (seção 8) e acompanhar os logs |
-| **Não existe / não foi implementado** | Render Cron Job, cron externo, *keep-alive* (requisições para manter o serviço acordado) e worker de fila (`queue:work`) |
+| **Depende de ação manual** | **manter acordado (opcional):** um monitor externo grátis (cron-job.org) acessando `/up` a cada 10 min, seção 13. Opcional: variáveis `SCHEDULER_*` (seção 8) |
+| **Não existe / não foi implementado** | Render Cron Job e worker de fila (`queue:work`) |
 | **Ainda NÃO validado em produção** | tudo acima foi testado **localmente** (testes automatizados, execução com SQLite). A confirmação no Render exige o deploy: veja o checklist da seção 11 |
 
 > **Limite do plano gratuito (importante):** o serviço do Render Free **dorme** por inatividade (~15 min sem requisições) e o
 > agendador dorme junto. Com ninguém no site, nenhuma rotina roda. Ao acordar, o laço volta a rodar e as rotinas são **idempotentes**
 > (só tratam o que já venceu), então nada se perde. Para as regras que não podem esperar (vez da partida, expiração de sala) também há
-> verificação **sob demanda** quando alguém abre a página. Por decisão do projeto **não** há requisições periódicas para manter o
-> serviço acordado: isso manteria o Render (e o Neon) ligados 24 h por dia sem necessidade.
+> verificação **sob demanda** quando alguém abre a página. Para o site **não dormir**, use um monitor externo (seção 13). Com ele, a
+> **trava de inatividade** faz as rotinas com banco rodarem só quando houve uso real nos últimos 20 min (ou de hora em hora), para o
+> Neon poder pausar e não gastar a cota grátis.
 
 ---
 
@@ -218,3 +219,32 @@ Esta mudança **não está** no Render até você fazer o deploy. Depois dele:
 4. **Migration do índice não aplicada:** o `games:sweep` fica lento; confira os logs de deploy.
 5. **Acúmulo grande depois de um período parado (serviço dormiu):** as rotinas trabalham em lotes e se repetem a cada minuto; o acúmulo é consumido
    em poucas execuções. Se quiser acelerar, rode uma vez cada comando da seção 7.
+
+## 13. Manter o site acordado (cron-job.org) e a trava de inatividade
+
+**Por que o agendador sozinho não basta:** ele roda dentro do contêiner. O Render Free só conta acessos que chegam de fora; sem eles,
+desliga o contêiner (e o agendador) depois de ~15 min. Um monitor externo resolve: ele acessa o site a cada 10 min.
+
+**Endereço para o monitor:** `https://estacaocommit.onrender.com/up`. É a verificação de saúde do Laravel: não abre sessão, não consulta o
+banco e não conta como uso real (fica fora do grupo `web`).
+
+**Trava de inatividade** (`App\Support\SiteActivity`, `App\Http\Middleware\RecordSiteActivity`): cada requisição web de verdade
+atualiza `storage/framework/last-activity` (no máximo uma escrita por minuto). As quatro rotinas com banco (`rooms:expire-waiting`,
+`games:sweep`, `rooms:purge-finished`, `guests:prune`) só rodam se esse arquivo tem menos de `SCHEDULER_IDLE_MINUTES` minutos (padrão 20)
+**ou** no minuto 0 de cada hora (manutenção). O `cron:heartbeat` não usa banco e continua a cada 15 min. Com `SCHEDULER_IDLE_MINUTES=0`
+a trava fica desligada. Testes: `CronSchedulerTest` (seção "trava de inatividade").
+
+**Custos com o site acordado 24 h:** o Render Free dá 750 h/mês por conta; um serviço ligado o mês todo usa ~744 h (não sobra para outro
+serviço gratuito na mesma conta). O Neon só trabalha quando há gente jogando, mais alguns minutos por hora.
+
+**Passo a passo no cron-job.org:**
+1. Crie a conta grátis em https://cron-job.org (e-mail e senha; confirme o e-mail que eles mandam).
+2. **Create cronjob** → *Title*: `Estação Commit acordado`; *URL*: `https://estacaocommit.onrender.com/up`.
+3. *Execution schedule*: **Every 10 minutes** (abaixo de 15 min, que é quando o Render dorme).
+4. Em *Advanced*: método **GET**, *timeout* 30 s (o primeiro acesso depois de dormir pode demorar), e ative **Notify on failure**
+   (você recebe e-mail se o site cair).
+5. Salve e use **Test run**: a resposta deve ser **200**. Em *History* aparecem as execuções.
+
+**Conferir no Render:** depois de ~30 min, o serviço não deve mais mostrar "spun down"; nos logs aparecem os `HEAD`/`GET /up` a cada
+10 min e a linha `cron.heartbeat` a cada 15 min.
+

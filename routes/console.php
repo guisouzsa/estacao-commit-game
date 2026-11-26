@@ -5,6 +5,7 @@ use App\Services\GameInactivityService;
 use App\Services\GuestPruner;
 use App\Services\RoomExpirationService;
 use App\Support\ScheduledJob;
+use App\Support\SiteActivity;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -28,22 +29,29 @@ Artisan::command('inspire', function () {
 |
 */
 
+// Rotinas com banco: só quando houve uso real do site há pouco, ou de hora em hora (SiteActivity). Com o Render
+// mantido acordado por um monitor externo, isso evita consultar o Neon a cada minuto sem ninguém jogando.
+
 // Salas em espera que ficaram vazias (só o anfitrião) por 5 minutos. Idempotente.
 Schedule::call(fn () => ScheduledJob::run('rooms:expire-waiting', fn () => app(RoomExpirationService::class)->expireDueRooms()))
-    ->name('rooms:expire-waiting')->everyMinute();
+    ->name('rooms:expire-waiting')->everyMinute()
+    ->when(fn () => SiteActivity::shouldRunRoutines());
 
 // Vezes paradas (humano que passou do prazo ou bot sem ninguém olhando). Uma consulta indexada por minuto, em lote.
 // withoutOverlapping: durante um deploy duas instâncias podem coexistir por instantes; só uma trata as partidas.
 Schedule::call(fn () => ScheduledJob::run('games:sweep', fn () => app(GameInactivityService::class)->sweepStalled()))
-    ->name('games:sweep')->everyMinute()->withoutOverlapping(5);
+    ->name('games:sweep')->everyMinute()->withoutOverlapping(5)
+    ->when(fn () => SiteActivity::shouldRunRoutines());
 
 // Salas com partida concluída: exclusão 2 minutos depois da vitória. Idempotente.
 Schedule::call(fn () => ScheduledJob::run('rooms:purge-finished', fn () => app(FinishedRoomCleanup::class)->purgeDue()))
-    ->name('rooms:purge-finished')->everyMinute();
+    ->name('rooms:purge-finished')->everyMinute()
+    ->when(fn () => SiteActivity::shouldRunRoutines());
 
 // Perfis de visitante sem atividade (6 h; teto de 3 dias). Consulta indexada, em lotes de 200.
 Schedule::call(fn () => ScheduledJob::run('guests:prune', fn () => app(GuestPruner::class)->prune()))
-    ->name('guests:prune')->everyFifteenMinutes();
+    ->name('guests:prune')->everyFifteenMinutes()
+    ->when(fn () => SiteActivity::shouldRunRoutines());
 
 // Sinal de vida: uma linha a cada 15 minutos mostra nos logs que o agendador está rodando.
 Schedule::call(fn () => ScheduledJob::heartbeat())->name('cron:heartbeat')->everyFifteenMinutes();

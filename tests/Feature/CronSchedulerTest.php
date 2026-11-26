@@ -244,4 +244,62 @@ class CronSchedulerTest extends TestCase
             $this->artisan($command)->assertSuccessful();
         }
     }
+
+    // ---------------------------------------------------------------- trava de inatividade (site acordado por monitor externo)
+
+    private function lastActivity(?int $secondsAgo): void
+    {
+        $path = storage_path('framework/last-activity');
+        @unlink($path);
+        if ($secondsAgo !== null) {
+            touch($path, time() - $secondsAgo);
+        }
+        clearstatcache(true, $path);
+    }
+
+    public function test_without_recent_use_the_database_routines_wait_and_run_once_people_return(): void
+    {
+        config(['game.scheduler_idle_minutes' => 20]);
+        $this->travelTo(now()->setTime(14, 7)); // fora da rodada de hora em hora
+        [, $match] = $this->table(4);
+        $this->travel(26)->seconds();
+
+        $this->lastActivity(null); // ninguém usou o site
+        $this->artisan('schedule:run')->assertSuccessful();
+        $this->assertSame(1, (int) $match->fresh()->current_seat, 'sem uso real: não consulta o banco');
+
+        $this->lastActivity(60 * 25); // último uso há 25 min
+        $this->artisan('schedule:run')->assertSuccessful();
+        $this->assertSame(1, (int) $match->fresh()->current_seat);
+
+        $this->lastActivity(30); // alguém voltou
+        $this->artisan('schedule:run')->assertSuccessful();
+        $this->assertSame(2, (int) $match->fresh()->current_seat, 'com uso recente, a rotina recupera o atraso');
+        $this->lastActivity(null);
+    }
+
+    public function test_the_hourly_maintenance_run_happens_even_without_anyone_online(): void
+    {
+        config(['game.scheduler_idle_minutes' => 20]);
+        $this->travelTo(now()->setTime(15, 0));
+        [, $match] = $this->table(4);
+        $this->travel(26)->seconds();
+        $this->lastActivity(null);
+
+        $this->artisan('schedule:run')->assertSuccessful();
+
+        $this->assertSame(2, (int) $match->fresh()->current_seat);
+    }
+
+    public function test_web_requests_mark_activity_but_the_health_check_does_not(): void
+    {
+        $this->lastActivity(null);
+
+        $this->get('/up')->assertOk();
+        $this->assertFalse(\App\Support\SiteActivity::recent(20), 'o monitor externo não conta como uso');
+
+        $this->get('/')->assertOk();
+        $this->assertTrue(\App\Support\SiteActivity::recent(20));
+        $this->lastActivity(null);
+    }
 }

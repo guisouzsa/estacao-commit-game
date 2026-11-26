@@ -5,6 +5,9 @@ registra o **estado funcional** do projeto para quem não quer ler commit a comm
 
 ## 26/11/2026 (vitória das pessoas, nomes e imagens)
 
+- **Site acordado sem gastar o banco:** guia do monitor externo (cron-job.org em `/up`, a cada 10 min) e trava de inatividade nas rotinas
+  agendadas (`SCHEDULER_IDLE_MINUTES`, padrão 20): sem uso real, o Neon pode pausar (`docs/DEPLOY/CRON-JOBS.md`, seção 13).
+
 - **Fundos animados em níveis** (`premium_background_tiers`, `App\Support\PremiumBackgrounds`): Premium com 10 vitórias (6 fundos),
   Elite com 20 (chuva de meteoros, cometa, nebulosa pulsante, grade synthwave) e Lendário com 50 (buraco negro, supernova, galáxia
   dourada, arco-íris cósmico). Conferido no servidor; cada fundo tem desenho e animação (teste `ProfileBackgroundTest`).

@@ -264,6 +264,7 @@ Não há identificadores de conta no repositório: o `wrangler login` associa ao
 | `GAME_BOT_DELAY_MS` | `700` | pausa do bot antes de jogar |
 | `GAME_BOT_STALL_SECONDS` | `8` | vez de bot parada há mais que isso é jogada pelo servidor (`games:sweep`) (`0` desliga) |
 | `GAME_SWEEP_BATCH` | `50` | máximo de partidas verificadas por execução do `games:sweep` |
+| `SCHEDULER_IDLE_MINUTES` | `20` | rotinas com banco só rodam se houve uso real nesse intervalo (ou de hora em hora); `0` desliga a trava |
 | `FINISHED_ROOM_TTL_MINUTES` | `2` | quanto tempo a sala encerrada fica visível antes da limpeza |
 | `GUEST_TTL_HOURS` | `6` | validade (por inatividade) da conta temporária de visitante |
 | `SCHEDULER_ENABLED` | `true` | `false` desliga o agendador sem deploy de código (lida pelo shell, não pelo Laravel) |

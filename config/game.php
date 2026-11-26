@@ -13,6 +13,11 @@ return [
     // Varredura automática (comando games:sweep, a cada minuto): cuida das mesas em que NINGUÉM está com a
     // página aberta. Uma vez de bot parada há mais de `bot_stall_seconds` é jogada pelo servidor.
     'bot_stall_seconds' => (int) env('GAME_BOT_STALL_SECONDS', 8),
+    // Rotinas com banco só rodam se alguém usou o site nos últimos N minutos (ou no minuto 0 de cada hora). Com o
+    // site mantido acordado por um monitor externo (cron-job.org em /up), isso deixa o Neon pausar quando ninguém
+    // está jogando. 0 = desliga a trava (as rotinas rodam todo minuto). Ver App\Support\SiteActivity.
+    'scheduler_idle_minutes' => (int) env('SCHEDULER_IDLE_MINUTES', 20),
+
     // Máximo de partidas verificadas por execução (protege a memória e o banco do plano gratuito).
     'sweep_batch' => (int) env('GAME_SWEEP_BATCH', 50),
 

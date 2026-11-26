@@ -159,4 +159,19 @@ body { margin: 0; background: var(--ec-ink); font-family: 'Space Grotesk', sans-
 [data-profile-background="premium-warp"] { background-position: center; animation: ec-warp 3.5s linear infinite; }
 [data-profile-background="premium-twinkle"] { animation: ec-twinkle 6s ease-in-out infinite; }
 [data-profile-background="premium-aurora"] { animation: ec-aurora 12s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { [data-profile-background^="premium-"] { animation: none !important; } }
+/* Elite (20 vitórias) e Lendário (50 vitórias). */
+@keyframes ec-meteor { to { background-position: -220px 220px, -60px 60px, 0 0; } }
+@keyframes ec-comet { 0% { background-position: -40% 120%, 0 0, 0 0, 0 0; } 100% { background-position: 140% -20%, 0 0, -60px 20px, 0 0; } }
+@keyframes ec-nebula-pulse { 0%, 100% { background-size: 100% 100%, 100% 100%, 100% 100%, 120px 120px, auto; } 50% { background-size: 130% 130%, 115% 115%, 140% 140%, 120px 120px, auto; } }
+@keyframes ec-synthwave { to { background-position: 0 50px, 0 0, 0 0, 0 0; } }
+@keyframes ec-spin { to { --ec-spin: 360deg; } }
+@keyframes ec-rainbow { 0%, 100% { background-position: 0 0, 0% 50%; } 50% { background-position: 50px -40px, 100% 50%; } }
+[data-profile-background="elite-meteor"] { animation: ec-meteor 2.6s linear infinite; }
+[data-profile-background="elite-comet"] { animation: ec-comet 7s ease-in-out infinite; }
+[data-profile-background="elite-nebula-pulse"] { background-position: center; animation: ec-nebula-pulse 8s ease-in-out infinite; }
+[data-profile-background="elite-synthwave"] { animation: ec-synthwave 1.6s linear infinite; }
+[data-profile-background="legend-blackhole"] { animation: ec-spin 10s linear infinite; }
+[data-profile-background="legend-supernova"] { animation: ec-spin 18s linear infinite; }
+[data-profile-background="legend-gold-galaxy"] { animation: ec-spin 30s linear infinite; }
+[data-profile-background="legend-cosmic-rainbow"] { animation: ec-rainbow 10s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { [data-profile-background^="premium-"], [data-profile-background^="elite-"], [data-profile-background^="legend-"] { animation: none !important; } }

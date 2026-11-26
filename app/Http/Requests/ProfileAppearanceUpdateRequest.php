@@ -48,13 +48,12 @@ class ProfileAppearanceUpdateRequest extends FormRequest
             'profile_frame' => ['required', Rule::in(array_keys(config('profiles.frames')))],
             'profile_background' => [
                 'nullable',
-                Rule::in([...array_keys(config('profiles.backgrounds')), ...array_keys(config('profiles.premium_backgrounds'))]),
-                // Premium (animados) só com o número mínimo de vitórias. Quem já usa um continua podendo salvar o perfil.
+                Rule::in([...array_keys(config('profiles.backgrounds')), ...array_keys(\App\Support\PremiumBackgrounds::all())]),
+                // Animados só com as vitórias do nível. Quem já usa um continua podendo salvar o perfil.
                 function ($attribute, $value, $fail): void {
-                    $premium = array_key_exists((string) $value, config('profiles.premium_backgrounds'));
-                    $min = (int) config('profiles.premium_backgrounds_min_wins');
-                    if ($premium && $value !== $this->user()->profile_background && (int) $this->user()->matches_won < $min) {
-                        $fail("Esse fundo é premium: libera com {$min} vitórias.");
+                    $min = \App\Support\PremiumBackgrounds::minWins((string) $value);
+                    if ($min !== null && $value !== $this->user()->profile_background && (int) $this->user()->matches_won < $min) {
+                        $fail("Esse fundo libera com {$min} vitórias.");
                     }
                 },
             ],

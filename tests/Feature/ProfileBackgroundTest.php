@@ -79,29 +79,39 @@ class ProfileBackgroundTest extends TestCase
         }
     }
 
-    public function test_premium_backgrounds_unlock_with_ten_wins(): void
+    public function test_animated_backgrounds_unlock_by_tier_10_20_and_50_wins(): void
     {
-        $this->assertSame(10, config('profiles.premium_backgrounds_min_wins'));
-        $this->assertGreaterThanOrEqual(5, count(config('profiles.premium_backgrounds')));
+        $tiers = collect(config('profiles.premium_background_tiers'));
+        $this->assertSame([10, 20, 50], $tiers->pluck('min_wins')->all());
+        $this->assertGreaterThanOrEqual(14, count(\App\Support\PremiumBackgrounds::all()));
+        foreach (\App\Support\PremiumBackgrounds::all() as $key => $label) {
+            $this->assertLessThanOrEqual(32, strlen($key), 'cabe na coluna profile_background');
+        }
 
-        $rookie = User::factory()->create(['matches_won' => 9]);
-        $this->appearance($rookie, ['profile_background' => 'premium-galaxy'])->assertSessionHasErrors('profile_background');
-        $this->assertNull($rookie->fresh()->profile_background);
-        // Os fundos de espaço comuns são livres para todos.
-        $this->appearance($rookie, ['profile_background' => 'red-stars'])->assertSessionHasNoErrors();
+        $cases = [
+            ['premium-galaxy', 9, false], ['premium-galaxy', 10, true],
+            ['elite-meteor', 19, false], ['elite-meteor', 20, true],
+            ['legend-blackhole', 49, false], ['legend-blackhole', 50, true],
+        ];
+        foreach ($cases as [$background, $wins, $allowed]) {
+            $user = User::factory()->create(['matches_won' => $wins]);
+            $response = $this->appearance($user, ['profile_background' => $background]);
+            $allowed ? $response->assertSessionHasNoErrors() : $response->assertSessionHasErrors('profile_background');
+            $this->assertSame($allowed ? $background : null, $user->fresh()->profile_background, "{$background} com {$wins}");
+        }
 
-        $veteran = User::factory()->create(['matches_won' => 10]);
-        $this->appearance($veteran, ['profile_background' => 'premium-galaxy'])->assertSessionHasNoErrors();
-        $this->assertSame('premium-galaxy', $veteran->fresh()->profile_background);
+        // Os fundos de espaço comuns continuam livres para todos.
+        $this->appearance(User::factory()->create(['matches_won' => 0]), ['profile_background' => 'red-stars'])->assertSessionHasNoErrors();
     }
 
-    public function test_the_edit_page_sends_premium_options_and_progress(): void
+    public function test_the_edit_page_sends_the_tiers_and_progress(): void
     {
         $this->actingAs(User::factory()->create(['matches_won' => 4]))->get(route('profile.edit'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('appearanceOptions.premiumMinWins', 10)
+            ->assertInertia(fn ($page) => $page
                 ->where('appearanceOptions.wins', 4)
-                ->has('appearanceOptions.premiumBackgrounds.premium-starfall'));
+                ->where('appearanceOptions.premiumTiers.0.min_wins', 10)
+                ->where('appearanceOptions.premiumTiers.2.name', 'Lendário')
+                ->has('appearanceOptions.premiumTiers.1.backgrounds.elite-meteor'));
     }
 
     public function test_photo_and_cover_reject_animated_images(): void
@@ -115,5 +125,19 @@ class ProfileBackgroundTest extends TestCase
         $this->appearance($user, ['avatar' => $gif])->assertSessionHasErrors('avatar');
         $this->appearance($user, ['cover' => \Illuminate\Http\UploadedFile::fake()->createWithContent('a.png', $apng)])->assertSessionHasErrors('cover');
         $this->appearance($user, ['cover' => \Illuminate\Http\UploadedFile::fake()->createWithContent('b.png', $png)])->assertSessionHasNoErrors();
+    }
+
+    public function test_every_background_has_a_drawing_and_every_animated_one_an_animation(): void
+    {
+        $drawings = file_get_contents(base_path('resources/js/lib/profileBackgrounds.ts'));
+        $css = file_get_contents(base_path('resources/css/app.css'));
+
+        foreach (array_keys(config('profiles.backgrounds')) as $key) {
+            $this->assertMatchesRegularExpression("/['\"]?".preg_quote($key, '/')."['\"]?\s*:/", $drawings, "desenho de {$key}");
+        }
+        foreach (array_keys(\App\Support\PremiumBackgrounds::all()) as $key) {
+            $this->assertStringContainsString("'{$key}':", $drawings, "desenho de {$key}");
+            $this->assertStringContainsString("[data-profile-background=\"{$key}\"]", $css, "animação de {$key}");
+        }
     }
 }

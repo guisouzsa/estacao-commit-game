@@ -11,6 +11,8 @@ import PlayerProfileCard, {
     ProfileLink,
 } from '@/Components/PlayerProfileCard';
 import ProfileExtras from '@/Components/ProfileExtras';
+import CoverImage from '@/Components/CoverImage';
+import PlayerAvatar from '@/Components/PlayerAvatar';
 import ProfileImageEditor from '@/Components/ProfileImageEditor';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { checkImage } from '@/lib/imageSafety';
@@ -31,14 +33,19 @@ import {
 type Options = {
     frames: Record<string, string>;
     backgrounds?: Record<string, string>;
-    premiumBackgrounds?: Record<string, string>;
-    premiumMinWins?: number;
+    premiumTiers?: PremiumTier[];
     wins?: number;
     badges: Record<string, string>;
     titles: Record<string, string>;
 };
 
 type EditableLink = ProfileLink & { is_public: boolean };
+
+type PremiumTier = {
+    name: string;
+    min_wins: number;
+    backgrounds: Record<string, string>;
+};
 
 /** Nome e começo de endereço sugeridos para cada rede (o servidor aceita qualquer URL HTTPS). */
 const LINK_PLATFORMS: Record<string, { label: string; url: string }> = {
@@ -133,13 +140,21 @@ const frameColors: Record<string, string> = {
 
 /** Igual a config/achievements.php (featured_limit); o servidor valida de novo. */
 /** Fundos premium (animados): liberados a partir de `minWins` vitórias; antes disso aparecem com cadeado. */
+const TIER_COLORS: Record<string, string> = {
+    Premium: '#f0b429',
+    Elite: '#7dd3fc',
+    Lendário: '#f481c6',
+};
+
 function PremiumBackgrounds({
+    name,
     options,
     selected,
     wins,
     minWins,
     onPick,
 }: {
+    name: string;
     options: Record<string, string>;
     selected: string | null;
     wins: number;
@@ -147,14 +162,18 @@ function PremiumBackgrounds({
     onPick: (key: string) => void;
 }) {
     const unlocked = wins >= minWins;
+    const color = TIER_COLORS[name] ?? '#f0b429';
 
     return (
         <div className="mt-5">
             <p className="mb-2 flex flex-wrap items-center gap-2 text-sm font-bold">
-                <span className="border-2 border-[#1d1d1b] bg-[#f0b429] px-1.5 font-mono text-[10px] font-black uppercase">
-                    Premium
+                <span
+                    className="border-2 border-[#1d1d1b] px-1.5 font-mono text-[10px] font-black uppercase"
+                    style={{ background: color }}
+                >
+                    {name}
                 </span>
-                Fundos animados
+                Animados · {minWins} vitórias
                 <span className="font-mono text-xs font-normal text-[#5b5953]">
                     {unlocked
                         ? 'liberados'
@@ -162,7 +181,7 @@ function PremiumBackgrounds({
                 </span>
             </p>
             <div
-                aria-label="Fundos premium"
+                aria-label={`Fundos ${name}`}
                 className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
                 role="group"
             >
@@ -172,18 +191,21 @@ function PremiumBackgrounds({
 
                     return (
                         <button
-                            aria-label={`Fundo premium ${label}${locked ? ', bloqueado' : ''}`}
+                            aria-label={`Fundo ${name} ${label}${locked ? ', bloqueado' : ''}`}
                             aria-pressed={active}
                             className={`relative flex h-16 flex-col justify-end overflow-hidden border-2 p-1 text-left disabled:cursor-not-allowed ${
                                 active
-                                    ? 'border-[#1d1d1b] shadow-[3px_3px_0_#f0b429]'
+                                    ? 'border-[#1d1d1b] shadow-[3px_3px_0_var(--tier)]'
                                     : 'border-[#1d1d1b]/25'
                             }`}
                             data-profile-background={locked ? undefined : key}
                             disabled={locked}
                             key={key}
                             onClick={() => onPick(key)}
-                            style={profileBackgroundStyle(key)}
+                            style={{
+                                ...profileBackgroundStyle(key),
+                                ['--tier' as string]: color,
+                            }}
                             title={
                                 locked
                                     ? `${label}: libera com ${minWins} vitórias`
@@ -205,7 +227,8 @@ function PremiumBackgrounds({
                             {active && (
                                 <span
                                     aria-hidden="true"
-                                    className="absolute right-1 top-1 grid size-4 place-items-center bg-[#f0b429] text-[10px] font-black"
+                                    className="absolute right-1 top-1 grid size-4 place-items-center text-[10px] font-black"
+                                    style={{ background: color }}
                                 >
                                     ✓
                                 </span>
@@ -215,6 +238,52 @@ function PremiumBackgrounds({
                 })}
             </div>
         </div>
+    );
+}
+
+/**
+ * Prévia ao vivo do topo do perfil (capa + foto com moldura + nome), mostrada dentro das seções de foto e de
+ * banner para a pessoa ver o resultado sem rolar até o card. Usa o rascunho: nada é salvo até "Salvar".
+ */
+function HeaderPreview({ profile }: { profile: PlayerProfile }) {
+    const background = profileBackgroundStyle(profile.profile_background);
+
+    return (
+        <figure className="mb-5 overflow-hidden border-2 border-[#1d1d1b] bg-white">
+            <div
+                className="relative aspect-[5/1] min-h-[4.5rem] overflow-hidden bg-[#464498]"
+                data-profile-background={
+                    profile.cover ? undefined : (profile.profile_background ?? undefined)
+                }
+                style={profile.cover ? undefined : background}
+            >
+                {profile.cover ? (
+                    <CoverImage
+                        framing={{
+                            x: profile.cover_position_x ?? 50,
+                            y: profile.cover_position_y ?? 50,
+                            zoom: profile.cover_zoom ?? 100,
+                        }}
+                        src={profile.cover}
+                    />
+                ) : (
+                    !background && (
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,#464498_0_52%,#b4da33_52%_56%,#1d1d1b_56%)]" />
+                    )
+                )}
+            </div>
+            <figcaption className="flex items-end gap-3 px-3 pb-2">
+                <PlayerAvatar className="-mt-8" profile={profile} size="md" />
+                <span className="min-w-0 pb-1">
+                    <strong className="block truncate text-sm font-black">
+                        @{profile.username}
+                    </strong>
+                    <span className="font-mono text-[10px] font-bold uppercase text-[#5b5953]">
+                        Prévia · ainda não salvo
+                    </span>
+                </span>
+            </figcaption>
+        </figure>
     );
 }
 
@@ -371,6 +440,20 @@ export default function Edit({
     const generated = data.avatar_generated
         ? data.avatar_generated.split(':')
         : null;
+
+    // "Editar perfil" abre a edição e leva a pessoa até ela (antes a tela parecia não mudar).
+    const scrollToEditor = useRef(false);
+    useEffect(() => {
+        if (!editing || !scrollToEditor.current) return;
+        // Espera a seção de edição aparecer na tela e então rola até ela.
+        const timer = window.setTimeout(() => {
+            scrollToEditor.current = false;
+            document
+                .getElementById('modo-edicao')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 60);
+        return () => window.clearTimeout(timer);
+    }, [editing]);
 
     const preview = useMemo<PlayerProfile>(
         () => ({
@@ -653,7 +736,10 @@ export default function Edit({
                             {!editing && (
                                 <button
                                     className="min-h-11 border-2 border-[#1d1d1b] bg-[#b4da33] px-4 py-2 font-mono text-xs font-black uppercase shadow-[3px_3px_0_#1d1d1b]"
-                                    onClick={() => setEditing(true)}
+                                    onClick={() => {
+                                        setEditing(true);
+                                        scrollToEditor.current = true;
+                                    }}
                                     type="button"
                                 >
                                     Editar perfil
@@ -692,7 +778,10 @@ export default function Edit({
                         </PlayerProfileCard>
 
                         {editing && (
-                            <section className="mt-6 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-4 shadow-[6px_6px_0_#464498] sm:p-6">
+                            <section
+                                className="mt-6 scroll-mt-4 border-[3px] border-[#1d1d1b] bg-[#f3f1ec] p-4 shadow-[6px_6px_0_#464498] sm:p-6"
+                                id="modo-edicao"
+                            >
                                 <div className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b-2 border-[#1d1d1b]/15 pb-4">
                                     <div>
                                         <h2 className="text-xl font-black">
@@ -786,6 +875,7 @@ export default function Edit({
                                     </EditSection>
 
                                     <EditSection id="foto" number={2} title="Foto do perfil" hint="Envie uma foto ou use um ícone gerado. A moldura vale para os dois.">
+                                        <HeaderPreview profile={preview} />
                                         <div className="grid gap-6 lg:grid-cols-2">
                                             <div>
                                                 <h4 className="text-sm font-bold">
@@ -943,6 +1033,7 @@ export default function Edit({
                                     </EditSection>
 
                                     <EditSection id="banner" number={3} title="Banner e fundo" hint="Uma imagem sua no topo do perfil ou um dos fundos da Estação.">
+                                        <HeaderPreview profile={preview} />
                                         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
                                             <div>
                                                 <h4 className="text-sm font-bold">
@@ -1113,29 +1204,38 @@ export default function Edit({
                                                                 ),
                                                             )}
                                                         </div>
-                                                        {appearanceOptions.premiumBackgrounds && (
-                                                            <PremiumBackgrounds
-                                                                minWins={
-                                                                    appearanceOptions.premiumMinWins ??
-                                                                    10
-                                                                }
-                                                                onPick={(key) =>
-                                                                    setData(
-                                                                        'profile_background',
+                                                        {appearanceOptions.premiumTiers?.map(
+                                                            (tier) => (
+                                                                <PremiumBackgrounds
+                                                                    key={
+                                                                        tier.name
+                                                                    }
+                                                                    minWins={
+                                                                        tier.min_wins
+                                                                    }
+                                                                    name={
+                                                                        tier.name
+                                                                    }
+                                                                    onPick={(
                                                                         key,
-                                                                    )
-                                                                }
-                                                                options={
-                                                                    appearanceOptions.premiumBackgrounds
-                                                                }
-                                                                selected={
-                                                                    data.profile_background
-                                                                }
-                                                                wins={
-                                                                    appearanceOptions.wins ??
-                                                                    0
-                                                                }
-                                                            />
+                                                                    ) =>
+                                                                        setData(
+                                                                            'profile_background',
+                                                                            key,
+                                                                        )
+                                                                    }
+                                                                    options={
+                                                                        tier.backgrounds
+                                                                    }
+                                                                    selected={
+                                                                        data.profile_background
+                                                                    }
+                                                                    wins={
+                                                                        appearanceOptions.wins ??
+                                                                        0
+                                                                    }
+                                                                />
+                                                            ),
                                                         )}
                                                         <InputError
                                                             message={

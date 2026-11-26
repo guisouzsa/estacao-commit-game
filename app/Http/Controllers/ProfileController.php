@@ -26,8 +26,7 @@ class ProfileController extends Controller
             'appearanceOptions' => [
                 'frames' => config('profiles.frames'),
                 'backgrounds' => config('profiles.backgrounds'),
-                'premiumBackgrounds' => config('profiles.premium_backgrounds'),
-                'premiumMinWins' => (int) config('profiles.premium_backgrounds_min_wins'),
+                'premiumTiers' => config('profiles.premium_background_tiers'),
                 'wins' => (int) $user->matches_won,
                 'badges' => config('profiles.badges'),
                 'titles' => config('profiles.titles'),

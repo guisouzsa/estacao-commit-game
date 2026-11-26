@@ -223,7 +223,9 @@ Dá para desligar esses dois com `MAIL_WELCOME=false`. Detalhes: [`docs/ARQUITET
 
 - **Perfil público** com avatar, capa, bio, links, moldura, fundo, título, selos de programação e o estado "jogando agora".
 - **Edição em 5 seções numeradas** (Identidade · Foto · Banner e fundo · Conquistas, selo e título · Links), com atalhos no topo.
-- **Fundos:** degradês e desenhos leves, incluindo fundos de espaço, e **fundos premium animados** liberados com **10 vitórias**.
+- **Fundos:** degradês e desenhos leves, incluindo fundos de espaço, e **fundos animados** em três níveis: **Premium** (10 vitórias),
+  **Elite** (20) e **Lendário** (50). Só CSS: o banco guarda apenas o nome do fundo.
+- **Prévia ao vivo** da capa e da foto dentro das seções de edição, e o botão *Editar perfil* leva direto à edição.
 - **Compartilhar perfil:** painel com a prévia de um **story 9:16** (você escolhe o fundo e o que aparece), copiar link, baixar a imagem,
   compartilhar no celular, WhatsApp e X.
 - **Foto e capa seguras:** checagem de conteúdo +18 no navegador (modelo aberto NSFWJS, baixado só quando alguém escolhe uma imagem)
@@ -471,7 +473,7 @@ Resumo das entregas mais recentes. A lista completa, por data, está em
 | --- | --- |
 | 🏆 Vitória | contra bots, o jogador real vence ~90% das partidas (bots hesitam de forma calibrada e auditável) |
 | 🧠 Bots | decisão por valor de carta e ataques no líder, iguais no PHP e no Worker; simulador de equilíbrio com 3.000 partidas por cenário |
-| 🌌 Fundos | 5 fundos de espaço e 6 premium animados, liberados com 10 vitórias |
+| 🌌 Fundos | 5 fundos de espaço e 14 animados em três níveis: Premium (10 vitórias), Elite (20) e Lendário (50) |
 | 📲 Compartilhar | painel com story 9:16 personalizável, copiar link, baixar imagem, WhatsApp e X |
 | 🛡️ Moderação | nomes impróprios em vários idiomas barrados; foto e capa +18 checadas no navegador; sem GIF ou imagem animada |
 | 🃏 Jogador | marcação **Sobrando** nas cartas que o percurso não usa mais; tutorial que não come a sua vez |

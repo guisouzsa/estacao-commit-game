@@ -18,16 +18,41 @@ return [
         'gold' => 'Commit dourado',
     ],
 
-    // Fundos PREMIUM: animados (CSS, sem arquivo para baixar) e liberados a partir de `premium_backgrounds_min_wins`
-    // vitórias. O desenho e a animação ficam em resources/js/lib/profileBackgrounds.ts e resources/css/app.css.
-    'premium_backgrounds_min_wins' => 10,
-    'premium_backgrounds' => [
-        'premium-starfall' => 'Chuva de estrelas',
-        'premium-red-stars' => 'Estrelas vermelhas vivas',
-        'premium-galaxy' => 'Galáxia em rotação',
-        'premium-warp' => 'Hiperespaço',
-        'premium-twinkle' => 'Céu cintilante',
-        'premium-aurora' => 'Aurora viva',
+    // Fundos ANIMADOS por nível de vitórias. Só CSS (sem arquivo, nada além do nome é salvo no banco). O desenho e a
+    // animação ficam em resources/js/lib/profileBackgrounds.ts e resources/css/app.css. O servidor confere o nível.
+    'premium_background_tiers' => [
+        [
+            'name' => 'Premium',
+            'min_wins' => 10,
+            'backgrounds' => [
+                'premium-starfall' => 'Chuva de estrelas',
+                'premium-red-stars' => 'Estrelas vermelhas vivas',
+                'premium-galaxy' => 'Galáxia em rotação',
+                'premium-warp' => 'Hiperespaço',
+                'premium-twinkle' => 'Céu cintilante',
+                'premium-aurora' => 'Aurora viva',
+            ],
+        ],
+        [
+            'name' => 'Elite',
+            'min_wins' => 20,
+            'backgrounds' => [
+                'elite-meteor' => 'Chuva de meteoros',
+                'elite-comet' => 'Cometa',
+                'elite-nebula-pulse' => 'Nebulosa pulsante',
+                'elite-synthwave' => 'Grade synthwave',
+            ],
+        ],
+        [
+            'name' => 'Lendário',
+            'min_wins' => 50,
+            'backgrounds' => [
+                'legend-blackhole' => 'Buraco negro',
+                'legend-supernova' => 'Supernova',
+                'legend-gold-galaxy' => 'Galáxia dourada',
+                'legend-cosmic-rainbow' => 'Arco-íris cósmico',
+            ],
+        ],
     ],
 
     // Fundos de perfil (preset leve em CSS/SVG; o desenho fica em resources/js/lib/profileBackgrounds.ts).

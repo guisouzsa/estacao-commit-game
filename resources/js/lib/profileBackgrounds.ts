@@ -243,6 +243,75 @@ export const PROFILE_BACKGROUNDS: Record<string, Preset> = {
             backgroundSize: '120px 120px, 300% 300%',
         },
     },
+
+    // ---- Elite (20 vitórias) ----
+    'elite-meteor': {
+        dark: true,
+        premium: true,
+        style: {
+            background: `repeating-linear-gradient(135deg, transparent 0 46px, #ffffffcc 47px, transparent 49px, transparent 140px), ${svg(stars(30, 113), 120)}, linear-gradient(180deg, #05050d, #14122b)`,
+            backgroundSize: '220px 220px, 120px 120px, auto',
+        },
+    },
+    'elite-comet': {
+        dark: true,
+        premium: true,
+        style: {
+            background: `radial-gradient(circle, #ffffff 0 5px, #7dd3fcaa 8px, transparent 26px), linear-gradient(110deg, transparent 40%, #7dd3fc33 50%, transparent 52%), ${svg(stars(30, 127), 120)}, linear-gradient(180deg, #0a1428, #05050d)`,
+            backgroundSize: '100% 100%, 100% 100%, 120px 120px, auto',
+            backgroundRepeat: 'no-repeat, no-repeat, repeat, no-repeat',
+        },
+    },
+    'elite-nebula-pulse': {
+        dark: true,
+        premium: true,
+        style: {
+            background: `radial-gradient(45% 70% at 30% 45%, #f481c699, transparent 65%), radial-gradient(40% 65% at 70% 55%, #7dd3fc77, transparent 65%), radial-gradient(30% 50% at 55% 30%, #b4da3355, transparent 65%), ${svg(stars(26, 131), 120)}, #0e0b1f`,
+            backgroundSize: '100% 100%, 100% 100%, 100% 100%, 120px 120px, auto',
+        },
+    },
+    'elite-synthwave': {
+        dark: true,
+        premium: true,
+        style: {
+            background: `repeating-linear-gradient(0deg, transparent 0 22px, #f481c6aa 23px, transparent 25px), repeating-linear-gradient(90deg, transparent 0 46px, #f481c666 47px, transparent 49px), radial-gradient(circle at 50% 30%, #f0b429 0 34px, #f481c6 35px, transparent 70px), linear-gradient(180deg, #14122b 0 45%, #2a0f3a 45%)`,
+            backgroundSize: '100% 50px, 49px 100%, auto, auto',
+        },
+    },
+
+    // ---- Lendário (50 vitórias) ----
+    'legend-blackhole': {
+        dark: true,
+        premium: true,
+        style: {
+            background: `radial-gradient(circle at 50% 50%, #000 0 28px, #f0b429 31px, #f481c6aa 40px, transparent 70px), conic-gradient(from var(--ec-spin, 0deg) at 50% 50%, #14122b, #464498, #f481c6, #f0b429, #14122b, #464498, #14122b), ${svg(stars(30, 137), 120)}, #05050d`,
+            backgroundSize: 'auto, auto, 120px 120px, auto',
+        },
+    },
+    'legend-supernova': {
+        dark: true,
+        premium: true,
+        style: {
+            background: `radial-gradient(circle at 50% 50%, #ffffff 0 6%, #f0b429 12%, #d01600aa 22%, transparent 45%), repeating-conic-gradient(from var(--ec-spin, 0deg) at 50% 50%, #ffffff22 0 4deg, transparent 4deg 18deg), ${svg(stars(30, 139), 120)}, #12030a`,
+            backgroundSize: '100% 100%, auto, 120px 120px, auto',
+        },
+    },
+    'legend-gold-galaxy': {
+        dark: true,
+        premium: true,
+        style: {
+            background: `${svg(sparkles(8, 149, '#f0b429'), 160)}, ${svg(stars(30, 151, '#ffe8a3'), 120)}, conic-gradient(from var(--ec-spin, 0deg) at 50% 50%, #1d1d1b, #6b4e00, #f0b429, #1d1d1b, #6b4e00, #1d1d1b)`,
+            backgroundSize: '160px 160px, 120px 120px, auto',
+        },
+    },
+    'legend-cosmic-rainbow': {
+        dark: true,
+        premium: true,
+        style: {
+            background: `${svg(sparkles(7, 157, '#ffffff'), 160)}, linear-gradient(120deg, #f481c6, #f0b429, #b4da33, #7dd3fc, #464498, #f481c6)`,
+            backgroundSize: '160px 160px, 300% 300%',
+        },
+    },
 };
 
 /** Estilo CSS do fundo escolhido, ou undefined (perfil antigo / chave desconhecida). */

@@ -22,8 +22,6 @@ registra o **estado funcional** do projeto para quem não quer ler commit a comm
   conquistas, link) e as ações copiar link, compartilhar story, baixar imagem (1080 × 1920), WhatsApp e X (`ShareProfileSheet`).
 - **E-mail do código:** assunto "123456 é seu código de verificação da Estação Commit", o formato que o Gmail e o iPhone usam para oferecer
   "Copiar código" (a decisão de mostrar o botão é deles).
-- **Logo para o Google** (tela de consentimento): `public/images/estacao-commit/brand/logo-120.png` e `logo-512.png`, geradas por
-  `scripts/make-google-logo.py`.
 
 ## 25/11/2026 (bots, e-mails de conta e equilíbrio)
 

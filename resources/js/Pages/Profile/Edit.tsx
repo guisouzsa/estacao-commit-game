@@ -34,6 +34,36 @@ type Options = {
 };
 
 type EditableLink = ProfileLink & { is_public: boolean };
+
+/** Nome e começo de endereço sugeridos para cada rede (o servidor aceita qualquer URL HTTPS). */
+const LINK_PLATFORMS: Record<string, { label: string; url: string }> = {
+    github: { label: 'GitHub', url: 'https://github.com/' },
+    linkedin: { label: 'LinkedIn', url: 'https://www.linkedin.com/in/' },
+    instagram: { label: 'Instagram', url: 'https://www.instagram.com/' },
+    youtube: { label: 'YouTube', url: 'https://www.youtube.com/@' },
+    twitch: { label: 'Twitch', url: 'https://www.twitch.tv/' },
+    portfolio: { label: 'Portfólio', url: 'https://' },
+    website: { label: 'Site', url: 'https://' },
+    other: { label: 'Link', url: 'https://' },
+};
+
+/**
+ * Trocar a rede atualiza o nome e o endereço SÓ se a pessoa ainda não os personalizou (vazios ou iguais ao
+ * padrão da rede anterior). Um nome ou endereço digitado à mão nunca é apagado.
+ */
+function switchPlatform(link: EditableLink, platform: string): EditableLink {
+    const before = LINK_PLATFORMS[link.platform] ?? LINK_PLATFORMS.other;
+    const after = LINK_PLATFORMS[platform] ?? LINK_PLATFORMS.other;
+    const labelIsDefault = link.label.trim() === '' || link.label === before.label;
+    const urlIsDefault = link.url.trim() === '' || link.url === before.url;
+
+    return {
+        ...link,
+        platform,
+        label: labelIsDefault ? after.label : link.label,
+        url: urlIsDefault ? after.url : link.url,
+    };
+}
 type ProfileExtrasData = {
     links: EditableLink[];
     badges: ProfileBadge[];
@@ -983,8 +1013,10 @@ export default function Edit({
                                                         ...data.links,
                                                         {
                                                             platform: 'github',
-                                                            label: 'GitHub',
-                                                            url: 'https://github.com/',
+                                                            label: LINK_PLATFORMS
+                                                                .github.label,
+                                                            url: LINK_PLATFORMS
+                                                                .github.url,
                                                             is_public: true,
                                                         },
                                                     ])
@@ -998,19 +1030,28 @@ export default function Edit({
                                             {data.links.map((link, index) => (
                                                 <div
                                                     className="grid gap-2 border-2 border-[#1d1d1b] bg-white p-3"
-                                                    key={`${index}-${link.url}`}
+                                                    // Chave pela posição, nunca pelo conteúdo: com a URL na chave,
+                                                    // cada letra recriava o campo e o teclado fechava.
+                                                    key={index}
                                                 >
                                                     <select
                                                         aria-label="Plataforma do link"
                                                         className="min-h-10 border border-[#1d1d1b] text-sm"
-                                                        onChange={(event) =>
-                                                            updateLink(
-                                                                index,
-                                                                'platform',
-                                                                event.target
-                                                                    .value,
-                                                            )
-                                                        }
+                                                        onChange={(event) => {
+                                                            const links = [
+                                                                ...data.links,
+                                                            ];
+                                                            links[index] =
+                                                                switchPlatform(
+                                                                    links[index],
+                                                                    event.target
+                                                                        .value,
+                                                                );
+                                                            setData(
+                                                                'links',
+                                                                links,
+                                                            );
+                                                        }}
                                                         value={link.platform}
                                                     >
                                                         <option value="github">
@@ -1063,6 +1104,11 @@ export default function Edit({
                                                                     .value,
                                                             )
                                                         }
+                                                        autoCapitalize="none"
+                                                        autoComplete="url"
+                                                        autoCorrect="off"
+                                                        inputMode="url"
+                                                        spellCheck={false}
                                                         type="url"
                                                         value={link.url}
                                                     />

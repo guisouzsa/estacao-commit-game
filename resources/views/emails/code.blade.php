@@ -9,7 +9,7 @@
 <body style="margin:0;padding:0;background-color:#f1efe9;">
 {{-- Texto de pré-visualização (aparece ao lado do assunto na caixa de entrada) --}}
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f1efe9;">
-    Seu código de confirmação é {{ $code }}. Ele vale por {{ $minutes }} minutos.
+    Seu código de verificação é {{ $code }}. Ele vale por {{ $minutes }} minutos.
 </div>
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1efe9;">

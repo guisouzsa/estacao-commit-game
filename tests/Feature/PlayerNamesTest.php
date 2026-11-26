@@ -113,6 +113,91 @@ class PlayerNamesTest extends TestCase
         }
     }
 
+    public function test_offensive_terms_in_many_languages_and_disguises_are_blocked(): void
+    {
+        $blocked = [
+            // português e abreviações
+            'buceta', 'Boceta', 'bct', 'B.C.T', 'c u', 'krl', 'Vsf', 'pqp', 'cacete', 'arrombado', 'putinha', 'piroca',
+            // disfarces: separadores, números, símbolos, letras repetidas
+            'b u c e t a', 'b.u.c.e.t.a', 'bucccceta', 'buuuceta x', 'Ca-ra-lho', 'p0rra', 'f0d4', 'merrrda',
+            // inglês, espanhol, francês, italiano, alemão, outros
+            'fuck you', 'shitty', 'b1tch', 'pornstar', 'dick', 'cunt', 'mierda', 'cabron', 'putain', 'salope',
+            'Puttana', 'vaffanculo', 'scheisse', 'arschloch', 'kurwa', 'blyat',
+            // ódio
+            'Hitler88', 'nazi', 'kkk', 'white power',
+        ];
+        foreach ($blocked as $bad) {
+            $this->assertNotNull($this->names->problem($bad), $bad);
+            $this->assertTrue(
+                $this->names->isBlocked(PlayerNames::key($bad)) || $this->names->problem($bad) !== 'Esse nome não pode ser usado. Escolha outro.',
+                $bad,
+            );
+        }
+
+        // Palavras e nomes comuns que contêm um termo curto por dentro continuam livres.
+        $fine = [
+            'cuidado', 'Cultura', 'therapist', 'Scunthorpe', 'Analista', 'Assis', 'Paulo Pinto', 'Rolando',
+            'Dickson', 'Cocktail', 'Cucumber', 'Sussex', 'Niquel', 'Vergara', 'Computador', 'Nazir',
+            'Grape Juice', 'Cumbuca', 'Picanha', 'Figueira',
+        ];
+        foreach ($fine as $ok) {
+            $this->assertFalse($this->names->isBlocked(PlayerNames::key($ok)), $ok);
+        }
+    }
+
+    public function test_only_the_latin_alphabet_and_a_few_symbols_are_accepted(): void
+    {
+        // Outros alfabetos, emojis e símbolos estranhos: não.
+        foreach (['Сергей', 'Ελένη', '张伟', 'محمد', 'Ana😀', 'jo#ao', 'ana!', 'Ana&Bia', 'ana@bia', 'ana/bia', 'ana+1'] as $bad) {
+            $this->assertNotNull(PlayerNames::formatProblem(PlayerNames::display($bad)), $bad);
+        }
+
+        // Começa com letra, sem símbolos seguidos ou no fim, sem 4 caracteres iguais seguidos.
+        foreach (['1abc', '_abc', 'a__b', 'a. b', 'aaaab', 'zzzz top'] as $bad) {
+            $this->assertNotNull(PlayerNames::formatProblem($bad), $bad);
+        }
+
+        // Acentos do português, números, espaço, ponto, hífen e sublinhado: sim.
+        foreach (['João', 'Conceição Silva', 'ana.maria', 'dev_123', 'Zé-Pequeno', 'Ana Paula 2'] as $ok) {
+            $this->assertNull(PlayerNames::formatProblem($ok), $ok);
+        }
+
+        // Um @ no começo é só tirado ("@ana" vira "ana").
+        $this->assertSame('ana', PlayerNames::display('@ana'));
+        $this->assertNull($this->names->problem('@Viajante'));
+    }
+
+    public function test_account_usernames_have_strict_rules(): void
+    {
+        foreach (['1gui', '_gui', 'gui_', 'gu__i', 'guiii-iiii', 'gui.souza', 'joão', 'gui#1'] as $bad) {
+            $this->assertNotNull(PlayerNames::usernameProblem($bad), $bad);
+        }
+        foreach (['gui', 'gui_souza', 'gui-dev-2', 'Guilherme22'] as $ok) {
+            $this->assertNull(PlayerNames::usernameProblem($ok), $ok);
+        }
+
+        foreach (['buceta_x', 'bct', '1player'] as $username) {
+            $this->post('/register', [
+                'username' => $username, 'email' => $username.'@example.com',
+                'password' => 'Senha-forte-123', 'password_confirmation' => 'Senha-forte-123',
+            ])->assertSessionHasErrors('username');
+        }
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_renaming_through_the_appearance_editor_also_checks_the_rules(): void
+    {
+        $user = User::factory()->create(['username' => 'jogador']);
+        $base = [
+            'avatar_position_x' => 50, 'avatar_position_y' => 50,
+            'profile_frame' => 'standard', 'primary_badge' => 'terminal', 'profile_title' => 'explorer',
+        ];
+
+        $this->actingAs($user)->patch('/profile/appearance', ['username' => 'buceta_x'] + $base)->assertSessionHasErrors('username');
+        $this->actingAs($user)->patch('/profile/appearance', ['username' => 'jogador'] + $base)->assertSessionHasNoErrors();
+        $this->assertSame('jogador', $user->fresh()->username);
+    }
+
     public function test_account_registration_follows_the_same_rules(): void
     {
         app(GuestIdentity::class)->create('Viajante', 'pixel', 'abc123xyz');

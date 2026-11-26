@@ -239,6 +239,35 @@ if (GROUP === 'all' || GROUP === 'bots') {
   }
 }
 
+if (GROUP === 'final') {
+  // Verificação da desvantagem calibrada (BOT_HANDICAP em src/bot.ts), como roda no jogo.
+  for (const humans of [1, 2, 3]) {
+    const bot: Policy = { name: 'robô (jogo)', decide: (m, me) => chooseBotAction(m, me, humans) };
+    for (const [label, human] of [['casual', casualHuman()], ['cuidadoso', carefulHuman()], ['casual que perde 10% das vezes', casualHuman({ timeoutRate: 0.1 })]] as const) {
+      const seats = [...Array(humans).fill(human), ...Array(4 - humans).fill(bot)];
+      const r = simulate(seats, N, SEED + humans * 10 + label.length);
+      const humanWins = r.stats.slice(0, humans).reduce((sum, s) => sum + s.wins, 0);
+      console.log(`${humans} humano(s) ${label} x ${4 - humans} robô(s): humanos vencem ${pct(humanWins, N)} [IC95 ${wilson(humanWins, N)}] · mediana ${r.medianTurns} turnos`);
+    }
+  }
+}
+
+if (GROUP === 'handicap') {
+  // Calibração da desvantagem dos bots: node ... sim/balance.ts 1000 SEMENTE handicap HUMANOS P1,P2,...
+  const humans = Number(args[3] ?? 1);
+  const values = (args[4] ?? '0,50,70,80,90').split(',').map(Number);
+  for (const p of values) {
+    const table = { 1: p, 2: p, 3: p };
+    const bot: Policy = { name: `robô (hesita ${p}%)`, decide: (m, me) => chooseBotAction(m, me, humans, table) };
+    for (const [label, human] of [['casual', casualHuman()], ['cuidadoso', carefulHuman()]] as const) {
+      const seats = [...Array(humans).fill(human), ...Array(4 - humans).fill(bot)];
+      const r = simulate(seats, N, SEED + p);
+      const humanWins = r.stats.slice(0, humans).reduce((sum, s) => sum + s.wins, 0);
+      console.log(`humanos=${humans} hesitação=${p}% humano ${label}: humanos vencem ${pct(humanWins, N)} [IC95 ${wilson(humanWins, N)}] · mediana ${r.medianTurns} turnos`);
+    }
+  }
+}
+
 if (GROUP === 'check') {
   report('Controle: 4 robôs novos (desempate pela ordem da mesa)', [improved, improved, improved, improved], N, SEED + 30);
   report('1 humano cuidadoso x 3 robôs novos', [carefulHuman(), improved, improved, improved], N, SEED + 31);

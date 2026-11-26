@@ -16,6 +16,10 @@ class ProfileAppearanceUpdateRequest extends FormRequest
         return [
             'username' => [
                 'sometimes', 'string', 'min:3', 'max:30', 'regex:/\A[a-zA-Z0-9_-]+\z/',
+                // Mesmas regras do cadastro, mas só quando o nome realmente muda (nomes antigos continuam valendo).
+                fn ($attribute, $value, $fail) => strtolower((string) $value) === strtolower((string) $this->user()->username)
+                    ? null
+                    : (new \App\Rules\PlayerNameAllowed)->validate($attribute, $value, $fail),
                 function ($attribute, $value, $fail): void {
                     $exists = \App\Models\User::query()
                         ->whereRaw('LOWER(username) = ?', [strtolower($value)])
@@ -28,8 +32,8 @@ class ProfileAppearanceUpdateRequest extends FormRequest
                 },
             ],
             'bio' => ['nullable', 'string', 'max:500'],
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:max_width=4000,max_height=4000'],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096', 'dimensions:max_width=4000,max_height=4000'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:max_width=4000,max_height=4000', new \App\Rules\StaticImage],
+            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096', 'dimensions:max_width=4000,max_height=4000', new \App\Rules\StaticImage],
             // Ícone gerado ("estilo:semente"), alternativa à foto. A foto enviada tem prioridade.
             'avatar_generated' => ['nullable', 'string', 'regex:/^('.implode('|', config('players.selectable_avatar_styles')).'):[a-z0-9]{6,32}$/'],
             'remove_avatar' => ['sometimes', 'boolean'],
@@ -42,7 +46,18 @@ class ProfileAppearanceUpdateRequest extends FormRequest
             // % do enquadramento "preencher": abaixo de 100 a imagem aparece inteira, com fundo desfocado nas sobras.
             'cover_zoom' => ['sometimes', 'integer', 'between:10,300'],
             'profile_frame' => ['required', Rule::in(array_keys(config('profiles.frames')))],
-            'profile_background' => ['nullable', Rule::in(array_keys(config('profiles.backgrounds')))],
+            'profile_background' => [
+                'nullable',
+                Rule::in([...array_keys(config('profiles.backgrounds')), ...array_keys(config('profiles.premium_backgrounds'))]),
+                // Premium (animados) só com o número mínimo de vitórias. Quem já usa um continua podendo salvar o perfil.
+                function ($attribute, $value, $fail): void {
+                    $premium = array_key_exists((string) $value, config('profiles.premium_backgrounds'));
+                    $min = (int) config('profiles.premium_backgrounds_min_wins');
+                    if ($premium && $value !== $this->user()->profile_background && (int) $this->user()->matches_won < $min) {
+                        $fail("Esse fundo é premium: libera com {$min} vitórias.");
+                    }
+                },
+            ],
             'primary_badge' => ['required', Rule::in(array_keys(config('profiles.badges')))],
             'profile_title' => ['nullable', Rule::in(array_keys(config('profiles.titles')))],
             'achievement_badge_id' => [

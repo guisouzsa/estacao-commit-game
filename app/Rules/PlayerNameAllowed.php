@@ -19,6 +19,13 @@ class PlayerNameAllowed implements ValidationRule
             return;
         }
 
+        // Formato do username de conta (letras sem acento, números, _ e -; começa com letra...).
+        if ($format = PlayerNames::usernameProblem($value)) {
+            $fail($format);
+
+            return;
+        }
+
         $names = app(PlayerNames::class);
         $key = PlayerNames::key($value);
 

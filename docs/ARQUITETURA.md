@@ -455,4 +455,48 @@ Resultado: o bot novo vence 55,6% contra três bots antigos, e 4 bots novos divi
 
 B e C não mudam o equilíbrio entre humano e bot (valem para todos); só encurtam a partida (B) ou as secas longas (C), em troca de manipular a ordem do baralho. **Decisão: manter A.** A desvantagem real vinha de vezes perdidas e da escolha da troca, e as duas foram tratadas sem mexer no baralho. Se no futuro a duração da partida incomodar, B com 25% é a opção com menor efeito colateral.
 
+**Desvantagem dos bots (decisão de produto, posterior à auditoria):** contra bots, o jogador real deve vencer ~90% das partidas.
+Com pelo menos uma pessoa na mesa, numa vez em que o bot poderia avançar (jogar a carta ou o bloco da etapa) ele **hesita** e troca a
+carta menos útil com chance `BotBrain::HANDICAP` / `BOT_HANDICAP` = **67% (1 pessoa), 50% (2), 40% (3)**. O sorteio é
+`handicapRoll(turno, assento, etapa)`: soma ponderada + finalizador do MurmurHash3 em 32 bits, igual nos dois motores (teste
+`BotBrainTest::test_the_roll_matches_the_worker_engine` e cenários `bots-com-pessoa-na-mesa-*` da paridade, versão `2026-11-29-1`).
+Determinístico, sem dado do cliente. Medido com `sim/balance.ts ... final` (3.000 partidas):
+
+| Mesa | Casual | Atento (dica Sobrando) | Casual que perde 10% das vezes |
+| --- | :-: | :-: | :-: |
+| 1 pessoa × 3 bots | 86,9% | 93,6% | 81,6% |
+| 2 pessoas × 2 bots | 85,0% | 97,7% | 72,6% |
+| 3 pessoas × 1 bot (medido com 35%; depois subiu para 40%) | 79,4% | 96,9% | 67,7% |
+
+A partida fica mais longa (mediana de ~98 para ~115–136 turnos com 1 pessoa), porque os bots avançam mais devagar.
+
 **Pendências:** não existem níveis de dificuldade (todos os bots usam o mesmo cérebro). O prazo de 25 s por vez continua: é a maior fonte restante de vezes perdidas para quem é novo no jogo.
+
+## 18. Regras de nomes (username e nome de visitante)
+
+Tudo fica em `App\Support\PlayerNames` (regras), `App\Rules\PlayerNameAllowed` (contas) e `config/players.php` (listas). Testes:
+`tests/Feature/PlayerNamesTest.php`.
+
+| Regra | Username de conta (vai na URL `/u/...`) | Nome de visitante |
+| --- | --- | --- |
+| Tamanho | 3 a 30 | 3 a 24 |
+| Caracteres | letras **sem acento**, números, `_` e `-` | alfabeto latino **com acentos** (João, Conceição), números, espaço, `.`, `-` e `_` |
+| Outros alfabetos e emojis | não (cirílico, grego, chinês, árabe, emoji...) | não |
+| Começo | sempre uma letra | sempre uma letra |
+| Símbolos | nunca seguidos nem no fim (`a__b`, `gui_`) | idem |
+| Repetição | no máximo 3 caracteres iguais seguidos (`aaaa` não) | idem |
+| `@` | o cadastro já remove o que não é aceito | um `@` no começo é tirado (`@ana` vira `ana`) |
+| Reservados | `admin`, `suporte`, `estacao`, nomes dos bots... (`players.reserved`) | idem |
+
+**Filtro de termos impróprios** (`players.blocked_contains` e `players.blocked_words`): palavrões, termos sexuais e de ódio em português
+(com abreviações como `bct`, `krl`, `vsf`, `pqp`, `fdp`), inglês, espanhol, francês, italiano, alemão, polonês, russo transliterado e turco.
+`PlayerNames::isBlocked` testa várias leituras do mesmo nome para pegar disfarces: troca de letras por números ou símbolos (`m3rda`, `$hit`,
+`f0da`), letras separadas (`b.u.c.e.t.a`, `p u t a`) e letras repetidas (`buuuceta`).
+
+- Termos longos e inequívocos (`blocked_contains`) são barrados em qualquer posição.
+- Termos curtos (`blocked_words`) só como palavra inteira ou nome inteiro, para não barrar `computador`, `cuidado`, `therapist`, `Scunthorpe`,
+  `Paulo Pinto` ou `Analista`. Exceção aceita: nomes que contêm um termo longo por dentro também são barrados (ex.: `Shitake`).
+- As regras valem para **nomes novos ou trocados**: cadastro, escolha de username no Google, edição do perfil (as duas telas) e visitantes.
+  Nomes antigos continuam funcionando até a pessoa trocá-los.
+- É um filtro automático, não uma moderação completa: ele não entende contexto. Para acrescentar um termo, edite `config/players.php`
+  e rode os testes.

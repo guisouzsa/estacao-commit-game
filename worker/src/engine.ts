@@ -156,7 +156,9 @@ export function botStep(m: MatchState, participants: Participant[], rng: Rng = c
   if (!bot) return false;
 
   // A decisão usa só a mão do próprio bot e o estado público da mesa (ver bot.ts).
-  const { action, payload } = chooseBotAction(m, String(bot.id));
+  // Pessoas na mesa: com alguém de verdade jogando, os bots têm a desvantagem calibrada (BOT_HANDICAP).
+  const humans = participants.filter((p) => p.kind !== 'bot').length;
+  const { action, payload } = chooseBotAction(m, String(bot.id), humans);
   act(m, bot.id, action, payload, rng, now);
 
   return true;

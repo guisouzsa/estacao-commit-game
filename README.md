@@ -222,6 +222,12 @@ Dá para desligar esses dois com `MAIL_WELCOME=false`. Detalhes: [`docs/ARQUITET
 <br>
 
 - **Perfil público** com avatar, capa, bio, links, moldura, fundo, título, selos de programação e o estado "jogando agora".
+- **Edição em 5 seções numeradas** (Identidade · Foto · Banner e fundo · Conquistas, selo e título · Links), com atalhos no topo.
+- **Fundos:** degradês e desenhos leves, incluindo fundos de espaço, e **fundos premium animados** liberados com **10 vitórias**.
+- **Compartilhar perfil:** painel com a prévia de um **story 9:16** (você escolhe o fundo e o que aparece), copiar link, baixar a imagem,
+  compartilhar no celular, WhatsApp e X.
+- **Foto e capa seguras:** checagem de conteúdo +18 no navegador (modelo aberto NSFWJS, baixado só quando alguém escolhe uma imagem)
+  e recusa de GIF ou imagem animada no servidor.
 - **Editor de capa** com prévia na mesma proporção da capa publicada: arrastar acompanha o cursor, zoom suave (slider, roda do mouse ou teclado), *Centralizar*, *Imagem inteira*, *Preencher*, *Redefinir* e um mapa da área visível. Capas antigas continuam iguais (zoom 100 = enquadramento anterior).
 - **Conquistas em destaque dentro do card do perfil**, escolhidas num seletor no modo de edição. Só aparecem se a pessoa ligar a opção.
 - **Seguir e deixar de seguir**, busca de jogadores, jogadores recomendados e selo de verificado.
@@ -265,21 +271,25 @@ a própria mão e o estado público (etapa e percurso de cada um, quem está blo
 | escolhe o que trocar | a carta que o percurso não usa mais, ou a cópia além do que falta; guarda a que vai usar antes |
 | ataca | Merge Conflict só no líder perto do fim (etapa 12+); Limpar Credenciais só dentro da regra do Treinamento |
 | desempata o alvo | quem joga logo depois dele (nenhum assento fixo é favorecido) |
+| **hesita** (só com pessoas na mesa) | numa vez em que poderia avançar, às vezes troca uma carta em vez de jogar: 67% com 1 pessoa, 50% com 2, 40% com 3 |
 
 A lógica existe em dois motores idênticos: [`app/Services/BotBrain.php`](app/Services/BotBrain.php) e [`worker/src/bot.ts`](worker/src/bot.ts),
 com a paridade conferida por cenários compartilhados em [`tests/parity/`](tests/parity/).
 
-**O que as simulações mostraram** (3.000 partidas por cenário no motor real, com o simulador [`worker/sim/balance.ts`](worker/sim/balance.ts)):
+**Decisão de produto: contra bots, o jogador real vence cerca de 90% das partidas.** Os bots não ganham cartas piores nem veem nada a
+mais; eles só **hesitam** de vez em quando. O "sorteio" da hesitação é uma conta sobre turno, assento e etapa, igual no PHP e no Worker,
+e não pode ser influenciado pelo navegador. Mesa só de bots não tem hesitação.
 
-| Cenário (1 humano × 3 bots) | Vitória do humano |
-| --- | :-: |
-| humano jogando normalmente × bots antigos | 25,6% (a parte justa) |
-| … perdendo 3 vezes no tutorial + 10% por tempo | **8,9%** ← a causa das derrotas |
-| humano que segue a dica **Sobrando** × bots novos | **25,5%** |
-| 4 bots novos entre si | 25,1 · 24,8 · 25,9 · 24,3% |
+Resultado medido (3.000 partidas por cenário no motor real, com o simulador [`worker/sim/balance.ts`](worker/sim/balance.ts), grupo `final`):
 
-As três formas de distribuir cartas (aleatória, ponderada por etapa e adaptativa) foram comparadas: nenhuma muda o equilíbrio entre humano
-e bot, só o tamanho da partida. **O baralho continua 100% aleatório.** Análise completa:
+| Mesa | Pessoas vencem (jogando casualmente) | Pessoas vencem (seguindo a dica **Sobrando**) |
+| --- | :-: | :-: |
+| 1 pessoa × 3 bots | 86,9% | 93,6% |
+| 2 pessoas × 2 bots | 85,0% | 97,7% |
+| 3 pessoas × 1 bot | ~86% (com 40%) | ~98% |
+
+Sem a hesitação, o mesmo humano atento venceria ~25% (a parte justa) e o casual ~8%. Quem perde muitas vezes por tempo cai para 70–80%.
+O baralho continua 100% aleatório. Análise completa:
 [`docs/ARQUITETURA.md`, seção 17](docs/ARQUITETURA.md#17-equilíbrio-entre-humanos-e-bots-auditoria-e-simulações).
 
 ---
@@ -459,7 +469,11 @@ Resumo das entregas mais recentes. A lista completa, por data, está em
 
 | Tema | Entrega |
 | --- | --- |
+| 🏆 Vitória | contra bots, o jogador real vence ~90% das partidas (bots hesitam de forma calibrada e auditável) |
 | 🧠 Bots | decisão por valor de carta e ataques no líder, iguais no PHP e no Worker; simulador de equilíbrio com 3.000 partidas por cenário |
+| 🌌 Fundos | 5 fundos de espaço e 6 premium animados, liberados com 10 vitórias |
+| 📲 Compartilhar | painel com story 9:16 personalizável, copiar link, baixar imagem, WhatsApp e X |
+| 🛡️ Moderação | nomes impróprios em vários idiomas barrados; foto e capa +18 checadas no navegador; sem GIF ou imagem animada |
 | 🃏 Jogador | marcação **Sobrando** nas cartas que o percurso não usa mais; tutorial que não come a sua vez |
 | ✉️ E-mails | boas-vindas (e-mail ou Google) e aviso de Google vinculado, uma vez cada, sem travar nada se o Brevo falhar |
 | 🆘 Falhas | erro inesperado ao entrar ou se cadastrar oferece jogar com perfil temporário |

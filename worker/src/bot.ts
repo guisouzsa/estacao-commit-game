@@ -63,7 +63,30 @@ function leader(m: MatchState, me: string): [string, PlayerState] | null {
   return best;
 }
 
-export function chooseBotAction(m: MatchState, me: string): BotDecision {
+/**
+ * Desvantagem dos bots quando há pessoas na mesa (decisão de produto: o jogador real deve vencer cerca de 90%
+ * das partidas contra bots). Chance, em %, de o bot "hesitar" numa vez em que poderia avançar: em vez de jogar
+ * a carta ou o bloco da etapa, ele troca uma carta. Indexada pelo número de pessoas na mesa (1 a 3).
+ * Calibrada com worker/sim/balance.ts (grupo "handicap"). Mesmos números em app/Services/BotBrain.php.
+ */
+export const BOT_HANDICAP: Record<number, number> = { 1: 67, 2: 50, 3: 40 };
+
+/**
+ * Sorteio determinístico (0 a 99) da hesitação: depende só do turno, do assento e da etapa, então o motor PHP e
+ * o do Worker chegam ao mesmo resultado (paridade) e ninguém consegue influenciá-lo pelo navegador.
+ */
+export function handicapRoll(turn: number, seat: number, step: number): number {
+  // Combina os três números e embaralha os bits (finalizador do MurmurHash3), tudo em 32 bits sem sinal.
+  let h = (turn * 0x9e3779b1 + seat * 0x85ebca77 + step * 0xc2b2ae3d) % 4294967296;
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b) >>> 0;
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35) >>> 0;
+  h ^= h >>> 16;
+  return (h >>> 0) % 100;
+}
+
+export function chooseBotAction(m: MatchState, me: string, humans = 0, handicap: Record<number, number> = BOT_HANDICAP): BotDecision {
   const player = m.players[me];
 
   if ((player.pending_discard ?? 0) > 0) {
@@ -71,6 +94,10 @@ export function chooseBotAction(m: MatchState, me: string): BotDecision {
   }
 
   const required: string | undefined = REQUIRED[player.step];
+  const canAdvance = required !== undefined && (required.startsWith('block_') || player.hand.includes(required));
+  if (canAdvance && humans > 0 && player.hand.length > 0 && handicapRoll(m.turn_number, player.seat, player.step) < (handicap[Math.min(humans, 3)] ?? 0)) {
+    return { action: 'exchange', payload: { card: player.hand[leastValuable(player)] } };
+  }
   if (required?.startsWith('block_')) return { action: 'play_block', payload: {} };
   if (required !== undefined && player.hand.includes(required)) return { action: 'play_card', payload: { card: required } };
 

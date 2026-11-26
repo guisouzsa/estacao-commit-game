@@ -3,6 +3,28 @@
 Resumo por tema do que foi entregue, na ordem em que aconteceu. O histórico completo e preciso é o do Git (`git log`). Este arquivo
 registra o **estado funcional** do projeto para quem não quer ler commit a commit. Voltar ao [índice](../README.md).
 
+## 26/11/2026 (vitória das pessoas, nomes e imagens)
+
+- **Bots com desvantagem calibrada:** com pessoas na mesa os bots às vezes hesitam (67% / 50% / 40% com 1 / 2 / 3 pessoas), para o jogador
+  real vencer ~90% das partidas. Sorteio determinístico, igual no PHP e no Worker; `PARITY_VERSION` `2026-11-29-1`. Medições em
+  `ARQUITETURA.md`, seção 17.
+- **Nomes:** filtro de termos impróprios em vários idiomas e com disfarces, só alfabeto latino, regras de formato e a troca de nome pela tela
+  de aparência passando pelas mesmas regras (seção 18).
+- **Imagens +18:** foto e capa passam por uma checagem no navegador (modelo aberto NSFWJS) antes de entrar no editor.
+- **Links do perfil:** digitar não fecha mais o teclado; trocar a rede atualiza nome e endereço padrão.
+- **Edição do perfil em 5 seções** numeradas (Identidade · Foto · Banner e fundo · Conquistas, selo e título · Links), com atalhos no topo;
+  foto enviada e ícone gerado lado a lado como duas opções da mesma escolha; molduras compactas no celular.
+- **Fundos:** 5 novos fundos de espaço (estrelas vermelhas, constelação, Via Láctea, poeira cósmica, eclipse) e 6 **fundos premium animados**
+  (chuva de estrelas, estrelas vermelhas vivas, galáxia em rotação, hiperespaço, céu cintilante, aurora viva), liberados com **10 vitórias**
+  e conferidos no servidor. Animação só em CSS (sem arquivo), parada para quem pede menos movimento.
+- **Foto e capa sem animação:** GIF, WebP animado e PNG animado são recusados (`App\Rules\StaticImage`).
+- **Compartilhar perfil** abre um painel com a prévia de um story 9:16 (escolha do fundo e do que mostrar: foto, título, vitórias e partidas,
+  conquistas, link) e as ações copiar link, compartilhar story, baixar imagem (1080 × 1920), WhatsApp e X (`ShareProfileSheet`).
+- **E-mail do código:** assunto "123456 é seu código de verificação da Estação Commit", o formato que o Gmail e o iPhone usam para oferecer
+  "Copiar código" (a decisão de mostrar o botão é deles).
+- **Logo para o Google** (tela de consentimento): `public/images/estacao-commit/brand/logo-120.png` e `logo-512.png`, geradas por
+  `scripts/make-google-logo.py`.
+
 ## 25/11/2026 (bots, e-mails de conta e equilíbrio)
 
 - **Bots mais espertos, nos dois motores:** `App\Services\BotBrain` e `worker/src/bot.ts` (espelhos exatos). Trocam ou descartam a carta que o

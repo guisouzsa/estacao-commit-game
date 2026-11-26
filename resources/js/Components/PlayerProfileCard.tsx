@@ -81,7 +81,7 @@ const badgeLabels: Record<string, string> = {
     api: 'API',
 };
 
-const titleLabels: Record<string, string> = {
+export const titleLabels: Record<string, string> = {
     explorer: 'Explorador',
     builder: 'Montador',
     collaborator: 'Colaborador',

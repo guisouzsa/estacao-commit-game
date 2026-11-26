@@ -12,7 +12,9 @@ class EmailCodeMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Seu código da Estação Commit: {$this->code}");
+        // Código no começo do assunto e frase "código de verificação": é o formato que o Gmail e o iPhone
+        // reconhecem para mostrar "Copiar código" na lista de e-mails / sugerir no teclado (não há como forçar).
+        return new Envelope(subject: "{$this->code} é seu código de verificação da Estação Commit");
     }
 
     public function content(): Content

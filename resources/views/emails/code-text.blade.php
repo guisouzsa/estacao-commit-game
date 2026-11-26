@@ -1,6 +1,6 @@
 ESTAÇÃO COMMIT - Verificação de e-mail
 
-Seu código de confirmação: {{ $code }}
+Seu código de verificação é: {{ $code }}
 
 Digite-o na tela de verificação para concluir seu cadastro.
 Ele vale por {{ $minutes }} minutos e só pode ser usado por você.

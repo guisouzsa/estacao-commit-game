@@ -18,6 +18,18 @@ return [
         'gold' => 'Commit dourado',
     ],
 
+    // Fundos PREMIUM: animados (CSS, sem arquivo para baixar) e liberados a partir de `premium_backgrounds_min_wins`
+    // vitórias. O desenho e a animação ficam em resources/js/lib/profileBackgrounds.ts e resources/css/app.css.
+    'premium_backgrounds_min_wins' => 10,
+    'premium_backgrounds' => [
+        'premium-starfall' => 'Chuva de estrelas',
+        'premium-red-stars' => 'Estrelas vermelhas vivas',
+        'premium-galaxy' => 'Galáxia em rotação',
+        'premium-warp' => 'Hiperespaço',
+        'premium-twinkle' => 'Céu cintilante',
+        'premium-aurora' => 'Aurora viva',
+    ],
+
     // Fundos de perfil (preset leve em CSS/SVG; o desenho fica em resources/js/lib/profileBackgrounds.ts).
     'backgrounds' => [
         'nebula' => 'Nebulosa',
@@ -38,6 +50,12 @@ return [
         'hex-tech' => 'Hexágonos tech',
         'night-mode' => 'Modo noturno',
         'paper' => 'Papel quadriculado',
+        // Espaço (estáticos, livres para todos)
+        'red-stars' => 'Estrelas vermelhas',
+        'constellation' => 'Constelação',
+        'milky-way' => 'Via Láctea',
+        'cosmic-dust' => 'Poeira cósmica',
+        'eclipse' => 'Eclipse',
     ],
 
     'badges' => [

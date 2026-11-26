@@ -128,4 +128,44 @@ class BotBrainTest extends TestCase
         $this->assertSame($expected, $brain->decide($other, '2'));
         $this->assertSame($expected, $brain->decide($state, '2')); // determinístico
     }
+
+    public function test_with_people_at_the_table_bots_sometimes_hesitate_at_the_calibrated_rate(): void
+    {
+        $brain = new BotBrain;
+        $state = $this->table(['git_add', 'git_push'], 4); // pode avançar (tem o git_add)
+
+        foreach ([1, 2, 3] as $humans) {
+            $hesitated = 0;
+            for ($turn = 1; $turn <= 2000; $turn++) {
+                $hesitated += $brain->decide($state, '2', $turn, $humans)['action'] === 'exchange' ? 1 : 0;
+            }
+            $expected = BotBrain::HANDICAP[$humans] / 100;
+            $this->assertEqualsWithDelta($expected, $hesitated / 2000, 0.04, "humanos={$humans}");
+        }
+
+        // Sem pessoas na mesa (só bots), nunca hesita.
+        for ($turn = 1; $turn <= 300; $turn++) {
+            $this->assertSame('play_card', $brain->decide($state, '2', $turn, 0)['action']);
+        }
+    }
+
+    public function test_hesitating_still_keeps_the_card_it_needs(): void
+    {
+        $brain = new BotBrain;
+        $state = $this->table(['git_add', 'git_clone', 'git_push'], 4);
+
+        for ($turn = 1; $turn <= 200; $turn++) {
+            $decision = $brain->decide($state, '2', $turn, 1, [1 => 100]);
+            $this->assertSame(['action' => 'exchange', 'payload' => ['card' => 'git_clone']], $decision);
+        }
+    }
+
+    public function test_the_roll_matches_the_worker_engine(): void
+    {
+        // Mesmos valores que worker/src/bot.ts (handicapRoll) devolve para estas entradas.
+        $this->assertSame([17, 35, 29, 32, 93, 28], array_map(
+            fn (array $c) => BotBrain::handicapRoll(...$c),
+            [[1, 1, 0], [5, 2, 3], [37, 4, 17], [1234, 3, 9], [3999, 1, 12], [77, 2, 0]],
+        ));
+    }
 }

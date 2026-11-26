@@ -157,6 +157,7 @@ export default function Public({
                             links={profile.links}
                             statistics={profile.statistics ?? null}
                             share
+                            profile={profile}
                         />
                     </PlayerProfileCard>
                 </div>

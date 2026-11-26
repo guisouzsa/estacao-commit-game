@@ -1,6 +1,6 @@
 {
     "_comment": "Cenários de PARIDADE entre o motor PHP (GameEngine) e o do Worker (worker/src/engine.ts). 'expected' é gerado pelo PHP (PARITY_UPDATE=1 php artisan test --filter=EngineParityTest); os dois motores precisam produzir exatamente isto. Jogadores indexados pelo assento (1 a 4).",
-    "parity_version": "2026-11-28-1",
+    "parity_version": "2026-11-29-1",
     "scenarios": [
         {
             "name": "login-e-validacoes",
@@ -5578,7 +5578,7 @@
                         "winner_seat": null,
                         "finished": false,
                         "deck": [
-                            "git_commit",
+                            "git_push",
                             "git_add",
                             "git_clone",
                             "git_checkout",
@@ -5588,7 +5588,9 @@
                             "git_push",
                             "git_clone"
                         ],
-                        "discard": [],
+                        "discard": [
+                            "git_push"
+                        ],
                         "players": {
                             "1": {
                                 "hand": [
@@ -5606,17 +5608,17 @@
                             "2": {
                                 "hand": [
                                     "git_add",
+                                    "git_login",
                                     "git_commit",
-                                    "git_push",
-                                    "git_push"
+                                    "git_commit"
                                 ],
-                                "path": [
-                                    "git_login"
-                                ],
-                                "step": 1,
+                                "path": [],
+                                "step": 0,
                                 "blocked": false,
                                 "pending_discard": 0,
-                                "recent_swaps": []
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
                             },
                             "3": {
                                 "hand": [
@@ -5652,7 +5654,7 @@
                         "history": [
                             {
                                 "seat": 2,
-                                "message": "jogou Git Login.",
+                                "message": "trocou uma carta.",
                                 "turn": 1
                             }
                         ]
@@ -5670,7 +5672,7 @@
                         "winner_seat": null,
                         "finished": false,
                         "deck": [
-                            "git_add",
+                            "git_push",
                             "git_clone",
                             "git_checkout",
                             "git_pull",
@@ -5680,6 +5682,7 @@
                             "git_clone"
                         ],
                         "discard": [
+                            "git_push",
                             "git_push"
                         ],
                         "players": {
@@ -5699,24 +5702,24 @@
                             "2": {
                                 "hand": [
                                     "git_add",
+                                    "git_login",
                                     "git_commit",
-                                    "git_push",
-                                    "git_push"
+                                    "git_commit"
                                 ],
-                                "path": [
-                                    "git_login"
-                                ],
-                                "step": 1,
+                                "path": [],
+                                "step": 0,
                                 "blocked": false,
                                 "pending_discard": 0,
-                                "recent_swaps": []
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
                             },
                             "3": {
                                 "hand": [
                                     "git_clone",
                                     "git_add",
                                     "git_commit",
-                                    "git_commit"
+                                    "git_add"
                                 ],
                                 "path": [],
                                 "step": 0,
@@ -5747,7 +5750,7 @@
                         "history": [
                             {
                                 "seat": 2,
-                                "message": "jogou Git Login.",
+                                "message": "trocou uma carta.",
                                 "turn": 1
                             },
                             {
@@ -5770,8 +5773,7 @@
                         "winner_seat": null,
                         "finished": false,
                         "deck": [
-                            "git_add",
-                            "git_clone",
+                            "git_push",
                             "git_checkout",
                             "git_pull",
                             "git_add",
@@ -5780,6 +5782,8 @@
                             "git_clone"
                         ],
                         "discard": [
+                            "git_push",
+                            "git_push",
                             "git_push"
                         ],
                         "players": {
@@ -5799,24 +5803,24 @@
                             "2": {
                                 "hand": [
                                     "git_add",
+                                    "git_login",
                                     "git_commit",
-                                    "git_push",
-                                    "git_push"
+                                    "git_commit"
                                 ],
-                                "path": [
-                                    "git_login"
-                                ],
-                                "step": 1,
+                                "path": [],
+                                "step": 0,
                                 "blocked": false,
                                 "pending_discard": 0,
-                                "recent_swaps": []
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
                             },
                             "3": {
                                 "hand": [
                                     "git_clone",
                                     "git_add",
                                     "git_commit",
-                                    "git_commit"
+                                    "git_add"
                                 ],
                                 "path": [],
                                 "step": 0,
@@ -5830,25 +5834,26 @@
                                 "hand": [
                                     "git_add",
                                     "git_commit",
-                                    "git_push",
-                                    "git_pull"
+                                    "git_pull",
+                                    "git_clone"
                                 ],
                                 "path": [
                                     "git_login",
                                     "git_clone",
-                                    "git_checkout",
-                                    "block_1"
+                                    "git_checkout"
                                 ],
-                                "step": 4,
+                                "step": 3,
                                 "blocked": false,
                                 "pending_discard": 0,
-                                "recent_swaps": []
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
                             }
                         },
                         "history": [
                             {
                                 "seat": 2,
-                                "message": "jogou Git Login.",
+                                "message": "trocou uma carta.",
                                 "turn": 1
                             },
                             {
@@ -5858,7 +5863,7 @@
                             },
                             {
                                 "seat": 4,
-                                "message": "encaixou o block 1.",
+                                "message": "trocou uma carta.",
                                 "turn": 3
                             }
                         ]
@@ -5876,8 +5881,7 @@
                         "winner_seat": null,
                         "finished": false,
                         "deck": [
-                            "git_add",
-                            "git_clone",
+                            "git_push",
                             "git_checkout",
                             "git_pull",
                             "git_add",
@@ -5886,6 +5890,8 @@
                             "git_clone"
                         ],
                         "discard": [
+                            "git_push",
+                            "git_push",
                             "git_push"
                         ],
                         "players": {
@@ -5905,24 +5911,24 @@
                             "2": {
                                 "hand": [
                                     "git_add",
+                                    "git_login",
                                     "git_commit",
-                                    "git_push",
-                                    "git_push"
+                                    "git_commit"
                                 ],
-                                "path": [
-                                    "git_login"
-                                ],
-                                "step": 1,
+                                "path": [],
+                                "step": 0,
                                 "blocked": false,
                                 "pending_discard": 0,
-                                "recent_swaps": []
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
                             },
                             "3": {
                                 "hand": [
                                     "git_clone",
                                     "git_add",
                                     "git_commit",
-                                    "git_commit"
+                                    "git_add"
                                 ],
                                 "path": [],
                                 "step": 0,
@@ -5936,25 +5942,26 @@
                                 "hand": [
                                     "git_add",
                                     "git_commit",
-                                    "git_push",
-                                    "git_pull"
+                                    "git_pull",
+                                    "git_clone"
                                 ],
                                 "path": [
                                     "git_login",
                                     "git_clone",
-                                    "git_checkout",
-                                    "block_1"
+                                    "git_checkout"
                                 ],
-                                "step": 4,
+                                "step": 3,
                                 "blocked": false,
                                 "pending_discard": 0,
-                                "recent_swaps": []
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
                             }
                         },
                         "history": [
                             {
                                 "seat": 2,
-                                "message": "jogou Git Login.",
+                                "message": "trocou uma carta.",
                                 "turn": 1
                             },
                             {
@@ -5964,7 +5971,7 @@
                             },
                             {
                                 "seat": 4,
-                                "message": "encaixou o block 1.",
+                                "message": "trocou uma carta.",
                                 "turn": 3
                             }
                         ]
@@ -5982,7 +5989,6 @@
                         "winner_seat": null,
                         "finished": false,
                         "deck": [
-                            "git_clone",
                             "git_checkout",
                             "git_pull",
                             "git_add",
@@ -5991,25 +5997,12 @@
                             "git_clone"
                         ],
                         "discard": [
+                            "git_push",
+                            "git_push",
                             "git_push"
                         ],
                         "players": {
                             "1": {
-                                "hand": [
-                                    "git_add",
-                                    "git_commit",
-                                    "git_push",
-                                    "git_add"
-                                ],
-                                "path": [
-                                    "git_login"
-                                ],
-                                "step": 1,
-                                "blocked": false,
-                                "pending_discard": 0,
-                                "recent_swaps": []
-                            },
-                            "2": {
                                 "hand": [
                                     "git_add",
                                     "git_commit",
@@ -6024,12 +6017,27 @@
                                 "pending_discard": 0,
                                 "recent_swaps": []
                             },
+                            "2": {
+                                "hand": [
+                                    "git_add",
+                                    "git_login",
+                                    "git_commit",
+                                    "git_commit"
+                                ],
+                                "path": [],
+                                "step": 0,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            },
                             "3": {
                                 "hand": [
                                     "git_clone",
                                     "git_add",
                                     "git_commit",
-                                    "git_commit"
+                                    "git_add"
                                 ],
                                 "path": [],
                                 "step": 0,
@@ -6043,25 +6051,26 @@
                                 "hand": [
                                     "git_add",
                                     "git_commit",
-                                    "git_push",
-                                    "git_pull"
+                                    "git_pull",
+                                    "git_clone"
                                 ],
                                 "path": [
                                     "git_login",
                                     "git_clone",
-                                    "git_checkout",
-                                    "block_1"
+                                    "git_checkout"
                                 ],
-                                "step": 4,
+                                "step": 3,
                                 "blocked": false,
                                 "pending_discard": 0,
-                                "recent_swaps": []
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
                             }
                         },
                         "history": [
                             {
                                 "seat": 2,
-                                "message": "jogou Git Login.",
+                                "message": "trocou uma carta.",
                                 "turn": 1
                             },
                             {
@@ -6071,7 +6080,7 @@
                             },
                             {
                                 "seat": 4,
-                                "message": "encaixou o block 1.",
+                                "message": "trocou uma carta.",
                                 "turn": 3
                             },
                             {
@@ -6094,7 +6103,6 @@
                         "winner_seat": null,
                         "finished": false,
                         "deck": [
-                            "git_checkout",
                             "git_pull",
                             "git_add",
                             "git_commit",
@@ -6103,7 +6111,9 @@
                         ],
                         "discard": [
                             "git_push",
-                            "git_push"
+                            "git_push",
+                            "git_push",
+                            "git_commit"
                         ],
                         "players": {
                             "1": {
@@ -6111,7 +6121,7 @@
                                     "git_add",
                                     "git_commit",
                                     "git_push",
-                                    "git_add"
+                                    "git_push"
                                 ],
                                 "path": [
                                     "git_login"
@@ -6124,18 +6134,17 @@
                             "2": {
                                 "hand": [
                                     "git_add",
+                                    "git_login",
                                     "git_commit",
-                                    "git_push",
-                                    "git_clone"
+                                    "git_checkout"
                                 ],
-                                "path": [
-                                    "git_login"
-                                ],
-                                "step": 1,
+                                "path": [],
+                                "step": 0,
                                 "blocked": false,
                                 "pending_discard": 0,
                                 "recent_swaps": [
-                                    "git_push"
+                                    "git_push",
+                                    "git_commit"
                                 ]
                             },
                             "3": {
@@ -6143,7 +6152,7 @@
                                     "git_clone",
                                     "git_add",
                                     "git_commit",
-                                    "git_commit"
+                                    "git_add"
                                 ],
                                 "path": [],
                                 "step": 0,
@@ -6157,25 +6166,26 @@
                                 "hand": [
                                     "git_add",
                                     "git_commit",
-                                    "git_push",
-                                    "git_pull"
+                                    "git_pull",
+                                    "git_clone"
                                 ],
                                 "path": [
                                     "git_login",
                                     "git_clone",
-                                    "git_checkout",
-                                    "block_1"
+                                    "git_checkout"
                                 ],
-                                "step": 4,
+                                "step": 3,
                                 "blocked": false,
                                 "pending_discard": 0,
-                                "recent_swaps": []
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
                             }
                         },
                         "history": [
                             {
                                 "seat": 2,
-                                "message": "jogou Git Login.",
+                                "message": "trocou uma carta.",
                                 "turn": 1
                             },
                             {
@@ -6185,7 +6195,7 @@
                             },
                             {
                                 "seat": 4,
-                                "message": "encaixou o block 1.",
+                                "message": "trocou uma carta.",
                                 "turn": 3
                             },
                             {
@@ -8050,6 +8060,3262 @@
                                 "seat": 2,
                                 "message": "trocou uma carta.",
                                 "turn": 5
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "bots-com-pessoa-na-mesa-turno-5",
+            "participants": [
+                {
+                    "seat": 1,
+                    "kind": "user"
+                },
+                {
+                    "seat": 2,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 3,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 4,
+                    "kind": "bot"
+                }
+            ],
+            "state": {
+                "current_seat": 2,
+                "turn_number": 5,
+                "version": 5,
+                "deck": [
+                    "git_push",
+                    "git_commit",
+                    "git_add",
+                    "git_clone",
+                    "git_checkout",
+                    "git_pull",
+                    "git_add",
+                    "git_commit",
+                    "git_push",
+                    "git_clone"
+                ],
+                "discard": [],
+                "players": {
+                    "1": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "2": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "3": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "4": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    }
+                },
+                "history": []
+            },
+            "steps": [
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                }
+            ],
+            "expected": [
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 3,
+                        "turn_number": 6,
+                        "version": 6,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_commit",
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_clone"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_clone"
+                                ]
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "trocou uma carta.",
+                                "turn": 5
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 4,
+                        "turn_number": 7,
+                        "version": 7,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_clone"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_clone"
+                                ]
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "trocou uma carta.",
+                                "turn": 5
+                            },
+                            {
+                                "seat": 3,
+                                "message": "jogou git add ..",
+                                "turn": 6
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 1,
+                        "turn_number": 8,
+                        "version": 8,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_clone"
+                                ]
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_add"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "trocou uma carta.",
+                                "turn": 5
+                            },
+                            {
+                                "seat": 3,
+                                "message": "jogou git add ..",
+                                "turn": 6
+                            },
+                            {
+                                "seat": 4,
+                                "message": "trocou uma carta.",
+                                "turn": 7
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "bots-com-pessoa-na-mesa-turno-9",
+            "participants": [
+                {
+                    "seat": 1,
+                    "kind": "user"
+                },
+                {
+                    "seat": 2,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 3,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 4,
+                    "kind": "bot"
+                }
+            ],
+            "state": {
+                "current_seat": 2,
+                "turn_number": 9,
+                "version": 5,
+                "deck": [
+                    "git_push",
+                    "git_commit",
+                    "git_add",
+                    "git_clone",
+                    "git_checkout",
+                    "git_pull",
+                    "git_add",
+                    "git_commit",
+                    "git_push",
+                    "git_clone"
+                ],
+                "discard": [],
+                "players": {
+                    "1": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "2": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "3": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "4": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    }
+                },
+                "history": []
+            },
+            "steps": [
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                }
+            ],
+            "expected": [
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 3,
+                        "turn_number": 10,
+                        "version": 6,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_commit",
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 9
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 4,
+                        "turn_number": 11,
+                        "version": 7,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_push"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 9
+                            },
+                            {
+                                "seat": 3,
+                                "message": "trocou uma carta.",
+                                "turn": 10
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 1,
+                        "turn_number": 12,
+                        "version": 8,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_push",
+                            "git_push"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_add"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 9
+                            },
+                            {
+                                "seat": 3,
+                                "message": "trocou uma carta.",
+                                "turn": 10
+                            },
+                            {
+                                "seat": 4,
+                                "message": "trocou uma carta.",
+                                "turn": 11
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "bots-com-pessoa-na-mesa-turno-13",
+            "participants": [
+                {
+                    "seat": 1,
+                    "kind": "user"
+                },
+                {
+                    "seat": 2,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 3,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 4,
+                    "kind": "bot"
+                }
+            ],
+            "state": {
+                "current_seat": 2,
+                "turn_number": 13,
+                "version": 5,
+                "deck": [
+                    "git_push",
+                    "git_commit",
+                    "git_add",
+                    "git_clone",
+                    "git_checkout",
+                    "git_pull",
+                    "git_add",
+                    "git_commit",
+                    "git_push",
+                    "git_clone"
+                ],
+                "discard": [],
+                "players": {
+                    "1": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "2": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "3": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "4": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    }
+                },
+                "history": []
+            },
+            "steps": [
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                }
+            ],
+            "expected": [
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 3,
+                        "turn_number": 14,
+                        "version": 6,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_commit",
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 13
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 4,
+                        "turn_number": 15,
+                        "version": 7,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 13
+                            },
+                            {
+                                "seat": 3,
+                                "message": "jogou git add ..",
+                                "turn": 14
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 1,
+                        "turn_number": 16,
+                        "version": 8,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_push"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_add"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 13
+                            },
+                            {
+                                "seat": 3,
+                                "message": "jogou git add ..",
+                                "turn": 14
+                            },
+                            {
+                                "seat": 4,
+                                "message": "trocou uma carta.",
+                                "turn": 15
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "bots-com-pessoa-na-mesa-turno-21",
+            "participants": [
+                {
+                    "seat": 1,
+                    "kind": "user"
+                },
+                {
+                    "seat": 2,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 3,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 4,
+                    "kind": "bot"
+                }
+            ],
+            "state": {
+                "current_seat": 2,
+                "turn_number": 21,
+                "version": 5,
+                "deck": [
+                    "git_push",
+                    "git_commit",
+                    "git_add",
+                    "git_clone",
+                    "git_checkout",
+                    "git_pull",
+                    "git_add",
+                    "git_commit",
+                    "git_push",
+                    "git_clone"
+                ],
+                "discard": [],
+                "players": {
+                    "1": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "2": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "3": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "4": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    }
+                },
+                "history": []
+            },
+            "steps": [
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                }
+            ],
+            "expected": [
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 3,
+                        "turn_number": 22,
+                        "version": 6,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_commit",
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_clone"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_clone"
+                                ]
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "trocou uma carta.",
+                                "turn": 21
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 4,
+                        "turn_number": 23,
+                        "version": 7,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_clone"
+                                ]
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "trocou uma carta.",
+                                "turn": 21
+                            },
+                            {
+                                "seat": 3,
+                                "message": "trocou uma carta.",
+                                "turn": 22
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 1,
+                        "turn_number": 24,
+                        "version": 8,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_clone"
+                                ]
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_add"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "trocou uma carta.",
+                                "turn": 21
+                            },
+                            {
+                                "seat": 3,
+                                "message": "trocou uma carta.",
+                                "turn": 22
+                            },
+                            {
+                                "seat": 4,
+                                "message": "jogou git add ..",
+                                "turn": 23
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "bots-com-pessoa-na-mesa-turno-40",
+            "participants": [
+                {
+                    "seat": 1,
+                    "kind": "user"
+                },
+                {
+                    "seat": 2,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 3,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 4,
+                    "kind": "bot"
+                }
+            ],
+            "state": {
+                "current_seat": 2,
+                "turn_number": 40,
+                "version": 5,
+                "deck": [
+                    "git_push",
+                    "git_commit",
+                    "git_add",
+                    "git_clone",
+                    "git_checkout",
+                    "git_pull",
+                    "git_add",
+                    "git_commit",
+                    "git_push",
+                    "git_clone"
+                ],
+                "discard": [],
+                "players": {
+                    "1": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "2": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "3": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "4": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    }
+                },
+                "history": []
+            },
+            "steps": [
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                }
+            ],
+            "expected": [
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 3,
+                        "turn_number": 41,
+                        "version": 6,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_commit",
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 40
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 4,
+                        "turn_number": 42,
+                        "version": 7,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 40
+                            },
+                            {
+                                "seat": 3,
+                                "message": "jogou git add ..",
+                                "turn": 41
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 1,
+                        "turn_number": 43,
+                        "version": 8,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_add"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 40
+                            },
+                            {
+                                "seat": 3,
+                                "message": "jogou git add ..",
+                                "turn": 41
+                            },
+                            {
+                                "seat": 4,
+                                "message": "jogou git add ..",
+                                "turn": 42
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "bots-com-pessoa-na-mesa-turno-77",
+            "participants": [
+                {
+                    "seat": 1,
+                    "kind": "user"
+                },
+                {
+                    "seat": 2,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 3,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 4,
+                    "kind": "bot"
+                }
+            ],
+            "state": {
+                "current_seat": 2,
+                "turn_number": 77,
+                "version": 5,
+                "deck": [
+                    "git_push",
+                    "git_commit",
+                    "git_add",
+                    "git_clone",
+                    "git_checkout",
+                    "git_pull",
+                    "git_add",
+                    "git_commit",
+                    "git_push",
+                    "git_clone"
+                ],
+                "discard": [],
+                "players": {
+                    "1": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "2": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "3": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "4": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    }
+                },
+                "history": []
+            },
+            "steps": [
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                }
+            ],
+            "expected": [
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 3,
+                        "turn_number": 78,
+                        "version": 6,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_commit",
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 77
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 4,
+                        "turn_number": 79,
+                        "version": 7,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_push"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 77
+                            },
+                            {
+                                "seat": 3,
+                                "message": "trocou uma carta.",
+                                "turn": 78
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 1,
+                        "turn_number": 80,
+                        "version": 8,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [
+                            "git_push",
+                            "git_push"
+                        ],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_pull",
+                                    "git_add"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": [
+                                    "git_push"
+                                ]
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 77
+                            },
+                            {
+                                "seat": 3,
+                                "message": "trocou uma carta.",
+                                "turn": 78
+                            },
+                            {
+                                "seat": 4,
+                                "message": "trocou uma carta.",
+                                "turn": 79
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "bots-sem-pessoas-nunca-hesitam",
+            "participants": [
+                {
+                    "seat": 1,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 2,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 3,
+                    "kind": "bot"
+                },
+                {
+                    "seat": 4,
+                    "kind": "bot"
+                }
+            ],
+            "state": {
+                "current_seat": 2,
+                "turn_number": 9,
+                "version": 5,
+                "deck": [
+                    "git_push",
+                    "git_commit",
+                    "git_add",
+                    "git_clone",
+                    "git_checkout",
+                    "git_pull",
+                    "git_add",
+                    "git_commit",
+                    "git_push",
+                    "git_clone"
+                ],
+                "discard": [],
+                "players": {
+                    "1": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "2": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_clone",
+                            "git_push"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "3": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    },
+                    "4": {
+                        "hand": [
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_pull"
+                        ],
+                        "path": [
+                            "git_login",
+                            "git_clone",
+                            "git_checkout",
+                            "block_1"
+                        ],
+                        "step": 4,
+                        "blocked": false,
+                        "pending_discard": 0
+                    }
+                },
+                "history": []
+            },
+            "steps": [
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                },
+                {
+                    "do": "bot"
+                }
+            ],
+            "expected": [
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 3,
+                        "turn_number": 10,
+                        "version": 6,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_commit",
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 9
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 4,
+                        "turn_number": 11,
+                        "version": 7,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_add",
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 9
+                            },
+                            {
+                                "seat": 3,
+                                "message": "jogou git add ..",
+                                "turn": 10
+                            }
+                        ]
+                    }
+                },
+                {
+                    "result": {
+                        "played": true
+                    },
+                    "snapshot": {
+                        "status": "active",
+                        "current_seat": 1,
+                        "turn_number": 12,
+                        "version": 8,
+                        "winner_seat": null,
+                        "finished": false,
+                        "deck": [
+                            "git_clone",
+                            "git_checkout",
+                            "git_pull",
+                            "git_add",
+                            "git_commit",
+                            "git_push",
+                            "git_clone"
+                        ],
+                        "discard": [],
+                        "players": {
+                            "1": {
+                                "hand": [
+                                    "git_add",
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1"
+                                ],
+                                "step": 4,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "2": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_clone",
+                                    "git_push",
+                                    "git_push"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "3": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_commit"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            },
+                            "4": {
+                                "hand": [
+                                    "git_commit",
+                                    "git_push",
+                                    "git_pull",
+                                    "git_add"
+                                ],
+                                "path": [
+                                    "git_login",
+                                    "git_clone",
+                                    "git_checkout",
+                                    "block_1",
+                                    "git_add"
+                                ],
+                                "step": 5,
+                                "blocked": false,
+                                "pending_discard": 0,
+                                "recent_swaps": []
+                            }
+                        },
+                        "history": [
+                            {
+                                "seat": 2,
+                                "message": "jogou git add ..",
+                                "turn": 9
+                            },
+                            {
+                                "seat": 3,
+                                "message": "jogou git add ..",
+                                "turn": 10
+                            },
+                            {
+                                "seat": 4,
+                                "message": "jogou git add ..",
+                                "turn": 11
                             }
                         ]
                     }

@@ -7,7 +7,7 @@
 | Documento | Para quê |
 | --- | --- |
 | [`PROJETO.md`](PROJETO.md) | visão geral: o que é, tecnologias, arquitetura, pastas, fluxo do jogo e segurança |
-| [`ARQUITETURA.md`](ARQUITETURA.md) | técnico: mapa de autenticação, e-mails de conta e falhas na entrada, multiplayer e timeouts, quedas de serviço, processos, paridade PHP × Worker, observabilidade, banco, baralho, conquistas, contas temporárias, padrão visual e **equilíbrio entre humanos e bots** (seção 17) |
+| [`ARQUITETURA.md`](ARQUITETURA.md) | técnico: mapa de autenticação, e-mails de conta e falhas na entrada, multiplayer e timeouts, quedas de serviço, processos, paridade PHP × Worker, observabilidade, banco, baralho, conquistas, contas temporárias, padrão visual, **equilíbrio entre humanos e bots** (seção 17) e **regras de nomes** (seção 18) |
 
 ## Deploy
 

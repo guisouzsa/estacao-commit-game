@@ -39,16 +39,48 @@ return [
         'bot', 'bots', 'visitante', 'convidado', 'guest', 'anonimo', 'anonymous',
     ],
 
-    // Filtro BÁSICO de nomes ofensivos. Não substitui moderação.
-    // Termos longos e inequívocos: bloqueados em qualquer posição do nome.
+    // Filtro de nomes ofensivos (palavrões, conteúdo sexual e ódio) em vários idiomas. Não substitui moderação.
+    // A comparação ignora maiúsculas, acentos, separadores (b.u.c.e.t.a), letras repetidas (buuuceta) e troca
+    // de letras por números ou símbolos (m3rda, f0da, $hit). Ver PlayerNames::isBlocked.
+    //
+    // Termos longos e inequívocos: bloqueados em QUALQUER posição do nome ("xcaralhox").
+    // Só entram aqui termos que não aparecem dentro de palavras comuns.
     'blocked_contains' => [
-        'caralho', 'buceta', 'arrombado', 'fuck', 'shit', 'bitch', 'nigger', 'nigga',
-        'hitler', 'nazista', 'estupro', 'cuzao',
+        // português
+        'caralho', 'buceta', 'boceta', 'xoxota', 'xereca', 'arrombad', 'cuzao', 'cusao', 'cuzin', 'filhodaputa',
+        'filhadaputa', 'putaria', 'putinha', 'putona', 'piroca', 'punheta', 'siririca', 'chupapau', 'chupapica',
+        'bucetinha', 'cacete', 'merda', 'bosta', 'escroto', 'fodase', 'fodasse', 'foder', 'fodid', 'fodao',
+        'vagabunda', 'prostitut', 'retardad', 'mongoloid', 'viadinho', 'bichona', 'traveco', 'sapatao', 'tesao',
+        'estupro', 'estuprad', 'pedofil', 'nazista', 'hitler', 'heilhitler', 'siegheil', 'whitepower', 'onlyfans',
+        'xvideos', 'pornhub', 'hentai',
+        // inglês
+        'fuck', 'shit', 'bitch', 'pussy', 'asshole', 'bastard', 'whore', 'nigger', 'nigga', 'faggot', 'retard',
+        'penis', 'vagina', 'dildo', 'blowjob', 'handjob', 'motherf', 'porn', 'boobs', 'jizz',
+        // espanhol
+        'mierda', 'pendejo', 'cabron', 'chingad', 'joder', 'gilipollas', 'maricon', 'malparid', 'culero',
+        'hijodeputa', 'putamadre',
+        // francês
+        'putain', 'salope', 'connard', 'connasse', 'encule', 'batard', 'merde',
+        // italiano
+        'cazzo', 'stronzo', 'vaffanculo', 'puttana', 'minchia', 'coglion', 'porcodio',
+        // alemão
+        'scheisse', 'arschloch', 'fotze', 'wichser', 'hurensohn', 'schlampe', 'ficken',
+        // outros (polonês, russo transliterado, turco)
+        'kurwa', 'blyat', 'blyad', 'pizda', 'siktir', 'orospu',
     ],
 
-    // Termos curtos (podem aparecer dentro de palavras normais, como "computador"):
-    // bloqueados apenas quando são uma palavra inteira do nome.
+    // Termos curtos ou que existem dentro de palavras normais ("computador", "cuidado", "therapist"):
+    // bloqueados quando são uma PALAVRA inteira do nome ou o nome inteiro ("c u", "b.c.t").
     'blocked_words' => [
-        'puta', 'porra', 'merda', 'foda', 'fdp', 'cu', 'viado', 'rape', 'nazi', 'fag', 'cunt',
+        // português e abreviações
+        'puta', 'puto', 'porra', 'foda', 'fdp', 'cu', 'viado', 'rola', 'pica', 'piru', 'xota', 'xana', 'corno',
+        'otario', 'babaca', 'idiota', 'imbecil', 'vadia', 'quenga', 'gozar', 'sexo', 'nudes', 'pelada', 'pelado',
+        'bct', 'krl', 'crl', 'kct', 'vsf', 'vtnc', 'tnc', 'pqp', 'pnc', 'ppk', 'tmnc',
+        // inglês
+        'rape', 'rapist', 'nazi', 'fag', 'cunt', 'dick', 'cock', 'slut', 'twat', 'wank', 'cum', 'sex', 'nude',
+        'milf', 'nsfw', 'stfu', 'kkk', 'anal', 'tits',
+        // espanhol, francês, italiano, alemão e outros
+        'verga', 'cono', 'chinga', 'marica', 'culo', 'zorra', 'polla', 'hdp', 'pute', 'bite', 'nique', 'troia',
+        'figa', 'fick', 'suka', 'chuj', 'amk',
     ],
 ];

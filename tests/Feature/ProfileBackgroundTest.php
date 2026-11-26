@@ -78,4 +78,42 @@ class ProfileBackgroundTest extends TestCase
             $this->assertMatchesRegularExpression('/(^|\s)\'?'.preg_quote($key, '/').'\'?:\s*\{/m', $source, "Falta o desenho do fundo {$key}");
         }
     }
+
+    public function test_premium_backgrounds_unlock_with_ten_wins(): void
+    {
+        $this->assertSame(10, config('profiles.premium_backgrounds_min_wins'));
+        $this->assertGreaterThanOrEqual(5, count(config('profiles.premium_backgrounds')));
+
+        $rookie = User::factory()->create(['matches_won' => 9]);
+        $this->appearance($rookie, ['profile_background' => 'premium-galaxy'])->assertSessionHasErrors('profile_background');
+        $this->assertNull($rookie->fresh()->profile_background);
+        // Os fundos de espaço comuns são livres para todos.
+        $this->appearance($rookie, ['profile_background' => 'red-stars'])->assertSessionHasNoErrors();
+
+        $veteran = User::factory()->create(['matches_won' => 10]);
+        $this->appearance($veteran, ['profile_background' => 'premium-galaxy'])->assertSessionHasNoErrors();
+        $this->assertSame('premium-galaxy', $veteran->fresh()->profile_background);
+    }
+
+    public function test_the_edit_page_sends_premium_options_and_progress(): void
+    {
+        $this->actingAs(User::factory()->create(['matches_won' => 4]))->get(route('profile.edit'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('appearanceOptions.premiumMinWins', 10)
+                ->where('appearanceOptions.wins', 4)
+                ->has('appearanceOptions.premiumBackgrounds.premium-starfall'));
+    }
+
+    public function test_photo_and_cover_reject_animated_images(): void
+    {
+        $user = User::factory()->create();
+        // GIF (tipo não aceito) e um PNG animado (APNG, com o bloco acTL).
+        $gif = \Illuminate\Http\UploadedFile::fake()->createWithContent('a.gif', base64_decode('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='));
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/U3QAAAAASUVORK5CYII=');
+        $apng = substr($png, 0, 33)."\x00\x00\x00\x08acTL\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00".substr($png, 33);
+
+        $this->appearance($user, ['avatar' => $gif])->assertSessionHasErrors('avatar');
+        $this->appearance($user, ['cover' => \Illuminate\Http\UploadedFile::fake()->createWithContent('a.png', $apng)])->assertSessionHasErrors('cover');
+        $this->appearance($user, ['cover' => \Illuminate\Http\UploadedFile::fake()->createWithContent('b.png', $png)])->assertSessionHasNoErrors();
+    }
 }

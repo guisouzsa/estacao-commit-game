@@ -13,12 +13,14 @@ import PlayerProfileCard, {
 import ProfileExtras from '@/Components/ProfileExtras';
 import ProfileImageEditor from '@/Components/ProfileImageEditor';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { checkImage } from '@/lib/imageSafety';
 import { profileBackgroundStyle } from '@/lib/profileBackgrounds';
 import { toast } from '@/lib/toast';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ChangeEvent,
     FormEvent,
+    ReactNode,
     useCallback,
     useEffect,
     useMemo,
@@ -29,6 +31,9 @@ import {
 type Options = {
     frames: Record<string, string>;
     backgrounds?: Record<string, string>;
+    premiumBackgrounds?: Record<string, string>;
+    premiumMinWins?: number;
+    wins?: number;
     badges: Record<string, string>;
     titles: Record<string, string>;
 };
@@ -127,6 +132,144 @@ const frameColors: Record<string, string> = {
 };
 
 /** Igual a config/achievements.php (featured_limit); o servidor valida de novo. */
+/** Fundos premium (animados): liberados a partir de `minWins` vitórias; antes disso aparecem com cadeado. */
+function PremiumBackgrounds({
+    options,
+    selected,
+    wins,
+    minWins,
+    onPick,
+}: {
+    options: Record<string, string>;
+    selected: string | null;
+    wins: number;
+    minWins: number;
+    onPick: (key: string) => void;
+}) {
+    const unlocked = wins >= minWins;
+
+    return (
+        <div className="mt-5">
+            <p className="mb-2 flex flex-wrap items-center gap-2 text-sm font-bold">
+                <span className="border-2 border-[#1d1d1b] bg-[#f0b429] px-1.5 font-mono text-[10px] font-black uppercase">
+                    Premium
+                </span>
+                Fundos animados
+                <span className="font-mono text-xs font-normal text-[#5b5953]">
+                    {unlocked
+                        ? 'liberados'
+                        : `${Math.min(wins, minWins)}/${minWins} vitórias para liberar`}
+                </span>
+            </p>
+            <div
+                aria-label="Fundos premium"
+                className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
+                role="group"
+            >
+                {Object.entries(options).map(([key, label]) => {
+                    const active = selected === key;
+                    const locked = !unlocked && !active;
+
+                    return (
+                        <button
+                            aria-label={`Fundo premium ${label}${locked ? ', bloqueado' : ''}`}
+                            aria-pressed={active}
+                            className={`relative flex h-16 flex-col justify-end overflow-hidden border-2 p-1 text-left disabled:cursor-not-allowed ${
+                                active
+                                    ? 'border-[#1d1d1b] shadow-[3px_3px_0_#f0b429]'
+                                    : 'border-[#1d1d1b]/25'
+                            }`}
+                            data-profile-background={locked ? undefined : key}
+                            disabled={locked}
+                            key={key}
+                            onClick={() => onPick(key)}
+                            style={profileBackgroundStyle(key)}
+                            title={
+                                locked
+                                    ? `${label}: libera com ${minWins} vitórias`
+                                    : label
+                            }
+                            type="button"
+                        >
+                            {locked && (
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute inset-0 grid place-items-center bg-[#1d1d1b]/55 text-lg"
+                                >
+                                    🔒
+                                </span>
+                            )}
+                            <span className="relative truncate bg-white/90 px-1 font-mono text-[9px] font-black uppercase">
+                                {label}
+                            </span>
+                            {active && (
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute right-1 top-1 grid size-4 place-items-center bg-[#f0b429] text-[10px] font-black"
+                                >
+                                    ✓
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+const EDIT_SECTIONS = [
+    { id: 'identidade', short: 'Identidade' },
+    { id: 'foto', short: 'Foto' },
+    { id: 'banner', short: 'Banner e fundo' },
+    { id: 'conquistas', short: 'Conquistas' },
+    { id: 'links', short: 'Links' },
+];
+
+/** Uma seção da edição: só um número, um título e uma linha separando da próxima (sem card). */
+function EditSection({
+    id,
+    number,
+    title,
+    hint,
+    children,
+}: {
+    id: string;
+    number: number;
+    title: string;
+    hint?: string;
+    children: ReactNode;
+}) {
+    return (
+        <section
+            aria-labelledby={`editar-${id}-titulo`}
+            className="scroll-mt-24 py-7 first:pt-0 last:pb-0"
+            id={`editar-${id}`}
+        >
+            <header className="mb-4 flex items-start gap-3">
+                <span
+                    aria-hidden="true"
+                    className="grid size-7 shrink-0 place-items-center bg-[#1d1d1b] font-mono text-xs font-black text-[#b4da33]"
+                >
+                    {number}
+                </span>
+                <div>
+                    <h3
+                        className="text-base font-black uppercase tracking-wide"
+                        id={`editar-${id}-titulo`}
+                    >
+                        {title}
+                    </h3>
+                    {hint && (
+                        <p className="mt-0.5 text-xs text-[#5b5953]">{hint}</p>
+                    )}
+                </div>
+            </header>
+            {children}
+        </section>
+    );
+}
+
 const ACHIEVEMENT_LIMIT = 11;
 
 const emptyExtras: ProfileExtrasData = {
@@ -409,13 +552,28 @@ export default function Edit({
         );
     };
 
-    const chooseImage = (
+    const [checkingImage, setCheckingImage] = useState<
+        'avatar' | 'cover' | null
+    >(null);
+
+    const chooseImage = async (
         kind: 'avatar' | 'cover',
         event: ChangeEvent<HTMLInputElement>,
     ) => {
         const file = event.target.files?.[0];
         event.target.value = '';
-        if (!file) return;
+        if (!file || checkingImage) return;
+
+        // Foto e capa passam por uma checagem de conteúdo impróprio (+18) antes de entrar no editor.
+        setCheckingImage(kind);
+        const verdict = await checkImage(file);
+        setCheckingImage(null);
+        if (!verdict.allowed) {
+            toast.error(
+                'Essa imagem parece ter conteúdo impróprio ou +18 e não pode ser usada no perfil. Escolha outra.',
+            );
+            return;
+        }
 
         cropSnapshot.current = { ...data };
         if (kind === 'avatar') {
@@ -553,11 +711,24 @@ export default function Edit({
                                     )}
                                 </div>
 
-                                <div className="grid gap-7 lg:grid-cols-2 xl:grid-cols-3">
-                                    <div className="space-y-5">
-                                        <h3 className="border-b-2 border-[#1d1d1b]/15 pb-2 text-sm font-black uppercase tracking-wide text-[#464498]">
-                                            Identidade
-                                        </h3>
+                                <nav
+                                    aria-label="Seções da edição"
+                                    className="-mx-1 mb-6 flex gap-1.5 overflow-x-auto px-1 pb-1"
+                                >
+                                    {EDIT_SECTIONS.map((section, index) => (
+                                        <a
+                                            className="shrink-0 border-2 border-[#1d1d1b]/25 bg-white px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase hover:border-[#1d1d1b]"
+                                            href={`#editar-${section.id}`}
+                                            key={section.id}
+                                        >
+                                            {index + 1}. {section.short}
+                                        </a>
+                                    ))}
+                                </nav>
+
+                                <div className="divide-y-2 divide-[#1d1d1b]/15">
+                                    <EditSection id="identidade" number={1} title="Identidade" hint="Seu @ público e a biografia.">
+                                        <div className="max-w-2xl space-y-5">
                                         <label className="block text-sm font-bold">
                                             Username público
                                             <input
@@ -611,71 +782,15 @@ export default function Edit({
                                             </span>
                                         </label>
                                         <InputError message={errors.bio} />
+                                        </div>
+                                    </EditSection>
 
-                                        <OptionPicker
-                                            hint="Aparece junto do seu nome no perfil."
-                                            label="Selo do perfil"
-                                            onChange={(value) =>
-                                                setData('primary_badge', value)
-                                            }
-                                            options={Object.entries(
-                                                appearanceOptions.badges,
-                                            ).map(([key, label]) => ({
-                                                value: key,
-                                                label,
-                                                accent: '#464498',
-                                            }))}
-                                            value={data.primary_badge}
-                                        />
-
-                                        <OptionPicker
-                                            hint="Uma frase curta que descreve você."
-                                            label="Título disponível"
-                                            onChange={(value) =>
-                                                setData(
-                                                    'profile_title',
-                                                    value || null,
-                                                )
-                                            }
-                                            options={[
-                                                {
-                                                    value: '',
-                                                    label: 'Sem título',
-                                                    description:
-                                                        'Nenhum título aparece no perfil.',
-                                                },
-                                                ...Object.entries(
-                                                    appearanceOptions.titles,
-                                                ).map(([key, label]) => ({
-                                                    value: key,
-                                                    label,
-                                                    accent: '#b4da33',
-                                                })),
-                                            ]}
-                                            value={data.profile_title ?? ''}
-                                        />
-
-                                        <AchievementPicker
-                                            badges={profileExtras.badges}
-                                            enabled={achievementsOn}
-                                            limit={ACHIEVEMENT_LIMIT}
-                                            onChange={({
-                                                enabled,
-                                                selected,
-                                            }) => {
-                                                setAchievementsOn(enabled);
-                                                setAchievementIds(selected);
-                                                setAchievementsTouched(true);
-                                            }}
-                                            selected={achievementIds}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <section>
-                                            <h3 className="text-sm font-bold">
-                                                Avatar
-                                            </h3>
+                                    <EditSection id="foto" number={2} title="Foto do perfil" hint="Envie uma foto ou use um ícone gerado. A moldura vale para os dois.">
+                                        <div className="grid gap-6 lg:grid-cols-2">
+                                            <div>
+                                                <h4 className="text-sm font-bold">
+                                                    Sua foto
+                                                </h4>
                                             <p className="mt-1 text-xs text-[#68665f]">
                                                 JPG, PNG ou WebP, até 2 MB.
                                             </p>
@@ -691,12 +806,17 @@ export default function Edit({
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <button
                                                     className="min-h-11 border-2 border-[#1d1d1b] bg-[#1d1d1b] px-4 font-mono text-xs font-bold uppercase text-white shadow-[3px_3px_0_#b4da33]"
+                                                    disabled={
+                                                        checkingImage !== null
+                                                    }
                                                     onClick={() =>
                                                         avatarInput.current?.click()
                                                     }
                                                     type="button"
                                                 >
-                                                    Trocar foto
+                                                    {checkingImage === 'avatar'
+                                                        ? 'Verificando imagem…'
+                                                        : 'Trocar foto'}
                                                 </button>
                                                 {avatarUrl &&
                                                     !data.avatar_generated && (
@@ -736,10 +856,10 @@ export default function Edit({
                                                 className="mt-2"
                                                 message={errors.avatar}
                                             />
-
-                                            <div className="mt-5 border-t-2 border-[#1d1d1b]/15 pt-4">
+                                            </div>
+                                            <div>
                                                 <h4 className="text-sm font-bold">
-                                                    Ou escolha um ícone
+                                                    Ou use um ícone gerado
                                                 </h4>
                                                 <p className="mb-3 mt-1 text-xs text-[#68665f]">
                                                     Sem foto? Use um ícone
@@ -778,12 +898,13 @@ export default function Edit({
                                                     }
                                                 />
                                             </div>
-                                            <div className="mt-6 border-t-2 border-[#1d1d1b]/15 pt-5">
+                                        </div>
+                                        <div className="mt-6">
                                                 <fieldset>
                                                     <legend className="mb-2 text-sm font-bold">
                                                         Moldura de avatar
                                                     </legend>
-                                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
                                                         {Object.entries(
                                                             appearanceOptions.frames,
                                                         ).map(
@@ -793,7 +914,7 @@ export default function Edit({
                                                                         data.profile_frame ===
                                                                         key
                                                                     }
-                                                                    className={`flex min-h-20 items-center gap-3 border-2 bg-white p-3 text-left text-xs font-bold ${
+                                                                    className={`flex flex-col items-center gap-1.5 border-2 bg-white p-2 text-center text-[11px] font-bold leading-tight sm:min-h-20 sm:flex-row sm:gap-3 sm:p-3 sm:text-left sm:text-xs ${
                                                                         data.profile_frame ===
                                                                         key
                                                                             ? 'border-[#1d1d1b] shadow-[3px_3px_0_#b4da33]'
@@ -810,7 +931,7 @@ export default function Edit({
                                                                 >
                                                                     <span
                                                                         aria-hidden="true"
-                                                                        className={`size-9 shrink-0 rounded-full border-[3px] bg-[#464498] ${frameColors[key] ?? frameColors.standard}`}
+                                                                        className={`size-8 shrink-0 rounded-full border-[3px] bg-[#464498] sm:size-9 ${frameColors[key] ?? frameColors.standard}`}
                                                                     />
                                                                     {label}
                                                                 </button>
@@ -818,13 +939,15 @@ export default function Edit({
                                                         )}
                                                     </div>
                                                 </fieldset>
-                                            </div>
-                                        </section>
+                                        </div>
+                                    </EditSection>
 
-                                        <section className="border-t-2 border-[#1d1d1b]/15 pt-5">
-                                            <h3 className="text-sm font-bold">
-                                                Banner de fundo
-                                            </h3>
+                                    <EditSection id="banner" number={3} title="Banner e fundo" hint="Uma imagem sua no topo do perfil ou um dos fundos da Estação.">
+                                        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+                                            <div>
+                                                <h4 className="text-sm font-bold">
+                                                    Imagem do banner
+                                                </h4>
                                             <p className="mt-1 text-xs text-[#68665f]">
                                                 Imagem horizontal exibida ao
                                                 fundo do seu perfil. JPG, PNG ou
@@ -842,12 +965,17 @@ export default function Edit({
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <button
                                                     className="min-h-11 border-2 border-[#1d1d1b] bg-[#1d1d1b] px-4 font-mono text-xs font-bold uppercase text-white shadow-[3px_3px_0_#b4da33]"
+                                                    disabled={
+                                                        checkingImage !== null
+                                                    }
                                                     onClick={() =>
                                                         coverInput.current?.click()
                                                     }
                                                     type="button"
                                                 >
-                                                    Trocar banner
+                                                    {checkingImage === 'cover'
+                                                        ? 'Verificando imagem…'
+                                                        : 'Trocar banner'}
                                                 </button>
                                                 {(coverUrl || data.cover) && (
                                                     <button
@@ -880,7 +1008,8 @@ export default function Edit({
                                                 className="mt-2"
                                                 message={errors.cover}
                                             />
-                                            <div className="mt-6 border-t-2 border-[#1d1d1b]/15 pt-5">
+                                            </div>
+                                            <div>
                                                 {appearanceOptions.backgrounds && (
                                                     <fieldset>
                                                         <legend className="mb-1 text-sm font-bold">
@@ -955,6 +1084,9 @@ export default function Edit({
                                                                                 key,
                                                                             )
                                                                         }
+                                                                        data-profile-background={
+                                                                            key
+                                                                        }
                                                                         style={profileBackgroundStyle(
                                                                             key,
                                                                         )}
@@ -981,6 +1113,30 @@ export default function Edit({
                                                                 ),
                                                             )}
                                                         </div>
+                                                        {appearanceOptions.premiumBackgrounds && (
+                                                            <PremiumBackgrounds
+                                                                minWins={
+                                                                    appearanceOptions.premiumMinWins ??
+                                                                    10
+                                                                }
+                                                                onPick={(key) =>
+                                                                    setData(
+                                                                        'profile_background',
+                                                                        key,
+                                                                    )
+                                                                }
+                                                                options={
+                                                                    appearanceOptions.premiumBackgrounds
+                                                                }
+                                                                selected={
+                                                                    data.profile_background
+                                                                }
+                                                                wins={
+                                                                    appearanceOptions.wins ??
+                                                                    0
+                                                                }
+                                                            />
+                                                        )}
                                                         <InputError
                                                             message={
                                                                 errors.profile_background
@@ -990,18 +1146,79 @@ export default function Edit({
                                                     </fieldset>
                                                 )}
                                             </div>
-                                        </section>
-                                    </div>
-                                    <fieldset className="mt-7 border-t-2 border-[#1d1d1b]/15 pt-5 lg:col-span-2 xl:col-span-1 xl:mt-0 xl:border-t-0 xl:pt-0">
+                                        </div>
+                                    </EditSection>
+
+                                    <EditSection id="conquistas" number={4} title="Conquistas, selo e título" hint="O que aparece junto do seu nome e no seu card.">
+                                        <div className="grid gap-5 lg:grid-cols-2">
+                                        <OptionPicker
+                                            hint="Aparece junto do seu nome no perfil."
+                                            label="Selo do perfil"
+                                            onChange={(value) =>
+                                                setData('primary_badge', value)
+                                            }
+                                            options={Object.entries(
+                                                appearanceOptions.badges,
+                                            ).map(([key, label]) => ({
+                                                value: key,
+                                                label,
+                                                accent: '#464498',
+                                            }))}
+                                            value={data.primary_badge}
+                                        />
+
+                                        <OptionPicker
+                                            hint="Uma frase curta que descreve você."
+                                            label="Título disponível"
+                                            onChange={(value) =>
+                                                setData(
+                                                    'profile_title',
+                                                    value || null,
+                                                )
+                                            }
+                                            options={[
+                                                {
+                                                    value: '',
+                                                    label: 'Sem título',
+                                                    description:
+                                                        'Nenhum título aparece no perfil.',
+                                                },
+                                                ...Object.entries(
+                                                    appearanceOptions.titles,
+                                                ).map(([key, label]) => ({
+                                                    value: key,
+                                                    label,
+                                                    accent: '#b4da33',
+                                                })),
+                                            ]}
+                                            value={data.profile_title ?? ''}
+                                        />
+                                        </div>
+                                        <div className="mt-5">
+                                        <AchievementPicker
+                                            badges={profileExtras.badges}
+                                            enabled={achievementsOn}
+                                            limit={ACHIEVEMENT_LIMIT}
+                                            onChange={({
+                                                enabled,
+                                                selected,
+                                            }) => {
+                                                setAchievementsOn(enabled);
+                                                setAchievementIds(selected);
+                                                setAchievementsTouched(true);
+                                            }}
+                                            selected={achievementIds}
+                                        />
+                                        </div>
+                                    </EditSection>
+
+                                    <EditSection id="links" number={5} title="Links" hint="Até oito links HTTPS no perfil público.">
+                                        <fieldset>
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                             <div>
-                                                <legend className="text-lg font-black">
-                                                    Conecte-se comigo
+                                                <legend className="sr-only">
+                                                    Links do perfil
                                                 </legend>
-                                                <p className="mt-1 text-sm text-[#68665f]">
-                                                    Até oito links HTTPS no
-                                                    perfil público.
-                                                </p>
                                             </div>
                                             <button
                                                 className="min-h-11 border-2 border-[#1d1d1b] bg-white px-3 font-mono text-xs font-bold uppercase disabled:opacity-40"
@@ -1238,6 +1455,7 @@ export default function Edit({
                                             ))}
                                         </div>
                                     </fieldset>
+                                    </EditSection>
                                 </div>
                             </section>
                         )}

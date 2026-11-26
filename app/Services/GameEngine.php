@@ -132,7 +132,10 @@ class GameEngine
         }
 
         // A decisão usa só a mão do próprio bot e o estado público da mesa (ver BotBrain).
-        ['action' => $action, 'payload' => $payload] = app(BotBrain::class)->decide($match->state, (string) $bot->id);
+        // Pessoas na mesa: com alguém de verdade jogando, os bots têm a desvantagem calibrada (BotBrain::HANDICAP).
+        $humans = $room->participants()->where('kind', '!=', 'bot')->count();
+        ['action' => $action, 'payload' => $payload] = app(BotBrain::class)
+            ->decide($match->state, (string) $bot->id, (int) $match->turn_number, $humans);
 
         $this->act($match, $bot, $action, $payload, (string) Str::uuid());
 

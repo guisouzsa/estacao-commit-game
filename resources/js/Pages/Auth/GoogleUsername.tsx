@@ -45,7 +45,7 @@ export default function GoogleUsername({
                         minLength={3}
                         maxLength={30}
                         pattern="[A-Za-z0-9_-]{3,30}"
-                        title="Use de 3 a 30 letras, números, _ ou -"
+                        title="De 3 a 30 caracteres: comece com uma letra e use letras sem acento, números, _ ou -"
                         autoFocus
                         required
                         aria-invalid={Boolean(errors.username)}

@@ -144,3 +144,19 @@ body { margin: 0; background: var(--ec-ink); font-family: 'Space Grotesk', sans-
 @keyframes achievement-pop { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
 .achievement-pop { animation: achievement-pop .32s cubic-bezier(.2, .9, .3, 1.2); }
 @media (prefers-reduced-motion: reduce) { .badge-shine, .badge-float, .achievement-pop { animation: none !important; } }
+
+/* Fundos premium do perfil (profileBackgrounds.ts): animação leve só de posição/ângulo do fundo, sem imagem. */
+@property --ec-spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes ec-starfall { to { background-position: -160px 160px, -120px 240px, -90px 270px, 0 0; } }
+@keyframes ec-red-stars { 0%, 100% { background-position: 0 0, 0 0, 0% 50%, 100% 50%, 0 0; } 50% { background-position: 40px -20px, -30px 15px, 100% 50%, 0% 50%, 0 0; } }
+@keyframes ec-galaxy { to { --ec-spin: 360deg; background-position: 120px -60px, 0 0, 0 0; } }
+@keyframes ec-warp { from { background-size: 100% 100%, auto, auto; } to { background-size: 260% 260%, auto, auto; } }
+@keyframes ec-twinkle { 0%, 100% { background-position: 0 0, 0 0, 0 0, 0 0; opacity: 1; } 50% { background-position: 8px -6px, -40px 20px, 30px -15px, 0 0; opacity: .92; } }
+@keyframes ec-aurora { 0%, 100% { background-position: 0 0, 0% 50%; } 50% { background-position: 60px -30px, 100% 50%; } }
+[data-profile-background="premium-starfall"] { animation: ec-starfall 14s linear infinite; }
+[data-profile-background="premium-red-stars"] { animation: ec-red-stars 9s ease-in-out infinite; }
+[data-profile-background="premium-galaxy"] { animation: ec-galaxy 24s linear infinite; }
+[data-profile-background="premium-warp"] { background-position: center; animation: ec-warp 3.5s linear infinite; }
+[data-profile-background="premium-twinkle"] { animation: ec-twinkle 6s ease-in-out infinite; }
+[data-profile-background="premium-aurora"] { animation: ec-aurora 12s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { [data-profile-background^="premium-"] { animation: none !important; } }

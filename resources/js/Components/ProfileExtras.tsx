@@ -1,5 +1,6 @@
+import ShareProfileSheet from '@/Components/ShareProfileSheet';
 import { useState } from 'react';
-import type { ProfileLink } from './PlayerProfileCard';
+import type { PlayerProfile, ProfileLink } from './PlayerProfileCard';
 
 const labels: Record<string, string> = {
     github: 'GitHub',
@@ -24,14 +25,22 @@ export default function ProfileExtras({
     username,
     links = [],
     share = false,
+    profile,
 }: {
     username: string;
     links?: ProfileLink[];
     statistics?: Statistics | null;
     share?: boolean;
+    /** Perfil completo: com ele, "Compartilhar" abre o painel com o story; sem ele, só o link. */
+    profile?: PlayerProfile;
 }) {
     const [message, setMessage] = useState('');
+    const [sheetOpen, setSheetOpen] = useState(false);
     const shareProfile = async () => {
+        if (profile) {
+            setSheetOpen(true);
+            return;
+        }
         const url = `${window.location.origin}/u/${username}`;
         const nativeShare = typeof navigator.share === 'function';
         try {
@@ -61,6 +70,13 @@ export default function ProfileExtras({
                         </button>
                     )}
                 </div>
+                {profile && (
+                    <ShareProfileSheet
+                        onClose={() => setSheetOpen(false)}
+                        profile={profile}
+                        show={sheetOpen}
+                    />
+                )}
                 {message && (
                     <p
                         role="status"

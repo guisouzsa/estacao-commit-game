@@ -7,7 +7,8 @@ namespace App\Services;
  *
  * O bot decide SÓ com o que um jogador da mesa poderia saber: a própria mão e o estado público
  * (etapa e percurso de cada um, quem está bloqueado). Nunca olha a mão dos outros nem o baralho.
- * Determinístico: mesma situação, mesma jogada (sem sorteio aqui).
+ * Determinístico: mesma situação, mesma jogada (o "sorteio" da hesitação é uma conta sobre turno,
+ * assento e etapa, igual nos dois motores).
  */
 class BotBrain
 {
@@ -15,10 +16,21 @@ class BotBrain
     private const TRAINING_END = 3;
 
     /**
+     * Desvantagem dos bots quando há pessoas na mesa (decisão de produto: o jogador real deve vencer cerca
+     * de 90% das partidas contra bots). Chance, em %, de o bot "hesitar" numa vez em que poderia avançar:
+     * em vez de jogar a carta ou o bloco da etapa, ele troca uma carta. Indexada pelo número de pessoas (1 a 3).
+     * Calibrada com worker/sim/balance.ts; os mesmos números ficam em worker/src/bot.ts (BOT_HANDICAP).
+     */
+    public const HANDICAP = [1 => 67, 2 => 50, 3 => 40];
+
+    /**
      * @param  array<string, mixed>  $state  estado da partida (players indexados pelo id do participante)
+     * @param  int  $turn  turno atual da partida (GameMatch::turn_number)
+     * @param  int  $humans  pessoas (contas ou visitantes) na mesa
+     * @param  array<int, int>|null  $handicap  tabela de hesitação (padrão: HANDICAP)
      * @return array{action: string, payload: array<string, string>}
      */
-    public function decide(array $state, string $me): array
+    public function decide(array $state, string $me, int $turn = 1, int $humans = 0, ?array $handicap = null): array
     {
         $player = $state['players'][$me];
 
@@ -27,6 +39,12 @@ class BotBrain
         }
 
         $required = GameEngine::REQUIRED[$player['step']] ?? null;
+        $canAdvance = $required !== null && (str_starts_with($required, 'block_') || in_array($required, $player['hand'], true));
+        $chance = ($handicap ?? self::HANDICAP)[min($humans, 3)] ?? 0;
+        if ($canAdvance && $humans > 0 && $player['hand'] !== []
+            && self::handicapRoll($turn, (int) $player['seat'], (int) $player['step']) < $chance) {
+            return ['action' => 'exchange', 'payload' => ['card' => $player['hand'][$this->leastValuable($player)]]];
+        }
         if ($required !== null && str_starts_with($required, 'block_')) {
             return ['action' => 'play_block', 'payload' => []];
         }
@@ -49,6 +67,32 @@ class BotBrain
         }
 
         return ['action' => 'exchange', 'payload' => ['card' => $player['hand'][$this->leastValuable($player)]]];
+    }
+
+    /**
+     * Sorteio determinístico (0 a 99) da hesitação: só depende do turno, do assento e da etapa, então o motor
+     * PHP e o do Worker chegam ao mesmo número (paridade) e o navegador não consegue influenciá-lo.
+     * Combina os três números e embaralha os bits (finalizador do MurmurHash3) em 32 bits sem sinal.
+     */
+    public static function handicapRoll(int $turn, int $seat, int $step): int
+    {
+        $h = ($turn * 0x9E3779B1 + $seat * 0x85EBCA77 + $step * 0xC2B2AE3D) % 4294967296;
+        $h ^= $h >> 16;
+        $h = self::mul32($h, 0x85EBCA6B);
+        $h ^= $h >> 13;
+        $h = self::mul32($h, 0xC2B2AE35);
+        $h ^= $h >> 16;
+
+        return $h % 100;
+    }
+
+    /** Multiplicação módulo 2^32 sem estourar o inteiro de 64 bits (equivale a Math.imul >>> 0). */
+    private static function mul32(int $a, int $b): int
+    {
+        $a &= 0xFFFFFFFF;
+        $b &= 0xFFFFFFFF;
+
+        return ((($a & 0xFFFF) * $b) + (((($a >> 16) * $b) & 0xFFFF) << 16)) & 0xFFFFFFFF;
     }
 
     /**

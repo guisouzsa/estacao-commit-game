@@ -148,8 +148,12 @@ class GameMatchTest extends TestCase
 
         $match->refresh();
         $this->assertSame(1, $match->current_seat);
+        // Com uma pessoa na mesa, cada bot pode avançar ou "hesitar" (trocar uma carta) — BotBrain::HANDICAP.
+        // Em qualquer caso joga exatamente uma vez e nunca pula etapa.
         foreach ($room->participants()->where('kind', 'bot')->get() as $bot) {
-            $this->assertSame(1, $match->state['players'][(string) $bot->id]['step']);
+            $player = $match->state['players'][(string) $bot->id];
+            $this->assertContains($player['step'], [0, 1]);
+            $this->assertCount(2, $player['hand']);
         }
     }
 
